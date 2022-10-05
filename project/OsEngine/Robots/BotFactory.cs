@@ -23,6 +23,7 @@ using OsEngine.Robots.Patterns;
 using OsEngine.Robots.Trend;
 using OsEngine.Robots.OnScriptIndicators;
 using OsEngine.Robots.Screeners;
+using OsEngine.Robots.SqueezyBot;
 
 namespace OsEngine.Robots
 {
@@ -37,6 +38,7 @@ namespace OsEngine.Robots
         public static List<string> GetNamesStrategy()
         {
             List<string> result = new List<string>();
+            result.Add("SqueezyBot");
             result.Add("SmaScreener");
             result.Add("Fisher");
             result.Add("Engine");
@@ -112,6 +114,10 @@ namespace OsEngine.Robots
             BotPanel bot = null;
 
             // примеры и бесплатные боты
+            if(nameClass == Squeezy.SQUEEZY_BOT)
+            {
+                bot = new Squeezy(name, startProgram);
+            }
             if (isScript && bot == null)
             {
                 bot = CreateScriptStrategyByName(nameClass, name, startProgram);
