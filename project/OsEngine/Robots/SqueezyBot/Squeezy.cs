@@ -35,6 +35,7 @@ namespace OsEngine.Robots.SqueezyBot
                         , CreateParameter("%MovingAverage высота коридора slow", 0.1m, 0.0m, 1.0m, 0.1m)
                         , CreateParameter("MovingAverage длина fast", 10, 0, 50, 1)
                         , CreateParameter("% депозита для сделки", 10.0m, 5.0m, 50.0m, 5.0m)
+                        , CreateParameter("Количество баров до выхода", 20, 0, 50, 1)
                         );
  
             addSeparateParameter();
@@ -43,32 +44,33 @@ namespace OsEngine.Robots.SqueezyBot
                           GroupType.UpLong
                         , CreateParameter("Включить UpLong торговлю", true)
                         , CreateParameter("%Триггер начала сделки UpLong", 1.4m, 0.0m, 1.0m, 3.0m)
-                        , CreateParameter("%StopLoss UpLong", 4m, 0.0m, 1.0m, 10.0m)
                         , CreateParameter("%TakeProfit UpLong", 2.4m, 0.0m, 1.0m, 10.0m)
+                        , CreateParameter("%StopLoss UpLong", 4m, 0.0m, 1.0m, 10.0m)
+
                         );
             addSeparateParameter();
             GroupParameters upShort = new GroupParameters(
                           GroupType.UpShort
                         , CreateParameter("Включить UpShort торговлю", true)
                         , CreateParameter("%Триггер начала сделки UpShort", 1.4m, 0.0m, 1.0m, 3.0m)
-                        , CreateParameter("%StopLoss UpShort", 4m, 0.0m, 1.0m, 10.0m)
                         , CreateParameter("%TakeProfit UpShort", 2.4m, 0.0m, 1.0m, 10.0m)
+                        , CreateParameter("%StopLoss UpShort", 4m, 0.0m, 1.0m, 10.0m)
                         );
             addSeparateParameter();
             GroupParameters dnLong = new GroupParameters(
                           GroupType.DownLong
                         , CreateParameter("Включить DownLong торговлю", true)
                         , CreateParameter("%Триггер начала сделки DownLong", 1.4m, 0.0m, 1.0m, 3.0m)
-                        , CreateParameter("%StopLoss DownLong", 4m, 0.0m, 1.0m, 10.0m)
                         , CreateParameter("%TakeProfit DownLong", 2.4m, 0.0m, 1.0m, 10.0m)
+                        , CreateParameter("%StopLoss DownLong", 4m, 0.0m, 1.0m, 10.0m)
                         );
             addSeparateParameter();
             GroupParameters dnShort = new GroupParameters(
                           GroupType.DownShort
                         , CreateParameter("Включить DownShort торговлю", true)
                         , CreateParameter("%Триггер начала сделки DownShort", 1.4m, 0.0m, 1.0m, 3.0m)
-                        , CreateParameter("%StopLoss DownShort", 4m, 0.0m, 1.0m, 10.0m)
                         , CreateParameter("%TakeProfit DownShort", 2.4m, 0.0m, 1.0m, 10.0m)
+                        , CreateParameter("%StopLoss DownShort", 4m, 0.0m, 1.0m, 10.0m)
                         );
             groupParametersService = new GroupParametersService();
             groupParametersService.addGroupParameters(upLong);

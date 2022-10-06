@@ -13,15 +13,16 @@ namespace OsEngine.Robots.SqueezyBot
         private StrategyParameterDecimal maCorridorHighSlow;
         private StrategyParameterInt maLenFast;
         private StrategyParameterDecimal volumePercent;
+        private StrategyParameterInt countBarForClose;
 
-        public GeneralParameters(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow, StrategyParameterInt maLenFast, StrategyParameterDecimal volumePercent)
+        public GeneralParameters(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow, StrategyParameterInt maLenFast, StrategyParameterDecimal volumePercent, StrategyParameterInt countBarForClose)
         {
             this.maLenSlow = maLenSlow;
             this.maCorridorHighSlow = maCorridorHighSlow;
             this.maLenFast = maLenFast;
             this.volumePercent = volumePercent;
+            this.countBarForClose = countBarForClose;
         }
-
 
         public int getMaLenSlow()
         {
@@ -40,6 +41,11 @@ namespace OsEngine.Robots.SqueezyBot
         public decimal getVolumePercent()
         {
             return volumePercent.ValueDecimal;
+        }
+
+        public int getCountBarForClose()
+        {
+            return countBarForClose.ValueInt;
         }
     }
 }

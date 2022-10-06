@@ -73,6 +73,19 @@ namespace OsEngine.Robots.SqueezyBot
             return false;
         }
 
+        public void closeAllDeals(Side direction)
+        {
+            List<Position> positions = tab.PositionsOpenAll;
+            foreach (Position position in positions)
+            {
+                if(position.Direction == direction)
+                {
+                    tab.CloseAtMarket(position, position.MaxVolume, "Закрылись по барам");
+                    return;
+                }
+            }
+
+        }
         public Position getPositionWithSlTpNotExists()
         {
             List<Position> positions = tab.PositionsOpenAll;

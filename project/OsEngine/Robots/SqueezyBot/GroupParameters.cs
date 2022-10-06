@@ -15,13 +15,13 @@ namespace OsEngine.Robots.SqueezyBot
         private StrategyParameterDecimal stopLoss;
         private StrategyParameterDecimal takeProfit;
 
-        public GroupParameters(GroupType groupType, StrategyParameterBool groupOn, StrategyParameterDecimal triggerCandleDiff, StrategyParameterDecimal stopLoss, StrategyParameterDecimal takeProfit)
+        public GroupParameters(GroupType groupType, StrategyParameterBool groupOn, StrategyParameterDecimal triggerCandleDiff, StrategyParameterDecimal takeProfit, StrategyParameterDecimal stopLoss)
         {
             this.groupType = groupType;
             this.groupOn = groupOn;
             this.triggerCandleDiff = triggerCandleDiff;
-            this.stopLoss = stopLoss;
             this.takeProfit = takeProfit;
+            this.stopLoss = stopLoss;
         }
 
         public GroupType getGroupType()

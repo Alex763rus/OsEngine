@@ -1,11 +1,6 @@
 ﻿using OsEngine.Entity;
 using OsEngine.OsTrader.Panels.Tab;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace OsEngine.Robots.SqueezyBot
 {
@@ -16,7 +11,7 @@ namespace OsEngine.Robots.SqueezyBot
         private MovingAverageService movingAverageService;
         private DealService dealService;
         private bool needSetSlTp; //Необходимость выполнить поиск сделки без SL TP и сделать расчет
-
+        private CountBarService countBarService;
         public EventService(BotTabSimple tab, GeneralParameters generalParameters, GroupParametersService groupParametersService)
         {
             this.generalParameters = generalParameters;
@@ -25,9 +20,8 @@ namespace OsEngine.Robots.SqueezyBot
             movingAverageService = new MovingAverageService(tab, generalParameters);
             dealService = new DealService(tab, generalParameters);
             needSetSlTp = false;
+            countBarService = new CountBarService();
         }
-
-
 
         public void finishedEventLogic(List<Candle> candles)
         {
@@ -39,6 +33,7 @@ namespace OsEngine.Robots.SqueezyBot
             decimal candleClose2 = candles[candles.Count - 2].Close;
             setSlTpIfNotExists();
             dealService.checkSlTpAndClose(candleClose1);
+
             GroupType groupType = getGroupType(candleClose1);
             GroupParameters groupParameters = groupParametersService.getGroupParameters(groupType);
 
@@ -46,15 +41,35 @@ namespace OsEngine.Robots.SqueezyBot
             {
                 return;
             }
-            if(!dealService.hasOpendeal(TrendType.Short) && candleClose1 > (candleClose2 + candleClose2 * (groupParameters.getTriggerCandleDiff()/100)))
+
+            //Sell:
+            if (dealService.hasOpendeal(TrendType.Short))
+            {
+                countBarService.addCounterBarSell();
+                if (countBarService.getCounterBarSell() > generalParameters.getCountBarForClose())
+                {
+                    dealService.closeAllDeals(Side.Sell);
+                    countBarService.resetCountBarSell();//todo перенести на евент закрытия позиции
+                }
+            } else if (candleClose1 > (candleClose2 + candleClose2 * (groupParameters.getTriggerCandleDiff() / 100)))
             {
                 if (dealService.openSellDeal(groupType.ToString()) != null)
                 {
                     needSetSlTp = true;
                 }
-            } else if(!dealService.hasOpendeal(TrendType.Long) && candleClose1 < (candleClose2 - candleClose2 * (groupParameters.getTriggerCandleDiff() / 100)))
+            }
+            
+            //Buy:
+            if (dealService.hasOpendeal(TrendType.Long))
             {
-                if(dealService.openBuyDeal(groupType.ToString())!= null)
+                countBarService.addCounterBarBuy();
+                if(countBarService.getCounterBarBuy() > generalParameters.getCountBarForClose())
+                {
+                    dealService.closeAllDeals(Side.Buy);
+                    countBarService.resetCountBarBuy();//todo перенести на евент закрытия позиции
+                }
+            } else if(candleClose1 < (candleClose2 - candleClose2 * (groupParameters.getTriggerCandleDiff() / 100))) {
+                if (dealService.openBuyDeal(groupType.ToString()) != null)
                 {
                     needSetSlTp = true;
                 }
@@ -88,12 +103,11 @@ namespace OsEngine.Robots.SqueezyBot
 
         private GroupType getGroupType(decimal lastCandleClose)
         {
-            decimal maCorridor = 0;
             GroupType groupType;
             if (movingAverageService.getMaLastValueFast() > movingAverageService.getMaLastValueSlow())
             {
                 //up:
-                maCorridor = movingAverageService.getMaLastValueSlow() + movingAverageService.getMaLastValueSlow() * (generalParameters.getMaCorridorHighSlow() / 100);
+                decimal maCorridor = movingAverageService.getMaLastValueSlow() + movingAverageService.getMaLastValueSlow() * (generalParameters.getMaCorridorHighSlow() / 100);
                 if (lastCandleClose > maCorridor)
                 {
                     groupType = GroupType.UpLong;
@@ -106,7 +120,7 @@ namespace OsEngine.Robots.SqueezyBot
             else
             {
                 //down:
-                maCorridor = movingAverageService.getMaLastValueSlow() - movingAverageService.getMaLastValueSlow() * (generalParameters.getMaCorridorHighSlow() / 100);
+                decimal maCorridor = movingAverageService.getMaLastValueSlow() - movingAverageService.getMaLastValueSlow() * (generalParameters.getMaCorridorHighSlow() / 100);
                 if (lastCandleClose > maCorridor)
                 {
                     groupType = GroupType.DownLong;
