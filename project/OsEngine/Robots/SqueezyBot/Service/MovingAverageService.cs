@@ -1,26 +1,16 @@
 ﻿using OsEngine.Indicators;
 using OsEngine.OsTrader.Panels.Tab;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace OsEngine.Robots.SqueezyBot
 {
 
     public class MovingAverageService
     {
-        private GeneralParameters generalParameters;
-
         private Aindicator smaSlow;
         private Aindicator smaFast;
 
-        public MovingAverageService(BotTabSimple tab, GeneralParameters generalParameters)
+        public MovingAverageService(BotTabSimple tab, GeneralParametersRuler generalParameters)
         {
-            this.generalParameters = generalParameters;
-
             smaSlow = IndicatorsFactory.CreateIndicatorByName("Sma", "smaSlow Bollinger", false);
             smaSlow = (Aindicator)tab.CreateCandleIndicator(smaSlow, "Prime");
             smaSlow.ParametersDigit[0].Value = generalParameters.getMaLenSlow();

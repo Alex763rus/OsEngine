@@ -9,19 +9,19 @@ namespace OsEngine.Robots.SqueezyBot
     public class GroupParametersService
     {
 
-        private List<GroupParameters> groupParametersList;
+        private List<GroupParametersRuler> groupParametersList;
 
         public GroupParametersService()
         {
-            groupParametersList = new List<GroupParameters>();
+            groupParametersList = new List<GroupParametersRuler>();
         }
 
-        public void addGroupParameters(GroupParameters groupParameters)
+        public void addGroupParameters(GroupParametersRuler groupParameters)
         {
             groupParametersList.Add(groupParameters);
         }
 
-        public GroupParameters getGroupParameters(GroupType groupType)
+        public GroupParametersRuler getGroupParameters(GroupType groupType)
         {
             foreach (var groupParameters in groupParametersList)
             {
@@ -33,7 +33,7 @@ namespace OsEngine.Robots.SqueezyBot
             return null;
         }
 
-        public GroupParameters getGroupParameters(String groupType)
+        public GroupParametersRuler getGroupParameters(String groupType)
         {
             foreach (var groupParameters in groupParametersList)
             {

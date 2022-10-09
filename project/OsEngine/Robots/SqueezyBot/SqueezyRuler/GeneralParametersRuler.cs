@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace OsEngine.Robots.SqueezyBot
 {
-    public class GeneralParameters
+    public class GeneralParametersRuler
     {
         private StrategyParameterInt maLenSlow;
         private StrategyParameterDecimal maCorridorHighSlow;
@@ -15,7 +15,7 @@ namespace OsEngine.Robots.SqueezyBot
         private StrategyParameterDecimal volumePercent;
         private StrategyParameterInt countBarForClose;
 
-        public GeneralParameters(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow, StrategyParameterInt maLenFast, StrategyParameterDecimal volumePercent, StrategyParameterInt countBarForClose)
+        public GeneralParametersRuler(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow, StrategyParameterInt maLenFast, StrategyParameterDecimal volumePercent, StrategyParameterInt countBarForClose)
         {
             this.maLenSlow = maLenSlow;
             this.maCorridorHighSlow = maCorridorHighSlow;

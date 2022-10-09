@@ -1,4 +1,5 @@
-﻿using OsEngine.Entity;
+﻿using OkonkwoOandaV20.TradeLibrary.DataTypes.Position;
+using OsEngine.Entity;
 using OsEngine.OsTrader.Panels.Tab;
 using System;
 using System.Collections.Generic;
@@ -6,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using Position = OsEngine.Entity.Position;
 
 namespace OsEngine.Robots.SqueezyBot
 {
@@ -13,19 +15,19 @@ namespace OsEngine.Robots.SqueezyBot
     {
 
         private BotTabSimple tab;
-        private GeneralParameters generalParameters;
+        private GeneralParametersRuler generalParametersRuler;
 
-        public DealService(BotTabSimple tab, GeneralParameters generalParameters)
+        public DealService(BotTabSimple tab, GeneralParametersRuler generalParameters)
         {
             this.tab = tab;
-            this.generalParameters = generalParameters;
+            this.generalParametersRuler = generalParameters;
         }
 
         private const int COUNT_TRY_OPEN_DEAL = 10;
 
         public Position openBuyDeal(string signalType)
         {
-            decimal volume = generalParameters.getVolumePercent()/100.0m * tab.Portfolio.ValueCurrent;
+            decimal volume = generalParametersRuler.getVolumePercent()/100.0m * tab.Portfolio.ValueCurrent;
             Position position = null;
             for (int i = 0; i < COUNT_TRY_OPEN_DEAL; ++i)
             {
@@ -34,7 +36,7 @@ namespace OsEngine.Robots.SqueezyBot
                 {
                     break;
                 } else {
-                    int test = 0;
+                    //todo ERROR
                 }
             }
 
@@ -43,7 +45,7 @@ namespace OsEngine.Robots.SqueezyBot
 
         public Position openSellDeal(string signalType)
         {
-            decimal volume = generalParameters.getVolumePercent()/ 100.0m * tab.Portfolio.ValueCurrent;
+            decimal volume = generalParametersRuler.getVolumePercent()/ 100.0m * tab.Portfolio.ValueCurrent;
             Position position = null;
             for (int i = 0; i < COUNT_TRY_OPEN_DEAL; ++i)
             {
@@ -60,13 +62,13 @@ namespace OsEngine.Robots.SqueezyBot
             return position;
         }
 
-        public bool hasOpendeal(TrendType groupType)
+        public bool hasOpendeal(Side direction)
         {
-            if(groupType == TrendType.Short)
+            if(direction == Side.Sell)
             {
                 return tab.PositionOpenShort.Count > 0;
             }
-            if (groupType == TrendType.Long)
+            if (direction == Side.Buy)
             {
                 return tab.PositionOpenLong.Count > 0;
             }
@@ -75,16 +77,19 @@ namespace OsEngine.Robots.SqueezyBot
 
         public void closeAllDeals(Side direction)
         {
-            List<Position> positions = tab.PositionsOpenAll;
-            foreach (Position position in positions)
+            List<Position> positions = null;
+            if (direction == Side.Sell)
             {
-                if(position.Direction == direction)
-                {
-                    tab.CloseAtMarket(position, position.MaxVolume, "Закрылись по барам");
-                    return;
-                }
+                positions = tab.PositionOpenShort;
+            } else if(direction == Side.Buy)
+            {
+                positions = tab.PositionOpenLong;
             }
 
+            if (positions != null && positions.Count > 0)
+            {
+                tab.CloseAtMarket(positions[0], positions[0].MaxVolume, "Закрылись по барам");
+            }
         }
         public Position getPositionWithSlTpNotExists()
         {

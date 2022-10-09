@@ -38,7 +38,8 @@ namespace OsEngine.Robots
         public static List<string> GetNamesStrategy()
         {
             List<string> result = new List<string>();
-            result.Add("SqueezyBot");
+            result.Add(Squeezy.SQUEEZY_BOT);
+            result.Add(SqueezyProm.SQUEEZY_PROM_BOT);
             result.Add("SmaScreener");
             result.Add("Fisher");
             result.Add("Engine");
@@ -118,6 +119,11 @@ namespace OsEngine.Robots
             {
                 bot = new Squeezy(name, startProgram);
             }
+            if (nameClass == SqueezyProm.SQUEEZY_PROM_BOT)
+            {
+                bot = new SqueezyProm(name, startProgram);
+            }
+
             if (isScript && bot == null)
             {
                 bot = CreateScriptStrategyByName(nameClass, name, startProgram);

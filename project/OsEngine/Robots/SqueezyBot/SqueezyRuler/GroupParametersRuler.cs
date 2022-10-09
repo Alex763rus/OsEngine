@@ -1,21 +1,16 @@
 ﻿using OsEngine.Entity;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OsEngine.Robots.SqueezyBot
 {
-    public class GroupParameters
+    public class GroupParametersRuler
     {
         private GroupType groupType;
         private StrategyParameterBool groupOn;
         private StrategyParameterDecimal triggerCandleDiff;
-        private StrategyParameterDecimal stopLoss;
         private StrategyParameterDecimal takeProfit;
+        private StrategyParameterDecimal stopLoss;
 
-        public GroupParameters(GroupType groupType, StrategyParameterBool groupOn, StrategyParameterDecimal triggerCandleDiff, StrategyParameterDecimal takeProfit, StrategyParameterDecimal stopLoss)
+        public GroupParametersRuler(GroupType groupType, StrategyParameterBool groupOn, StrategyParameterDecimal triggerCandleDiff, StrategyParameterDecimal takeProfit, StrategyParameterDecimal stopLoss)
         {
             this.groupType = groupType;
             this.groupOn = groupOn;
@@ -49,6 +44,8 @@ namespace OsEngine.Robots.SqueezyBot
             return takeProfit.ValueDecimal;
         }
 
+
+        
     }
 
     public enum GroupType
