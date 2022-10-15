@@ -4,14 +4,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OsEngine.Robots.SqueezyBot
+namespace OsEngine.Robots.SqueezyBot.rulerVersion
 {
-    public class GroupParametersService
+    public class GroupParametersRulerService
     {
 
         private List<GroupParametersRuler> groupParametersList;
 
-        public GroupParametersService()
+        public GroupParametersRulerService()
         {
             groupParametersList = new List<GroupParametersRuler>();
         }
@@ -43,6 +43,11 @@ namespace OsEngine.Robots.SqueezyBot
                 }
             }
             return null;
+        }
+
+        public List<GroupParametersRuler>  getGroupsParameters()
+        {
+            return groupParametersList;
         }
     }
 }

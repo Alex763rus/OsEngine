@@ -83,6 +83,7 @@ artifacts/
 *.svclog
 *.scc
 *.exe
+*.dll
 
 # Chutzpah Test files
 _Chutzpah*
@@ -97,6 +98,7 @@ ipch/
 *.cachefile
 *.VC.db
 *.VC.VC.opendb
+*.config
 
 # Visual Studio profiler
 *.psess

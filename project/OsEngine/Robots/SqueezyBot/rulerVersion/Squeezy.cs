@@ -1,23 +1,30 @@
 ﻿
 using OsEngine.Entity;
+using OsEngine.Logging;
 using OsEngine.OsTrader.Panels;
 using OsEngine.OsTrader.Panels.Tab;
+using OsEngine.Robots.SqueezyBot.promVersion;
+using OsEngine.Robots.SqueezyBot.rulerVersion;
+using OsEngine.Robots.SqueezyBot.Service;
+using System;
 using System.Collections.Generic;
 using System.Windows;
 
-namespace OsEngine.Robots.SqueezyBot
+namespace OsEngine.Robots.SqueezyBot.SqueezyRuler.rulerVersion
 {
-    public class Squeezy : BotPanel
+    public class Squeezy : BotPanel, Loggable
     {
-        public static string SQUEEZY_BOT = "SqueezyBot";
+        public static string BOT_NAME = "SqueezyBot";
+        private const string VERSION = "0.0.1";
         public static string SEPARATE_PARAMETR_LINE = "=====================================================";
 
         public static int separateCounter = 0;    
         private EventServiceRuler eventServiceRuler;
         private GeneralParametersRuler generalParameters;
-        private GroupParametersService groupParametersService;
+        private GroupParametersRulerService groupParametersRulerService;
         private BotTabSimple tab;
-        
+        private static LogService logService;
+
         public Squeezy(string name, StartProgram startProgram) : base(name, startProgram)
         {
             TabCreate(BotTabType.Simple);
@@ -29,6 +36,7 @@ namespace OsEngine.Robots.SqueezyBot
                         , CreateParameter("MovingAverage длина fast", 10, 0, 50, 5)
                         , CreateParameter("% депозита для сделки", 10.0m, 5.0m, 50.0m, 5.0m)
                         , CreateParameter("Количество баров до выхода", 10, 0, 50, 1)
+                        , CreateParameter("Количество строк лога в буфере", 50, 0, 50, 1)
                         );
             addSeparateParameter();
             addSeparateParameter();
@@ -64,17 +72,28 @@ namespace OsEngine.Robots.SqueezyBot
                         , CreateParameter("%TakeProfit DownShort", 1.5m, 0.0m, 0.5m, 3.0m)
                         , CreateParameter("%StopLoss DownShort", 3m, 0.0m, 1.0m, 10.0m)
                         );
-            groupParametersService = new GroupParametersService();
-            groupParametersService.addGroupParameters(upLong);
-            groupParametersService.addGroupParameters(upShort);
-            groupParametersService.addGroupParameters(dnLong);
-            groupParametersService.addGroupParameters(dnShort);
-            
-            eventServiceRuler = new EventServiceRuler(tab, generalParameters, groupParametersService);
+            groupParametersRulerService = new GroupParametersRulerService();
+            groupParametersRulerService.addGroupParameters(upLong);
+            groupParametersRulerService.addGroupParameters(upShort);
+            groupParametersRulerService.addGroupParameters(dnLong);
+            groupParametersRulerService.addGroupParameters(dnShort);
+
+            logService = new LogService(this);
+
+            eventServiceRuler = new EventServiceRuler(tab, generalParameters, groupParametersRulerService, logService);
 
             tab.CandleFinishedEvent += finishedEventLogic;
             tab.PositionClosingSuccesEvent += positionClosingSuccesEventLogic;
             tab.PositionOpeningSuccesEvent += positionOpeningSuccesEventLogic;
+
+            //Логгирование стартовых настроек:
+            logService.sendLogSystem(SEPARATE_PARAMETR_LINE);
+            logService.sendLogSystem(BOT_NAME + " init successful, started version bot:" + VERSION);
+            logService.sendLogSystem(generalParameters.getAllSettings());
+            logService.sendLogSystem(upLong.getAllGroupParameters());
+            logService.sendLogSystem(upShort.getAllGroupParameters());
+            logService.sendLogSystem(dnLong.getAllGroupParameters());
+            logService.sendLogSystem(dnShort.getAllGroupParameters());
         }
 
         private void addSeparateParameter()
@@ -84,7 +103,7 @@ namespace OsEngine.Robots.SqueezyBot
         }
         public override string GetNameStrategyType()
         {
-            return SQUEEZY_BOT;
+            return BOT_NAME;
         }
 
         public override void ShowIndividualSettingsDialog()
@@ -106,5 +125,24 @@ namespace OsEngine.Robots.SqueezyBot
             eventServiceRuler.positionOpeningSuccesEventLogic(position);
         }
 
+        public void sendLog(string message, LogMessageType logMessageType)
+        {
+            SendNewLogMessage(message, logMessageType);
+        }
+
+        public new void SendNewLogMessage(string message, LogMessageType system)
+        {
+            base.SendNewLogMessage(message, system);
+        }
+
+        public int getCountBufferLogLine()
+        {
+            return generalParameters.getCountBufferLogLine();
+        }
+
+        public string getFilePath()
+        {
+            return "C:\\1_LOGS\\" + BOT_NAME + "_log.txt";
+        }
     }
 }

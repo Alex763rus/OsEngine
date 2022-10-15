@@ -1,6 +1,6 @@
 ﻿using OsEngine.Entity;
 
-namespace OsEngine.Robots.SqueezyBot
+namespace OsEngine.Robots.SqueezyBot.rulerVersion
 {
     public class GroupParametersRuler
     {
@@ -44,8 +44,17 @@ namespace OsEngine.Robots.SqueezyBot
             return takeProfit.ValueDecimal;
         }
 
-
-        
+        public string getAllGroupParameters()
+        {
+            string settings = " groupSettings:"
+                            + " groupType = " + getGroupType()
+                            + " groupOn = " + getGroupOn()
+                            + " triggerCandleDiff = " + getTriggerCandleDiff()
+                            + " takeProfit = " + getTakeProfit()
+                            + " stopLoss = " + getStopLoss()
+                            ;
+            return settings;
+        }
     }
 
     public enum GroupType

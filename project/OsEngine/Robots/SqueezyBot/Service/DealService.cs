@@ -1,6 +1,7 @@
 ﻿using OkonkwoOandaV20.TradeLibrary.DataTypes.Position;
 using OsEngine.Entity;
 using OsEngine.OsTrader.Panels.Tab;
+using OsEngine.Robots.SqueezyBot.rulerVersion;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,7 +28,7 @@ namespace OsEngine.Robots.SqueezyBot
 
         public Position openBuyDeal(string signalType)
         {
-            decimal volume = generalParametersRuler.getVolumePercent()/100.0m * tab.Portfolio.ValueCurrent;
+            decimal volume = Math.Round(generalParametersRuler.getVolumePercent() / 100.0m * tab.Portfolio.ValueCurrent, 0);
             Position position = null;
             for (int i = 0; i < COUNT_TRY_OPEN_DEAL; ++i)
             {
@@ -111,6 +112,18 @@ namespace OsEngine.Robots.SqueezyBot
             position.ProfitOrderIsActiv = true;
             position.StopOrderIsActiv = true;
         }
+
+        public void openSellAtLimit(decimal priceLimit)
+        {
+            decimal volume = generalParametersRuler.getVolumePercent() / 100.0m * tab.Portfolio.ValueCurrent;
+            tab.SellAtLimit(volume, priceLimit);
+        }
+        public void openBuyAtLimit(decimal priceLimit)
+        {
+            decimal volume = generalParametersRuler.getVolumePercent() / 100.0m * tab.Portfolio.ValueCurrent;
+            tab.BuyAtLimit(volume, priceLimit);
+        }
+
 
         internal void checkSlTpAndClose(decimal lastCandleClose)
         {

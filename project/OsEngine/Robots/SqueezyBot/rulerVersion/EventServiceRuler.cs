@@ -1,21 +1,24 @@
 ﻿using OsEngine.Entity;
 using OsEngine.OsTrader.Panels.Tab;
+using OsEngine.Robots.SqueezyBot.Service;
 using System;
 using System.Collections.Generic;
 
-namespace OsEngine.Robots.SqueezyBot
+namespace OsEngine.Robots.SqueezyBot.rulerVersion
 {
     public class EventServiceRuler
     {
         private GeneralParametersRuler generalParameters;
-        private GroupParametersService groupParametersService;
+        private GroupParametersRulerService groupParametersService;
         private MovingAverageService movingAverageService;
         private DealService dealService;
         private CountBarService countBarService;
-        public EventServiceRuler(BotTabSimple tab, GeneralParametersRuler generalParameters, GroupParametersService groupParametersService)
+        private LogService logService;
+        public EventServiceRuler(BotTabSimple tab, GeneralParametersRuler generalParameters, GroupParametersRulerService groupParametersService,  LogService logService)
         {
             this.generalParameters = generalParameters;
             this.groupParametersService = groupParametersService;
+            this.logService = logService;
 
             movingAverageService = new MovingAverageService(tab, generalParameters);
             dealService = new DealService(tab, generalParameters);
@@ -24,7 +27,7 @@ namespace OsEngine.Robots.SqueezyBot
 
         public void finishedEventLogic(List<Candle> candles)
         {
-            if(candles.Count < 2 || movingAverageService.getMaLastValueSlow() == 0)
+            if(candles.Count < 2 /*|| movingAverageService.getMaLastValueSlow() == 0*/)
             {
                 return;
             }
@@ -84,6 +87,11 @@ namespace OsEngine.Robots.SqueezyBot
         private GroupType getGroupType(decimal lastCandleClose)
         {
             GroupType groupType;
+            //Группа по дефолту, пока нет медленной:
+            if(movingAverageService.getMaLastValueSlow() == 0)
+            {
+                return GroupType.UpLong;
+            }
             if (movingAverageService.getMaLastValueFast() > movingAverageService.getMaLastValueSlow())
             {
                 //up:

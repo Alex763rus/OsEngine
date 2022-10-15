@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OsEngine.Robots.SqueezyBot
+namespace OsEngine.Robots.SqueezyBot.rulerVersion
 {
     public class GeneralParametersRuler
     {
@@ -14,14 +14,16 @@ namespace OsEngine.Robots.SqueezyBot
         private StrategyParameterInt maLenFast;
         private StrategyParameterDecimal volumePercent;
         private StrategyParameterInt countBarForClose;
+        private StrategyParameterInt countBufferLogLine;
 
-        public GeneralParametersRuler(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow, StrategyParameterInt maLenFast, StrategyParameterDecimal volumePercent, StrategyParameterInt countBarForClose)
+        public GeneralParametersRuler(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow, StrategyParameterInt maLenFast, StrategyParameterDecimal volumePercent, StrategyParameterInt countBarForClose, StrategyParameterInt countBufferLogLine)
         {
             this.maLenSlow = maLenSlow;
             this.maCorridorHighSlow = maCorridorHighSlow;
             this.maLenFast = maLenFast;
             this.volumePercent = volumePercent;
             this.countBarForClose = countBarForClose;
+            this.countBufferLogLine = countBufferLogLine;
         }
 
         public int getMaLenSlow()
@@ -46,6 +48,24 @@ namespace OsEngine.Robots.SqueezyBot
         public int getCountBarForClose()
         {
             return countBarForClose.ValueInt;
+        }
+
+        public int getCountBufferLogLine()
+        {
+            return countBufferLogLine.ValueInt;
+        }
+        
+        public string getAllSettings()
+        {
+            string settings = " Settings:"
+                            + " maLenSlow = " + getMaLenSlow()
+                            + " maCorridorHighSlow = " + getMaCorridorHighSlow()
+                            + " maLenFast = " + getMaLenFast()
+                            + " volumePercent = " + getVolumePercent()
+                            + " countBarForClose = " + getCountBarForClose()
+                            + " countBufferLogLine = " + getCountBufferLogLine()
+                            ;
+            return settings;
         }
     }
 }
