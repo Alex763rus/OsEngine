@@ -1,6 +1,6 @@
 ﻿using OsEngine.Entity;
 
-namespace OsEngine.Robots.SqueezyBot.rulerVersion
+namespace OsEngine.Robots.Squeezy.Ruler
 {
     public class GroupParametersRuler
     {

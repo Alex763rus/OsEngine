@@ -1,10 +1,11 @@
 ﻿using OsEngine.Entity;
 using OsEngine.OsTrader.Panels.Tab;
+using OsEngine.Robots.SqueezyBot;
 using OsEngine.Robots.SqueezyBot.Service;
 using System;
 using System.Collections.Generic;
 
-namespace OsEngine.Robots.SqueezyBot.rulerVersion
+namespace OsEngine.Robots.Squeezy.Ruler
 {
     public class EventServiceRuler
     {

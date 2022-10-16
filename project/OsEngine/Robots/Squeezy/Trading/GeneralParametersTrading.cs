@@ -1,18 +1,18 @@
 ﻿using OsEngine.Entity;
-using OsEngine.Robots.SqueezyBot.rulerVersion;
+using OsEngine.Robots.Squeezy.Ruler;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OsEngine.Robots.SqueezyBot.promVersion
+namespace OsEngine.Robots.Squeezy.Trading
 {
-    public class GeneralParametersProm : GeneralParametersRuler
+    public class GeneralParametersTrading : GeneralParametersRuler
     {
         private StrategyParameterDecimal triggerStartPercent;
 
-        public GeneralParametersProm(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow, StrategyParameterInt maLenFast, StrategyParameterDecimal volumePercent, StrategyParameterInt countBarForClose, StrategyParameterDecimal triggerStartPercent, StrategyParameterInt countBufferLogLine)
+        public GeneralParametersTrading(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow, StrategyParameterInt maLenFast, StrategyParameterDecimal volumePercent, StrategyParameterInt countBarForClose, StrategyParameterDecimal triggerStartPercent, StrategyParameterInt countBufferLogLine)
         : base(maLenSlow, maCorridorHighSlow, maLenFast, volumePercent, countBarForClose, countBufferLogLine)
         {
             this.triggerStartPercent = triggerStartPercent;

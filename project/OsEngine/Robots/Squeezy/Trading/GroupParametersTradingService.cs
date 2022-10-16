@@ -1,25 +1,26 @@
-﻿using OsEngine.Robots.SqueezyBot.rulerVersion;
+﻿using OsEngine.Robots.Squeezy.Ruler;
+
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace OsEngine.Robots.SqueezyBot.promVersion
+namespace OsEngine.Robots.Squeezy.Trading
 {
-    public class GroupParametersPromService
+    public class GroupParametersTradingService
     {
-        private List<GroupParametersProm> groupParametersList;
+        private List<GroupParametersTrading> groupParametersList;
 
-        public GroupParametersPromService()
+        public GroupParametersTradingService()
         {
-            groupParametersList = new List<GroupParametersProm>();
+            groupParametersList = new List<GroupParametersTrading>();
         }
 
-        public void addGroupParameters(GroupParametersProm groupParameters)
+        public void addGroupParameters(GroupParametersTrading groupParameters)
         {
             groupParametersList.Add(groupParameters);
         }
 
-        public GroupParametersProm getGroupParameters(GroupType groupType)
+        public GroupParametersTrading getGroupParameters(GroupType groupType)
         {
             foreach (var groupParameters in groupParametersList)
             {
@@ -31,7 +32,7 @@ namespace OsEngine.Robots.SqueezyBot.promVersion
             return null;
         }
 
-        public GroupParametersProm getGroupParameters(String groupType)
+        public GroupParametersTrading getGroupParameters(String groupType)
         {
             foreach (var groupParameters in groupParametersList)
             {
@@ -43,7 +44,7 @@ namespace OsEngine.Robots.SqueezyBot.promVersion
             return null;
         }
 
-        public List<GroupParametersProm> getGroupsParameters()
+        public List<GroupParametersTrading> getGroupsParameters()
         {
             return groupParametersList;
         }

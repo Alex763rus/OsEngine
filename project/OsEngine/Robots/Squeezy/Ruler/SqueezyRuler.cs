@@ -3,18 +3,18 @@ using OsEngine.Entity;
 using OsEngine.Logging;
 using OsEngine.OsTrader.Panels;
 using OsEngine.OsTrader.Panels.Tab;
-using OsEngine.Robots.SqueezyBot.promVersion;
-using OsEngine.Robots.SqueezyBot.rulerVersion;
+using OsEngine.Robots.Squeezy;
+using OsEngine.Robots.Squeezy.Ruler;
 using OsEngine.Robots.SqueezyBot.Service;
 using System;
 using System.Collections.Generic;
 using System.Windows;
 
-namespace OsEngine.Robots.SqueezyBot.SqueezyRuler.rulerVersion
+namespace OsEngine.Robots.Squeezy.Ruler
 {
-    public class Squeezy : BotPanel, Loggable
+    public class SqueezyRuler : BotPanel, Loggable
     {
-        public static string BOT_NAME = "SqueezyBot";
+        public static string BOT_NAME = "SqueezyRulerBot";
         private const string VERSION = "0.0.1";
         public static string SEPARATE_PARAMETR_LINE = "=====================================================";
 
@@ -25,7 +25,7 @@ namespace OsEngine.Robots.SqueezyBot.SqueezyRuler.rulerVersion
         private BotTabSimple tab;
         private LogService logService;
 
-        public Squeezy(string name, StartProgram startProgram) : base(name, startProgram)
+        public SqueezyRuler(string name, StartProgram startProgram) : base(name, startProgram)
         {
             TabCreate(BotTabType.Simple);
             tab = TabsSimple[0];

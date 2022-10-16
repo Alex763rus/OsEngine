@@ -1,6 +1,6 @@
 ﻿using OsEngine.Indicators;
 using OsEngine.OsTrader.Panels.Tab;
-using OsEngine.Robots.SqueezyBot.rulerVersion;
+using OsEngine.Robots.Squeezy.Ruler;
 
 namespace OsEngine.Robots.SqueezyBot
 {

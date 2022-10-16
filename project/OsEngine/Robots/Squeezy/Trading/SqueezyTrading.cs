@@ -2,33 +2,33 @@
 using OsEngine.Logging;
 using OsEngine.OsTrader.Panels;
 using OsEngine.OsTrader.Panels.Tab;
-using OsEngine.Robots.SqueezyBot.rulerVersion;
+using OsEngine.Robots.Squeezy.Ruler;
 using OsEngine.Robots.SqueezyBot.Service;
 using System;
 using System.Collections.Generic;
 using System.Windows;
 
-namespace OsEngine.Robots.SqueezyBot.promVersion
+namespace OsEngine.Robots.Squeezy.Trading
 {
-    public class SqueezyProm : BotPanel, Loggable
+    public class SqueezyTrading : BotPanel, Loggable
     {
-        public static string BOT_NAME = "SqueezyPromBot";
+        public static string BOT_NAME = "SqueezyTradingBot";
         private const string VERSION = "0.0.1";
         public static string SEPARATE_PARAMETR_LINE = "=====================================================";
 
         public static int separateCounter = 0;
-        private EventServiceProm eventServiceProm;
-        private GeneralParametersProm generalParametersProm;
-        private GroupParametersPromService groupParametersPromService;
+        private EventServiceTrading eventServiceTrading;
+        private GeneralParametersTrading groupParametersTrading;
+        private GroupParametersTradingService groupParametersTradingService;
         private BotTabSimple tab;
         private static LogService logService;
 
-        public SqueezyProm(string name, StartProgram startProgram) : base(name, startProgram)
+        public SqueezyTrading(string name, StartProgram startProgram) : base(name, startProgram)
         {
             TabCreate(BotTabType.Simple);
             tab = TabsSimple[0];
 
-            generalParametersProm = new GeneralParametersProm(
+            groupParametersTrading = new GeneralParametersTrading(
                           CreateParameter("MovingAverage длина slow", 20, 0, 50, 5)
                         , CreateParameter("%MovingAverage высота коридора slow", 0.1m, 0.0m, 1.0m, 0.1m)
                         , CreateParameter("MovingAverage длина fast", 10, 0, 50, 5)
@@ -40,7 +40,7 @@ namespace OsEngine.Robots.SqueezyBot.promVersion
             addSeparateParameter();
             addSeparateParameter();
 
-            GroupParametersProm upLong = new GroupParametersProm(
+            GroupParametersTrading upLong = new GroupParametersTrading(
                           GroupType.UpLong
                         , CreateParameter("Включить UpLong торговлю", true)
                         , CreateParameter("%Триггер отложенного ордера UpLong", 1.5m, 0.0m, 0.5m, 5.0m)
@@ -50,7 +50,7 @@ namespace OsEngine.Robots.SqueezyBot.promVersion
                         , CreateParameter("%StopLoss UpLong", 3m, 0.0m, 1.0m, 10.0m)
                         );
             addSeparateParameter();
-            GroupParametersProm upShort = new GroupParametersProm(
+            GroupParametersTrading upShort = new GroupParametersTrading(
                           GroupType.UpShort
                         , CreateParameter("Включить UpShort торговлю", true)
                         , CreateParameter("%Триггер отложенного ордера UpShort", 1.5m, 0.0m, 0.5m, 5.0m)
@@ -60,7 +60,7 @@ namespace OsEngine.Robots.SqueezyBot.promVersion
                         , CreateParameter("%StopLoss UpShort", 3m, 0.0m, 1.0m, 10.0m)
                         );
             addSeparateParameter();
-            GroupParametersProm dnLong = new GroupParametersProm(
+            GroupParametersTrading dnLong = new GroupParametersTrading(
                           GroupType.DownLong
                         , CreateParameter("Включить DownLong торговлю", true)
                         , CreateParameter("%Триггер отложенного ордера DownLong", 1.5m, 0.0m, 0.5m, 5.0m)
@@ -70,7 +70,7 @@ namespace OsEngine.Robots.SqueezyBot.promVersion
                         , CreateParameter("%StopLoss DownLong", 3m, 0.0m, 1.0m, 10.0m)
                         );
             addSeparateParameter();
-            GroupParametersProm dnShort = new GroupParametersProm (
+            GroupParametersTrading dnShort = new GroupParametersTrading (
                           GroupType.DownShort
                         , CreateParameter("Включить DownShort торговлю", true)
                         , CreateParameter("%Триггер отложенного ордера DownShort", 1.5m, 0.0m, 0.5m, 5.0m)
@@ -79,15 +79,15 @@ namespace OsEngine.Robots.SqueezyBot.promVersion
                         , CreateParameter("%Триггер старта sl DownShort", 1m, 1.0m, 1.0m, 1.0m)
                         , CreateParameter("%StopLoss DownShort", 3m, 0.0m, 1.0m, 10.0m)
                         );
-            groupParametersPromService = new GroupParametersPromService();
-            groupParametersPromService.addGroupParameters(upLong);
-            groupParametersPromService.addGroupParameters(upShort);
-            groupParametersPromService.addGroupParameters(dnLong);
-            groupParametersPromService.addGroupParameters(dnShort);
+            groupParametersTradingService = new GroupParametersTradingService();
+            groupParametersTradingService.addGroupParameters(upLong);
+            groupParametersTradingService.addGroupParameters(upShort);
+            groupParametersTradingService.addGroupParameters(dnLong);
+            groupParametersTradingService.addGroupParameters(dnShort);
 
             logService = new LogService(this);
 
-            eventServiceProm = new EventServiceProm(tab, generalParametersProm, groupParametersPromService, logService);
+            eventServiceTrading = new EventServiceTrading(tab, groupParametersTrading, groupParametersTradingService, logService);
 
             tab.CandleFinishedEvent += finishedEventLogic;
             tab.PositionClosingSuccesEvent += positionClosingSuccesEventLogic;
@@ -98,7 +98,7 @@ namespace OsEngine.Robots.SqueezyBot.promVersion
             //Логгирование стартовых настроек:
             logService.sendLogSystem(SEPARATE_PARAMETR_LINE);
             logService.sendLogSystem(BOT_NAME + " init successful, started version bot:" + VERSION);
-            logService.sendLogSystem(generalParametersProm.getAllSettings());
+            logService.sendLogSystem(groupParametersTrading.getAllSettings());
             logService.sendLogSystem(upLong.getAllGroupParameters());
             logService.sendLogSystem(upShort.getAllGroupParameters());
             logService.sendLogSystem(dnLong.getAllGroupParameters());
@@ -122,26 +122,26 @@ namespace OsEngine.Robots.SqueezyBot.promVersion
 
         private void finishedEventLogic(List<Candle> candles)
         {
-            eventServiceProm.finishedEventLogic(candles);
+            eventServiceTrading.finishedEventLogic(candles);
         }
         private void positionClosingSuccesEventLogic(Position position)
         {
-            eventServiceProm.positionClosingSuccesEventLogic(position);
+            eventServiceTrading.positionClosingSuccesEventLogic(position);
         }
 
         private void positionOpeningSuccesEventLogic(Position position)
         {
-            eventServiceProm.positionOpeningSuccesEventLogic(position);
+            eventServiceTrading.positionOpeningSuccesEventLogic(position);
         }
 
         private void newTickEventLogic(Trade trade)
         {
-            //eventServiceProm.newTickEventLogic(trade);
+            //eventServiceTrading.newTickEventLogic(trade);
         }
 
         private void bestBidAskChangeEventLogic(decimal bestBid, decimal bestAsk)
         {
-            eventServiceProm.bestBidAskChangeEventLogic(bestBid, bestAsk);
+            eventServiceTrading.bestBidAskChangeEventLogic(bestBid, bestAsk);
         }
 
         public void sendLog(string message, LogMessageType logMessageType)
@@ -155,7 +155,7 @@ namespace OsEngine.Robots.SqueezyBot.promVersion
 
         public int getCountBufferLogLine()
         {
-            return generalParametersProm.getCountBufferLogLine();
+            return groupParametersTrading.getCountBufferLogLine();
         }
 
         public string getFilePath()

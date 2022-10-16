@@ -2,7 +2,7 @@
 using OsEngine.Charts.CandleChart.Indicators;
 using OsEngine.Entity;
 using OsEngine.OsTrader.Panels.Tab;
-using OsEngine.Robots.SqueezyBot.rulerVersion;
+using OsEngine.Robots.Squeezy.Ruler;
 using OsEngine.Robots.SqueezyBot.Service;
 using System;
 using System.Collections.Generic;

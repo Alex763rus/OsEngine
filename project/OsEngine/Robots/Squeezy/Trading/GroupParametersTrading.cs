@@ -1,16 +1,16 @@
 ﻿using OsEngine.Entity;
-using OsEngine.Robots.SqueezyBot.rulerVersion;
+using OsEngine.Robots.Squeezy.Ruler;
 
-namespace OsEngine.Robots.SqueezyBot.promVersion
+namespace OsEngine.Robots.Squeezy.Trading
 {
-    public class GroupParametersProm : GroupParametersRuler
+    public class GroupParametersTrading : GroupParametersRuler
     {
 
         private StrategyParameterDecimal takeProfitTriggerStart;
         private StrategyParameterDecimal stopLossTriggerStart;
         //не является параметром:
         private GroupStatus groupStatus;
-        public GroupParametersProm(GroupType groupType, StrategyParameterBool groupOn, StrategyParameterDecimal triggerCandleDiff, StrategyParameterDecimal takeProfitTriggerStart, StrategyParameterDecimal takeProfit, StrategyParameterDecimal stopLossTriggerStart, StrategyParameterDecimal stopLoss)
+        public GroupParametersTrading(GroupType groupType, StrategyParameterBool groupOn, StrategyParameterDecimal triggerCandleDiff, StrategyParameterDecimal takeProfitTriggerStart, StrategyParameterDecimal takeProfit, StrategyParameterDecimal stopLossTriggerStart, StrategyParameterDecimal stopLoss)
             :base(groupType, groupOn, triggerCandleDiff, takeProfit, stopLoss)
          { 
             this.takeProfitTriggerStart = takeProfitTriggerStart;

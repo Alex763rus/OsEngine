@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using OsEngine.Robots.SqueezyBot.promVersion;
+using OsEngine.Robots.Squeezy.Trading;
 using System.IO;
 using System.Windows.Controls;
 using System.Collections;
@@ -16,6 +16,7 @@ using OsEngine.Alerts;
 using OsEngine.Charts.CandleChart.Indicators;
 using OkonkwoOandaV20.TradeLibrary.DataTypes.Position;
 using Position = OsEngine.Entity.Position;
+using OsEngine.Robots.Squeezy;
 
 namespace OsEngine.Robots.SqueezyBot.Service
 {

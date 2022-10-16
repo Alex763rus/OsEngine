@@ -1,7 +1,8 @@
 ﻿using OkonkwoOandaV20.TradeLibrary.DataTypes.Position;
 using OsEngine.Entity;
 using OsEngine.OsTrader.Panels.Tab;
-using OsEngine.Robots.SqueezyBot.promVersion;
+using OsEngine.Robots.Squeezy.Trading;
+using OsEngine.Robots.SqueezyBot;
 using OsEngine.Robots.SqueezyBot.Service;
 using System;
 using System.Collections.Generic;
@@ -11,13 +12,13 @@ using System.Threading.Tasks;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using Position = OsEngine.Entity.Position;
 
-namespace OsEngine.Robots.SqueezyBot.promVersion
+namespace OsEngine.Robots.Squeezy.Trading
 {
-    public class EventServiceProm
+    public class EventServiceTrading
     {
 
-        private GeneralParametersProm generalParameters;
-        private GroupParametersPromService groupParametersPromService;
+        private GeneralParametersTrading generalParameters;
+        private GroupParametersTradingService groupParametersTradingService;
 
         private MovingAverageService movingAverageService;
         private DealService dealService;
@@ -28,10 +29,10 @@ namespace OsEngine.Robots.SqueezyBot.promVersion
         private Candle lastCandle;
         private decimal candleTriggerStartBid; //триггер цены открытия лимитки. Изменяется с завершением бара
         private decimal candleTriggerStartAsc; //триггер цены открытия лимитки. Изменяется с завершением бара
-        public EventServiceProm(BotTabSimple tab, GeneralParametersProm generalParameters, GroupParametersPromService groupParametersPromService, LogService logService)
+        public EventServiceTrading(BotTabSimple tab, GeneralParametersTrading generalParameters, GroupParametersTradingService groupParametersTradingService, LogService logService)
         {
             this.generalParameters = generalParameters;
-            this.groupParametersPromService = groupParametersPromService;
+            this.groupParametersTradingService = groupParametersTradingService;
             this.logService = logService;
 
             movingAverageService = new MovingAverageService(tab, generalParameters);
@@ -93,8 +94,8 @@ namespace OsEngine.Robots.SqueezyBot.promVersion
             {
                 return;
             }
-            List<GroupParametersProm> groupsParameters = groupParametersPromService.getGroupsParameters();
-            foreach (GroupParametersProm groupParameters in groupsParameters)
+            List<GroupParametersTrading> groupsParameters = groupParametersTradingService.getGroupsParameters();
+            foreach (GroupParametersTrading groupParameters in groupsParameters)
             {
                 if (!groupParameters.getGroupOn())
                 {
@@ -118,7 +119,7 @@ namespace OsEngine.Robots.SqueezyBot.promVersion
         }
 
         
-        private void waitTriggerStartLogic(GroupParametersProm groupParameters, decimal bestBid, decimal bestAsk)
+        private void waitTriggerStartLogic(GroupParametersTrading groupParameters, decimal bestBid, decimal bestAsk)
         {
             //todo... проверить наличие открытой активности в том же направлении у другой группы
             if(bestAsk > candleTriggerStartBid)
@@ -133,17 +134,17 @@ namespace OsEngine.Robots.SqueezyBot.promVersion
                 groupParameters.setGroupStatus(GroupStatus.WAIT_OPEN_POSITION);
             }
         }
-        private void waitTpSlLogic(GroupParametersProm groupParameters)
+        private void waitTpSlLogic(GroupParametersTrading groupParameters)
         {
            //todo
         }
 
-        private void waitTriggerTpSlStartLogic(GroupParametersProm groupParameters)
+        private void waitTriggerTpSlStartLogic(GroupParametersTrading groupParameters)
         {
             //todo
         }
 
-        private void waitOpenPositionLogic(GroupParametersProm groupParameters)
+        private void waitOpenPositionLogic(GroupParametersTrading groupParameters)
         {
             //todo
         }

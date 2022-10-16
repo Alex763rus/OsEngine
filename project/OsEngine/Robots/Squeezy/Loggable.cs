@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OsEngine.Robots.SqueezyBot
+namespace OsEngine.Robots.Squeezy
 {
     public interface Loggable
     {
