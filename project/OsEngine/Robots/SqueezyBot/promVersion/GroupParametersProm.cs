@@ -41,8 +41,8 @@ namespace OsEngine.Robots.SqueezyBot.promVersion
         public new string getAllGroupParameters()
         {
             string settings = base.getAllGroupParameters()
-                            + " takeProfitTriggerStart = " + getTakeProfitTriggerStart()
-                            +" stopLossTriggerStart = " + getStopLossTriggerStart()
+                            + ", takeProfitTriggerStart = " + getTakeProfitTriggerStart()
+                            + ", stopLossTriggerStart = " + getStopLossTriggerStart()
                             ;
             return settings;
         }

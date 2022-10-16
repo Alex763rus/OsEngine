@@ -25,7 +25,7 @@ namespace OsEngine.Robots.SqueezyBot.promVersion
         public new string getAllSettings()
         {
             string settings = base.getAllSettings()
-                + " triggerStartPercent = " + getTriggerStartPercent();
+                + ", triggerStartPercent = " + getTriggerStartPercent();
             return settings;
         }
     }

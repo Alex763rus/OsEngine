@@ -14,6 +14,7 @@ namespace OsEngine.Robots.SqueezyBot.rulerVersion
         private DealService dealService;
         private CountBarService countBarService;
         private LogService logService;
+        private PaintService paintService;
         public EventServiceRuler(BotTabSimple tab, GeneralParametersRuler generalParameters, GroupParametersRulerService groupParametersService,  LogService logService)
         {
             this.generalParameters = generalParameters;
@@ -21,13 +22,14 @@ namespace OsEngine.Robots.SqueezyBot.rulerVersion
             this.logService = logService;
 
             movingAverageService = new MovingAverageService(tab, generalParameters);
-            dealService = new DealService(tab, generalParameters);
+            dealService = new DealService(tab, generalParameters, logService);
             countBarService = new CountBarService();
+            paintService = new PaintService(tab);
         }
 
         public void finishedEventLogic(List<Candle> candles)
         {
-            if(candles.Count < 2 /*|| movingAverageService.getMaLastValueSlow() == 0*/)
+            if(candles.Count < 2)
             {
                 return;
             }
@@ -54,14 +56,12 @@ namespace OsEngine.Robots.SqueezyBot.rulerVersion
                 }
             } else if (candleClose1 > (candleClose2 + candleClose2 * (groupParameters.getTriggerCandleDiff() / 100)))
             {
-                if (dealService.openSellDeal(groupType.ToString()) != null)
-                {
-                    //todo okOpenDeal
-                }
-                else
-                {
-                    //todo error
-                }
+                string message = "Обнаружен сквиз " + groupType.ToString() + ": предпоследний бар:" + logService.getCandleInfo(candles[candles.Count - 2])
+                                    + " последний бар:" + logService.getCandleInfo(candles[candles.Count - 1])
+                                    + " отношение:" + Math.Round((candleClose1 - candleClose2) / candleClose2 * 100, 2) + "%"
+                                    + " настройки:" + groupParameters.getTriggerCandleDiff() + "%";
+                logService.sendLogSystem(message);
+                dealService.openSellDeal(groupType.ToString());
             }
             
             //Buy:
@@ -73,14 +73,12 @@ namespace OsEngine.Robots.SqueezyBot.rulerVersion
                     dealService.closeAllDeals(Side.Buy);
                 }
             } else if(candleClose1 < (candleClose2 - candleClose2 * (groupParameters.getTriggerCandleDiff() / 100))) {
-                if (dealService.openBuyDeal(groupType.ToString()) != null)
-                {
-                    //todo okOpenDeal
-                }
-                else
-                {
-                    //todo error
-                }
+                string message = "Обнаружен сквиз " + groupType.ToString() + ": предпоследний бар:" + logService.getCandleInfo(candles[candles.Count - 2])
+                                    + " последний бар:" + logService.getCandleInfo(candles[candles.Count - 1])
+                                    + " отношение:" + Math.Round((candleClose2 - candleClose1) / candleClose1 * 100, 2) + "%"
+                                    + " настройки:" + groupParameters.getTriggerCandleDiff() + "%";
+                logService.sendLogSystem(message);
+                dealService.openBuyDeal(groupType.ToString());
             }
         }
 
@@ -123,7 +121,9 @@ namespace OsEngine.Robots.SqueezyBot.rulerVersion
 
         public void positionClosingSuccesEventLogic(Position position)
         {
-            if(position.Direction == Side.Buy)
+            logService.sendLogSystem("Подтверждение: Успешно закрыта позиция:" + logService.getPositionInfo(position));
+            paintService.paintClosedPosition(position);
+            if (position.Direction == Side.Buy)
             {
                 countBarService.resetCountBarBuy();
             }

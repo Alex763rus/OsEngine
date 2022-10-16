@@ -46,12 +46,12 @@ namespace OsEngine.Robots.SqueezyBot.rulerVersion
 
         public string getAllGroupParameters()
         {
-            string settings = " groupSettings:"
-                            + " groupType = " + getGroupType()
-                            + " groupOn = " + getGroupOn()
-                            + " triggerCandleDiff = " + getTriggerCandleDiff()
-                            + " takeProfit = " + getTakeProfit()
-                            + " stopLoss = " + getStopLoss()
+            string settings = " GroupSettings:"
+                            + ", groupType = " + getGroupType()
+                            + ", groupOn = " + getGroupOn()
+                            + ", triggerCandleDiff = " + getTriggerCandleDiff()
+                            + ", takeProfit = " + getTakeProfit()
+                            + ", stopLoss = " + getStopLoss()
                             ;
             return settings;
         }

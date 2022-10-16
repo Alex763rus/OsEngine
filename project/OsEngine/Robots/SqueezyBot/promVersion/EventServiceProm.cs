@@ -35,7 +35,7 @@ namespace OsEngine.Robots.SqueezyBot.promVersion
             this.logService = logService;
 
             movingAverageService = new MovingAverageService(tab, generalParameters);
-            dealService = new DealService(tab, generalParameters);
+            dealService = new DealService(tab, generalParameters, logService);
             countBarService = new CountBarService();
             paintService = new PaintService(tab);
         }

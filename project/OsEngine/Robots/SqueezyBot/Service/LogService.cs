@@ -11,6 +11,11 @@ using System.Windows.Controls;
 using System.Collections;
 using ru.micexrts.cgate;
 using System.Threading;
+using OsEngine.Entity;
+using OsEngine.Alerts;
+using OsEngine.Charts.CandleChart.Indicators;
+using OkonkwoOandaV20.TradeLibrary.DataTypes.Position;
+using Position = OsEngine.Entity.Position;
 
 namespace OsEngine.Robots.SqueezyBot.Service
 {
@@ -41,13 +46,37 @@ namespace OsEngine.Robots.SqueezyBot.Service
             sendLogMessage(message, LogMessageType.Error, level);
         }
 
+        public string getCandleInfo(Candle candle)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("TimeStart:").Append(candle.TimeStart)
+            .Append(", Close:").Append(candle.Close)
+            ;
+            return sb.ToString();
+        }
+        public string getPositionInfo(Position position)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("Number:#").Append(position.Number)
+            .Append(", TimeOpen:").Append(position.TimeOpen)
+            .Append(", TimeClose:").Append(position.TimeClose)
+            .Append(", volume:").Append(position.OpenVolume)
+            .Append(", SignalTypeOpen:").Append(position.SignalTypeOpen)
+            .Append(", SignalTypeClose:").Append(position.SignalTypeClose)
+            .Append(", TP:").Append(position.ProfitOrderPrice)
+            .Append(", SL:").Append(position.StopOrderPrice)
+            .Append(", Profit:").Append(position.ProfitPortfolioPunkt)
+            ;
+            return sb.ToString();
+        }
+
         private void sendLogMessage(string message, LogMessageType logMessageType, int level = 0)
         {
             StringBuilder logMessage = new StringBuilder();
             logMessage.Append(DateTime.Now).Append(" ")
                         .Append(getIndent(level))
                         .Append(logMessageType.ToString()).Append(":")
-                        .Append(message).Append("\n");
+                        .Append(message);
 
             logList.Add(logMessage.ToString());
             squeezy.sendLog(logMessage.ToString(), logMessageType);
@@ -58,7 +87,7 @@ namespace OsEngine.Robots.SqueezyBot.Service
             }
         }
 
-        private void saveLogInFile(String filePath, ArrayList logList)
+        private void saveLogInFile(string filePath, ArrayList logList)
         {
             if(logList == null)
             {
@@ -74,8 +103,7 @@ namespace OsEngine.Robots.SqueezyBot.Service
                     }
                     writer.Close();
                 }
-            }
-            finally
+            } catch(Exception ex)
             {
 
             }

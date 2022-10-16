@@ -1,4 +1,5 @@
 ﻿using OsEngine.Charts.CandleChart.Elements;
+using OsEngine.Entity;
 using OsEngine.OsTrader.Panels.Tab;
 using System;
 using System.Collections.Generic;
@@ -13,11 +14,14 @@ namespace OsEngine.Robots.SqueezyBot.Service
 {
     internal class PaintService
     {
+        private int uniqNameIncrement;
         private BotTabSimple tab;
 
+        
         public PaintService(BotTabSimple tab)
         {
             this.tab = tab;
+            uniqNameIncrement = 0;
         }
 
         public void paintLabel(decimal priceY, DateTime timeX)
@@ -33,25 +37,23 @@ namespace OsEngine.Robots.SqueezyBot.Service
 
             tab.SetChartElement(point);
         }
-        public void paintLine(DateTime timeStart, DateTime timeEnd)
+
+        public void paintClosedPosition(Position position)
         {
-            Line line = new Line("nameUniq", "Prime");
+            string label = "#" + position.Number + " " + position.SignalTypeOpen + " \n" + position.Direction;
+            paintLine(position.TimeOpen, position.EntryPrice, position.TimeClose, position.ClosePrice, label, Color.Yellow, 2);
+        }
+        public void paintLine(DateTime timeStart, decimal valueYStart, DateTime timeEnd, decimal valueYEnd, string label, Color color, int width)
+        {
+            Line line = new Line(getUniqName(), "Prime");
 
             line.TimeStart = timeStart;
             line.TimeEnd = timeEnd;
-            line.ValueYStart = 0.6234m;
-            line.ValueYEnd = 0.6534m;
-            line.Label = "Тут могла быть ваша реклама!";
-            line.Color = Color.YellowGreen;
-
-            line.LineWidth = 5;
-            /*
-            line.ValueYStart = candles[candles.Count - 11].Close;
-            line.TimeStart = candles[candles.Count - 11].TimeStart;
-
-            line.ValueYEnd = candles[candles.Count - 1].Close;
-            line.TimeEnd = candles[candles.Count - 1].TimeStart;
-            */
+            line.ValueYStart = valueYStart;
+            line.ValueYEnd = valueYEnd;
+            line.Label = label;
+            line.Color = color;
+            line.LineWidth = width;
             tab.SetChartElement(line);
         }
 
@@ -68,6 +70,13 @@ namespace OsEngine.Robots.SqueezyBot.Service
             lineHorizontal.LineWidth = 5;
 
             tab.SetChartElement(lineHorizontal);
+        }
+
+        public string getUniqName(string mainPartName = "")
+        {
+            string uniqName = mainPartName + "_" + uniqNameIncrement;
+            ++uniqNameIncrement;
+            return uniqName;
         }
     }
 }

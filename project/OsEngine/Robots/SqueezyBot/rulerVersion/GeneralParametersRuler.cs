@@ -59,11 +59,11 @@ namespace OsEngine.Robots.SqueezyBot.rulerVersion
         {
             string settings = " Settings:"
                             + " maLenSlow = " + getMaLenSlow()
-                            + " maCorridorHighSlow = " + getMaCorridorHighSlow()
-                            + " maLenFast = " + getMaLenFast()
-                            + " volumePercent = " + getVolumePercent()
-                            + " countBarForClose = " + getCountBarForClose()
-                            + " countBufferLogLine = " + getCountBufferLogLine()
+                            + ", maCorridorHighSlow = " + getMaCorridorHighSlow()
+                            + ", maLenFast = " + getMaLenFast()
+                            + ", volumePercent = " + getVolumePercent()
+                            + ", countBarForClose = " + getCountBarForClose()
+                            + ", countBufferLogLine = " + getCountBufferLogLine()
                             ;
             return settings;
         }

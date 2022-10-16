@@ -23,7 +23,7 @@ namespace OsEngine.Robots.SqueezyBot.SqueezyRuler.rulerVersion
         private GeneralParametersRuler generalParameters;
         private GroupParametersRulerService groupParametersRulerService;
         private BotTabSimple tab;
-        private static LogService logService;
+        private LogService logService;
 
         public Squeezy(string name, StartProgram startProgram) : base(name, startProgram)
         {
