@@ -2,7 +2,7 @@
 using OsEngine.Charts.CandleChart.Indicators;
 using OsEngine.Entity;
 using OsEngine.OsTrader.Panels.Tab;
-using OsEngine.Robots.Squeezy.Ruler;
+using OsEngine.Robots.Squeezy.Tester;
 using OsEngine.Robots.SqueezyBot.Service;
 using System;
 using System.Collections.Generic;
@@ -18,14 +18,14 @@ namespace OsEngine.Robots.SqueezyBot
     {
 
         private BotTabSimple tab;
-        private GeneralParametersRuler generalParametersRuler;
+        private GeneralParametersTester generalParametersTester;
         private LogService logService;
 
 
-        public DealService(BotTabSimple tab, GeneralParametersRuler generalParametersRuler, LogService logService)
+        public DealService(BotTabSimple tab, GeneralParametersTester generalParametersTester, LogService logService)
         {
             this.tab = tab;
-            this.generalParametersRuler = generalParametersRuler;
+            this.generalParametersTester = generalParametersTester;
             this.logService = logService;
         }
 
@@ -33,7 +33,7 @@ namespace OsEngine.Robots.SqueezyBot
 
         public Position openBuyDeal(string signalType)
         {
-            decimal volume = Math.Round(generalParametersRuler.getVolumePercent() / 100.0m * tab.Portfolio.ValueCurrent, 0);
+            decimal volume = Math.Round(generalParametersTester.getVolumePercent() / 100.0m * tab.Portfolio.ValueCurrent, 0);
             Position position = null;
             for (int i = 0; i < COUNT_TRY_OPEN_DEAL; ++i)
             {
@@ -55,7 +55,7 @@ namespace OsEngine.Robots.SqueezyBot
 
         public Position openSellDeal(string signalType)
         {
-            decimal volume = generalParametersRuler.getVolumePercent()/ 100.0m * tab.Portfolio.ValueCurrent;
+            decimal volume = generalParametersTester.getVolumePercent()/ 100.0m * tab.Portfolio.ValueCurrent;
             Position position = null;
             for (int i = 0; i < COUNT_TRY_OPEN_DEAL; ++i)
             {
@@ -116,13 +116,13 @@ namespace OsEngine.Robots.SqueezyBot
 
         public void openSellAtLimit(decimal priceLimit)
         {
-            decimal volume = generalParametersRuler.getVolumePercent() / 100.0m * tab.Portfolio.ValueCurrent;
+            decimal volume = generalParametersTester.getVolumePercent() / 100.0m * tab.Portfolio.ValueCurrent;
             logService.sendLogSystem("Хотим открыть позицию SellAtLimit, priceLimit = " + priceLimit + ", volume = " + volume);
             tab.SellAtLimit(volume, priceLimit);
         }
         public void openBuyAtLimit(decimal priceLimit)
         {
-            decimal volume = generalParametersRuler.getVolumePercent() / 100.0m * tab.Portfolio.ValueCurrent;
+            decimal volume = generalParametersTester.getVolumePercent() / 100.0m * tab.Portfolio.ValueCurrent;
             logService.sendLogSystem("Хотим открыть позицию BuyAtLimit, priceLimit = " + priceLimit + ", volume = " + volume);
             tab.BuyAtLimit(volume, priceLimit);
         }

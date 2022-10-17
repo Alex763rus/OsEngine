@@ -2,9 +2,8 @@
 using OsEngine.Logging;
 using OsEngine.OsTrader.Panels;
 using OsEngine.OsTrader.Panels.Tab;
-using OsEngine.Robots.Squeezy.Ruler;
+using OsEngine.Robots.Squeezy.Tester;
 using OsEngine.Robots.SqueezyBot.Service;
-using System;
 using System.Collections.Generic;
 using System.Windows;
 

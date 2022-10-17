@@ -5,18 +5,18 @@ using OsEngine.Robots.SqueezyBot.Service;
 using System;
 using System.Collections.Generic;
 
-namespace OsEngine.Robots.Squeezy.Ruler
+namespace OsEngine.Robots.Squeezy.Tester
 {
-    public class EventServiceRuler
+    public class EventServiceTester
     {
-        private GeneralParametersRuler generalParameters;
-        private GroupParametersRulerService groupParametersService;
+        private GeneralParametersTester generalParameters;
+        private GroupParametersTesterService groupParametersService;
         private MovingAverageService movingAverageService;
         private DealService dealService;
         private CountBarService countBarService;
         private LogService logService;
         private PaintService paintService;
-        public EventServiceRuler(BotTabSimple tab, GeneralParametersRuler generalParameters, GroupParametersRulerService groupParametersService,  LogService logService)
+        public EventServiceTester(BotTabSimple tab, GeneralParametersTester generalParameters, GroupParametersTesterService groupParametersService,  LogService logService)
         {
             this.generalParameters = generalParameters;
             this.groupParametersService = groupParametersService;
@@ -40,7 +40,7 @@ namespace OsEngine.Robots.Squeezy.Ruler
             dealService.checkSlTpAndClose(candleClose1);
 
             GroupType groupType = getGroupType(candleClose1);
-            GroupParametersRuler groupParameters = groupParametersService.getGroupParameters(groupType);
+            GroupParametersTester groupParameters = groupParametersService.getGroupParameters(groupType);
 
             if (!groupParameters.getGroupOn())
             {
@@ -136,7 +136,7 @@ namespace OsEngine.Robots.Squeezy.Ruler
 
         public void positionOpeningSuccesEventLogic(Position position)
         {
-            GroupParametersRuler groupParameters = groupParametersService.getGroupParameters(position.SignalTypeOpen);
+            GroupParametersTester groupParameters = groupParametersService.getGroupParameters(position.SignalTypeOpen);
             decimal sl = position.EntryPrice;
             decimal tp = position.EntryPrice;
             if (position.Direction == Side.Buy)

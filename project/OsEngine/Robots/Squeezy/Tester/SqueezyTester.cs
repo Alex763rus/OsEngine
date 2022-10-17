@@ -4,33 +4,33 @@ using OsEngine.Logging;
 using OsEngine.OsTrader.Panels;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Robots.Squeezy;
-using OsEngine.Robots.Squeezy.Ruler;
+using OsEngine.Robots.Squeezy.Tester;
 using OsEngine.Robots.SqueezyBot.Service;
 using System;
 using System.Collections.Generic;
 using System.Windows;
 
-namespace OsEngine.Robots.Squeezy.Ruler
+namespace OsEngine.Robots.Squeezy.Tester
 {
-    public class SqueezyRuler : BotPanel, Loggable
+    public class SqueezyTester : BotPanel, Loggable
     {
-        public static string BOT_NAME = "SqueezyRulerBot";
+        public static string BOT_NAME = "SqueezyTesterBot";
         private const string VERSION = "0.0.1";
         public static string SEPARATE_PARAMETR_LINE = "=====================================================";
 
         public static int separateCounter = 0;    
-        private EventServiceRuler eventServiceRuler;
-        private GeneralParametersRuler generalParameters;
-        private GroupParametersRulerService groupParametersRulerService;
+        private EventServiceTester eventServiceTester;
+        private GeneralParametersTester generalParameters;
+        private GroupParametersTesterService groupParametersTesterService;
         private BotTabSimple tab;
         private LogService logService;
 
-        public SqueezyRuler(string name, StartProgram startProgram) : base(name, startProgram)
+        public SqueezyTester(string name, StartProgram startProgram) : base(name, startProgram)
         {
             TabCreate(BotTabType.Simple);
             tab = TabsSimple[0];
 
-            generalParameters = new GeneralParametersRuler(
+            generalParameters = new GeneralParametersTester(
                           CreateParameter("MovingAverage длина slow", 20, 0, 50, 5)
                         , CreateParameter("%MovingAverage высота коридора slow", 0.1m, 0.0m, 1.0m, 0.1m)
                         , CreateParameter("MovingAverage длина fast", 10, 0, 50, 5)
@@ -41,7 +41,7 @@ namespace OsEngine.Robots.Squeezy.Ruler
             addSeparateParameter();
             addSeparateParameter();
 
-            GroupParametersRuler upLong = new GroupParametersRuler(
+            GroupParametersTester upLong = new GroupParametersTester(
                           GroupType.UpLong
                         , CreateParameter("Включить UpLong торговлю", true)
                         , CreateParameter("%Триггер отложенного ордера UpLong", 1.5m, 0.0m, 0.5m, 5.0m)
@@ -49,7 +49,7 @@ namespace OsEngine.Robots.Squeezy.Ruler
                         , CreateParameter("%StopLoss UpLong", 3m, 0.0m, 1.0m, 10.0m)
                         );
             addSeparateParameter();
-            GroupParametersRuler upShort = new GroupParametersRuler(
+            GroupParametersTester upShort = new GroupParametersTester(
                           GroupType.UpShort
                         , CreateParameter("Включить UpShort торговлю", true)
                         , CreateParameter("%Триггер отложенного ордера UpShort", 1.5m, 0.0m, 0.5m, 3.0m)
@@ -57,7 +57,7 @@ namespace OsEngine.Robots.Squeezy.Ruler
                         , CreateParameter("%StopLoss UpShort", 3m, 0.0m, 1.0m, 10.0m)
                         );
             addSeparateParameter();
-            GroupParametersRuler dnLong = new GroupParametersRuler(
+            GroupParametersTester dnLong = new GroupParametersTester(
                           GroupType.DownLong
                         , CreateParameter("Включить DownLong торговлю", true)
                         , CreateParameter("%Триггер отложенного ордера DownLong", 1.5m, 0.0m, 0.5m, 3.0m)
@@ -65,22 +65,22 @@ namespace OsEngine.Robots.Squeezy.Ruler
                         , CreateParameter("%StopLoss DownLong", 3m, 0.0m, 1.0m, 10.0m)
                         );
             addSeparateParameter();
-            GroupParametersRuler dnShort = new GroupParametersRuler(
+            GroupParametersTester dnShort = new GroupParametersTester(
                           GroupType.DownShort
                         , CreateParameter("Включить DownShort торговлю", true)
                         , CreateParameter("%Триггер отложенного ордера DownShort", 1.5m, 0.0m, 0.5m, 3.0m)
                         , CreateParameter("%TakeProfit DownShort", 1.5m, 0.0m, 0.5m, 3.0m)
                         , CreateParameter("%StopLoss DownShort", 3m, 0.0m, 1.0m, 10.0m)
                         );
-            groupParametersRulerService = new GroupParametersRulerService();
-            groupParametersRulerService.addGroupParameters(upLong);
-            groupParametersRulerService.addGroupParameters(upShort);
-            groupParametersRulerService.addGroupParameters(dnLong);
-            groupParametersRulerService.addGroupParameters(dnShort);
+            groupParametersTesterService = new GroupParametersTesterService();
+            groupParametersTesterService.addGroupParameters(upLong);
+            groupParametersTesterService.addGroupParameters(upShort);
+            groupParametersTesterService.addGroupParameters(dnLong);
+            groupParametersTesterService.addGroupParameters(dnShort);
 
             logService = new LogService(this);
 
-            eventServiceRuler = new EventServiceRuler(tab, generalParameters, groupParametersRulerService, logService);
+            eventServiceTester = new EventServiceTester(tab, generalParameters, groupParametersTesterService, logService);
 
             tab.CandleFinishedEvent += finishedEventLogic;
             tab.PositionClosingSuccesEvent += positionClosingSuccesEventLogic;
@@ -113,16 +113,16 @@ namespace OsEngine.Robots.Squeezy.Ruler
 
         private void finishedEventLogic(List<Candle> candles)
         {
-            eventServiceRuler.finishedEventLogic(candles);
+            eventServiceTester.finishedEventLogic(candles);
         }
         private void positionClosingSuccesEventLogic(Position position)
         {
-            eventServiceRuler.positionClosingSuccesEventLogic(position);
+            eventServiceTester.positionClosingSuccesEventLogic(position);
         }
 
         private void positionOpeningSuccesEventLogic(Position position)
         {
-            eventServiceRuler.positionOpeningSuccesEventLogic(position);
+            eventServiceTester.positionOpeningSuccesEventLogic(position);
         }
 
         public void sendLog(string message, LogMessageType logMessageType)

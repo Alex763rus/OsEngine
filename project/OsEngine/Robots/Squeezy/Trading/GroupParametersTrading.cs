@@ -1,9 +1,9 @@
 ﻿using OsEngine.Entity;
-using OsEngine.Robots.Squeezy.Ruler;
+using OsEngine.Robots.Squeezy.Tester;
 
 namespace OsEngine.Robots.Squeezy.Trading
 {
-    public class GroupParametersTrading : GroupParametersRuler
+    public class GroupParametersTrading : GroupParametersTester
     {
 
         private StrategyParameterDecimal takeProfitTriggerStart;

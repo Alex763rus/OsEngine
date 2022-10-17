@@ -4,24 +4,24 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OsEngine.Robots.Squeezy.Ruler
+namespace OsEngine.Robots.Squeezy.Tester
 {
-    public class GroupParametersRulerService
+    public class GroupParametersTesterService
     {
 
-        private List<GroupParametersRuler> groupParametersList;
+        private List<GroupParametersTester> groupParametersList;
 
-        public GroupParametersRulerService()
+        public GroupParametersTesterService()
         {
-            groupParametersList = new List<GroupParametersRuler>();
+            groupParametersList = new List<GroupParametersTester>();
         }
 
-        public void addGroupParameters(GroupParametersRuler groupParameters)
+        public void addGroupParameters(GroupParametersTester groupParameters)
         {
             groupParametersList.Add(groupParameters);
         }
 
-        public GroupParametersRuler getGroupParameters(GroupType groupType)
+        public GroupParametersTester getGroupParameters(GroupType groupType)
         {
             foreach (var groupParameters in groupParametersList)
             {
@@ -33,7 +33,7 @@ namespace OsEngine.Robots.Squeezy.Ruler
             return null;
         }
 
-        public GroupParametersRuler getGroupParameters(String groupType)
+        public GroupParametersTester getGroupParameters(String groupType)
         {
             foreach (var groupParameters in groupParametersList)
             {
@@ -45,7 +45,7 @@ namespace OsEngine.Robots.Squeezy.Ruler
             return null;
         }
 
-        public List<GroupParametersRuler>  getGroupsParameters()
+        public List<GroupParametersTester>  getGroupsParameters()
         {
             return groupParametersList;
         }

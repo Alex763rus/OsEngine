@@ -1,8 +1,6 @@
-﻿using OsEngine.Robots.Squeezy.Ruler;
-
+﻿using OsEngine.Robots.Squeezy.Tester;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace OsEngine.Robots.Squeezy.Trading
 {

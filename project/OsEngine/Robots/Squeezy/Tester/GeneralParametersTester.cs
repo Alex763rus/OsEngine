@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OsEngine.Robots.Squeezy.Ruler
+namespace OsEngine.Robots.Squeezy.Tester
 {
-    public class GeneralParametersRuler
+    public class GeneralParametersTester
     {
         private StrategyParameterInt maLenSlow;
         private StrategyParameterDecimal maCorridorHighSlow;
@@ -16,7 +16,7 @@ namespace OsEngine.Robots.Squeezy.Ruler
         private StrategyParameterInt countBarForClose;
         private StrategyParameterInt countBufferLogLine;
 
-        public GeneralParametersRuler(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow, StrategyParameterInt maLenFast, StrategyParameterDecimal volumePercent, StrategyParameterInt countBarForClose, StrategyParameterInt countBufferLogLine)
+        public GeneralParametersTester(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow, StrategyParameterInt maLenFast, StrategyParameterDecimal volumePercent, StrategyParameterInt countBarForClose, StrategyParameterInt countBufferLogLine)
         {
             this.maLenSlow = maLenSlow;
             this.maCorridorHighSlow = maCorridorHighSlow;

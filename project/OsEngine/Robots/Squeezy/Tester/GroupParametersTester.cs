@@ -1,8 +1,8 @@
 ﻿using OsEngine.Entity;
 
-namespace OsEngine.Robots.Squeezy.Ruler
+namespace OsEngine.Robots.Squeezy.Tester
 {
-    public class GroupParametersRuler
+    public class GroupParametersTester
     {
         private GroupType groupType;
         private StrategyParameterBool groupOn;
@@ -10,7 +10,7 @@ namespace OsEngine.Robots.Squeezy.Ruler
         private StrategyParameterDecimal takeProfit;
         private StrategyParameterDecimal stopLoss;
 
-        public GroupParametersRuler(GroupType groupType, StrategyParameterBool groupOn, StrategyParameterDecimal triggerCandleDiff, StrategyParameterDecimal takeProfit, StrategyParameterDecimal stopLoss)
+        public GroupParametersTester(GroupType groupType, StrategyParameterBool groupOn, StrategyParameterDecimal triggerCandleDiff, StrategyParameterDecimal takeProfit, StrategyParameterDecimal stopLoss)
         {
             this.groupType = groupType;
             this.groupOn = groupOn;

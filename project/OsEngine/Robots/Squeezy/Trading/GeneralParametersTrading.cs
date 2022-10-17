@@ -1,14 +1,9 @@
 ﻿using OsEngine.Entity;
-using OsEngine.Robots.Squeezy.Ruler;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using OsEngine.Robots.Squeezy.Tester;
 
 namespace OsEngine.Robots.Squeezy.Trading
 {
-    public class GeneralParametersTrading : GeneralParametersRuler
+    public class GeneralParametersTrading : GeneralParametersTester
     {
         private StrategyParameterDecimal triggerStartPercent;
 
