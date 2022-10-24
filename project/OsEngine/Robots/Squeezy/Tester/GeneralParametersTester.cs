@@ -15,8 +15,10 @@ namespace OsEngine.Robots.Squeezy.Tester
         private StrategyParameterDecimal volumePercent;
         private StrategyParameterInt countBarForClose;
         private StrategyParameterInt countBufferLogLine;
+        private StrategyParameterBool testSettings;
+        private StrategyParameterBool logEnabled;
 
-        public GeneralParametersTester(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow, StrategyParameterInt maLenFast, StrategyParameterDecimal volumePercent, StrategyParameterInt countBarForClose, StrategyParameterInt countBufferLogLine)
+        public GeneralParametersTester(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow, StrategyParameterInt maLenFast, StrategyParameterDecimal volumePercent, StrategyParameterInt countBarForClose, StrategyParameterInt countBufferLogLine, StrategyParameterBool testSettings, StrategyParameterBool logEnabled)
         {
             this.maLenSlow = maLenSlow;
             this.maCorridorHighSlow = maCorridorHighSlow;
@@ -24,8 +26,19 @@ namespace OsEngine.Robots.Squeezy.Tester
             this.volumePercent = volumePercent;
             this.countBarForClose = countBarForClose;
             this.countBufferLogLine = countBufferLogLine;
+            this.testSettings = testSettings;
+            this.logEnabled = logEnabled;
         }
 
+        public bool getTestSettings()
+        {
+            return testSettings.ValueBool;
+        }
+
+        public bool getLogEnabled()
+        {
+            return logEnabled.ValueBool;
+        }
         public int getMaLenSlow()
         {
             return maLenSlow.ValueInt;
@@ -64,6 +77,8 @@ namespace OsEngine.Robots.Squeezy.Tester
                             + ", volumePercent = " + getVolumePercent()
                             + ", countBarForClose = " + getCountBarForClose()
                             + ", countBufferLogLine = " + getCountBufferLogLine()
+                            + ", getTestSettings = " + getTestSettings()
+                            + ", getLogEnabled = " + getLogEnabled()
                             ;
             return settings;
         }

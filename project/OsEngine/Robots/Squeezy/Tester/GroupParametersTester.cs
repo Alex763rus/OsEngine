@@ -55,6 +55,12 @@ namespace OsEngine.Robots.Squeezy.Tester
                             ;
             return settings;
         }
+
+        public override bool Equals(object obj)
+        {
+            return obj is GroupParametersTester tester &&
+                   groupType.ToString().Equals(tester.groupType.ToString());
+        }
     }
 
     public enum GroupType
@@ -63,6 +69,7 @@ namespace OsEngine.Robots.Squeezy.Tester
         UpShort,
         DownLong,
         DownShort,
+        TestTest
     }
 
     public enum TrendType

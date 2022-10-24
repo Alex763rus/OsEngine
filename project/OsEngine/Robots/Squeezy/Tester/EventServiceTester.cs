@@ -53,7 +53,7 @@ namespace OsEngine.Robots.Squeezy.Tester
                 countBarService.addCounterBarSell();
                 if (countBarService.getCounterBarSell() > generalParameters.getCountBarForClose())
                 {
-                    dealService.closeAllDeals(Side.Sell);
+                    dealService.closeAllDeals(Side.Sell, "Закрылись по барам");
                 }
             } else if (candleClose1 > (candleClose2 + candleClose2 * (groupParameters.getTriggerCandleDiff() / 100)))
             {
@@ -62,7 +62,7 @@ namespace OsEngine.Robots.Squeezy.Tester
                                     + " отношение:" + Math.Round((candleClose1 - candleClose2) / candleClose2 * 100, 2) + "%"
                                     + " настройки:" + groupParameters.getTriggerCandleDiff() + "%";
                 logService.sendLogSystem(message);
-                dealService.openSellDeal(groupType.ToString());
+                dealService.openSellDeal(groupType.ToString(), "Продажа по рынку");
             }
             
             //Buy:
@@ -71,7 +71,7 @@ namespace OsEngine.Robots.Squeezy.Tester
                 countBarService.addCounterBarBuy();
                 if(countBarService.getCounterBarBuy() > generalParameters.getCountBarForClose())
                 {
-                    dealService.closeAllDeals(Side.Buy);
+                    dealService.closeAllDeals(Side.Buy, "Закрылись по барам");
                 }
             } else if(candleClose1 < (candleClose2 - candleClose2 * (groupParameters.getTriggerCandleDiff() / 100))) {
                 string message = "Обнаружен сквиз " + groupType.ToString() + ": предпоследний бар:" + logService.getCandleInfo(candles[candles.Count - 2])
@@ -79,15 +79,19 @@ namespace OsEngine.Robots.Squeezy.Tester
                                     + " отношение:" + Math.Round((candleClose2 - candleClose1) / candleClose1 * 100, 2) + "%"
                                     + " настройки:" + groupParameters.getTriggerCandleDiff() + "%";
                 logService.sendLogSystem(message);
-                dealService.openBuyDeal(groupType.ToString());
+                dealService.openBuyDeal(groupType.ToString(), "Покупка по рынку");
             }
         }
 
         private GroupType getGroupType(decimal lastCandleClose)
         {
+            if (generalParameters.getTestSettings())
+            {
+                return GroupType.TestTest;
+            }
             GroupType groupType;
             //Группа по дефолту, пока нет медленной:
-            if(movingAverageService.getMaLastValueSlow() == 0)
+            if (movingAverageService.getMaLastValueSlow() == 0)
             {
                 return GroupType.UpLong;
             }

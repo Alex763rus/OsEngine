@@ -5,6 +5,7 @@ using OsEngine.OsTrader.Panels;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Robots.Squeezy;
 using OsEngine.Robots.Squeezy.Tester;
+using OsEngine.Robots.Squeezy.Trading;
 using OsEngine.Robots.SqueezyBot.Service;
 using System;
 using System.Collections.Generic;
@@ -16,6 +17,7 @@ namespace OsEngine.Robots.Squeezy.Tester
     {
         public static string BOT_NAME = "SqueezyTesterBot";
         private const string VERSION = "0.0.1";
+        private const string TAB_SERVICE_CONTROL_NAME = "Service";
         public static string SEPARATE_PARAMETR_LINE = "=====================================================";
 
         public static int separateCounter = 0;    
@@ -36,7 +38,9 @@ namespace OsEngine.Robots.Squeezy.Tester
                         , CreateParameter("MovingAverage длина fast", 10, 0, 50, 5)
                         , CreateParameter("% депозита для сделки", 10.0m, 5.0m, 50.0m, 5.0m)
                         , CreateParameter("Количество баров до выхода", 10, 0, 50, 1)
-                        , CreateParameter("Количество строк лога в буфере", 50, 0, 50, 1)
+                        , CreateParameter("Количество строк лога в буфере", 5000, 5000, 5000, 5000, TAB_SERVICE_CONTROL_NAME)
+                        , CreateParameter("Тестовые параметры", false, TAB_SERVICE_CONTROL_NAME)
+                        , CreateParameter("Логгирование", false, TAB_SERVICE_CONTROL_NAME)
                         );
             addSeparateParameter();
             addSeparateParameter();
@@ -44,39 +48,52 @@ namespace OsEngine.Robots.Squeezy.Tester
             GroupParametersTester upLong = new GroupParametersTester(
                           GroupType.UpLong
                         , CreateParameter("Включить UpLong торговлю", true)
-                        , CreateParameter("%Триггер отложенного ордера UpLong", 1.5m, 0.0m, 0.5m, 5.0m)
-                        , CreateParameter("%TakeProfit UpLong", 1.5m, 0.0m, 0.5m, 5.0m)
-                        , CreateParameter("%StopLoss UpLong", 3m, 0.0m, 1.0m, 10.0m)
+                        , CreateParameter("%Триггер отложенного ордера UpLong", 1.5m, 0.0m, 1.5m, 7.5m)
+                        , CreateParameter("%TakeProfit UpLong", 1.5m, 0.0m, 1.5m, 7.5m)
+                        , CreateParameter("%StopLoss UpLong", 2m, 0.0m, 4.0m, 10.0m)
                         );
             addSeparateParameter();
             GroupParametersTester upShort = new GroupParametersTester(
                           GroupType.UpShort
                         , CreateParameter("Включить UpShort торговлю", true)
-                        , CreateParameter("%Триггер отложенного ордера UpShort", 1.5m, 0.0m, 0.5m, 3.0m)
-                        , CreateParameter("%TakeProfit UpShort", 1.5m, 0.0m, 0.5m, 3.0m)
-                        , CreateParameter("%StopLoss UpShort", 3m, 0.0m, 1.0m, 10.0m)
+                        , CreateParameter("%Триггер отложенного ордера UpShort", 1.5m, 0.0m, 1.5m, 7.5m)
+                        , CreateParameter("%TakeProfit UpShort", 1.5m, 0.0m, 1.5m, 7.5m)
+                        , CreateParameter("%StopLoss UpShort", 2m, 0.0m, 4.0m, 10.0m)
                         );
             addSeparateParameter();
             GroupParametersTester dnLong = new GroupParametersTester(
                           GroupType.DownLong
                         , CreateParameter("Включить DownLong торговлю", true)
-                        , CreateParameter("%Триггер отложенного ордера DownLong", 1.5m, 0.0m, 0.5m, 3.0m)
-                        , CreateParameter("%TakeProfit DownLong", 1.5m, 0.0m, 0.5m, 3.0m)
-                        , CreateParameter("%StopLoss DownLong", 3m, 0.0m, 1.0m, 10.0m)
+                        , CreateParameter("%Триггер отложенного ордера DownLong", 1.5m, 0.0m, 1.5m, 7.5m)
+                        , CreateParameter("%TakeProfit DownLong", 1.5m, 0.0m, 1.5m, 7.5m)
+                        , CreateParameter("%StopLoss DownLong", 2m, 0.0m, 4.0m, 10.0m)
                         );
             addSeparateParameter();
             GroupParametersTester dnShort = new GroupParametersTester(
                           GroupType.DownShort
                         , CreateParameter("Включить DownShort торговлю", true)
-                        , CreateParameter("%Триггер отложенного ордера DownShort", 1.5m, 0.0m, 0.5m, 3.0m)
-                        , CreateParameter("%TakeProfit DownShort", 1.5m, 0.0m, 0.5m, 3.0m)
-                        , CreateParameter("%StopLoss DownShort", 3m, 0.0m, 1.0m, 10.0m)
+                        , CreateParameter("%Триггер отложенного ордера DownShort", 1.5m, 0.0m, 1.5m, 7.5m)
+                        , CreateParameter("%TakeProfit DownShort", 1.5m, 0.0m, 1.5m, 7.5m)
+                        , CreateParameter("%StopLoss DownShort", 2m, 0.0m, 4.0m, 10.0m)
                         );
+            //==Панель с техническими параметрами: ======================================================================================================================
+            addSeparateParameter(TAB_SERVICE_CONTROL_NAME);
+            GroupParametersTrading testTest = new GroupParametersTrading(
+                          GroupType.TestTest
+                        , CreateParameter("Включить TestTest торговлю", true, TAB_SERVICE_CONTROL_NAME)
+                        , CreateParameter("%Триггер отложенного ордера TestTest", 1.5m, 0.0m, 1.5m, 7.5m, TAB_SERVICE_CONTROL_NAME)
+                        , CreateParameter("%Триггер старта tp TestTest", 1m, 1.0m, 1.0m, 1.0m, TAB_SERVICE_CONTROL_NAME)
+                        , CreateParameter("%TakeProfit TestTest", 1.5m, 0.0m, 1.5m, 7.5m, TAB_SERVICE_CONTROL_NAME)
+                        , CreateParameter("%Триггер старта sl TestTest", 1m, 1.0m, 1.0m, 1.0m, TAB_SERVICE_CONTROL_NAME)
+                        , CreateParameter("%StopLoss TestTest", 2m, 0.0m, 4.0m, 10.0m, TAB_SERVICE_CONTROL_NAME)
+                        );
+            //===========================================================================================================================================================
             groupParametersTesterService = new GroupParametersTesterService();
             groupParametersTesterService.addGroupParameters(upLong);
             groupParametersTesterService.addGroupParameters(upShort);
             groupParametersTesterService.addGroupParameters(dnLong);
             groupParametersTesterService.addGroupParameters(dnShort);
+            groupParametersTesterService.addGroupParameters(testTest);
 
             logService = new LogService(this);
 
@@ -94,11 +111,12 @@ namespace OsEngine.Robots.Squeezy.Tester
             logService.sendLogSystem(upShort.getAllGroupParameters());
             logService.sendLogSystem(dnLong.getAllGroupParameters());
             logService.sendLogSystem(dnShort.getAllGroupParameters());
+            logService.sendLogSystem(testTest.getAllGroupParameters());
         }
 
-        private void addSeparateParameter()
+        private void addSeparateParameter(string tabControlName = null)
         {
-            CreateParameter(SEPARATE_PARAMETR_LINE + separateCounter, SEPARATE_PARAMETR_LINE);
+            CreateParameter(SEPARATE_PARAMETR_LINE + separateCounter, SEPARATE_PARAMETR_LINE, tabControlName);
             ++separateCounter;
         }
         public override string GetNameStrategyType()
@@ -143,6 +161,15 @@ namespace OsEngine.Robots.Squeezy.Tester
         public string getFilePath()
         {
             return "C:\\1_LOGS\\" + BOT_NAME + "_log.txt";
+        }
+        public DateTime getTimeServerCurrent()
+        {
+            return tab.TimeServerCurrent;
+        }
+
+        public bool loggingEnabled()
+        {
+            return generalParameters.getLogEnabled();
         }
     }
 }

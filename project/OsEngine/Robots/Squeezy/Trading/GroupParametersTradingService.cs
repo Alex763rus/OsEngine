@@ -1,6 +1,8 @@
-﻿using OsEngine.Robots.Squeezy.Tester;
+﻿using OsEngine.Entity;
+using OsEngine.Robots.Squeezy.Tester;
 using System;
 using System.Collections.Generic;
+using System.Windows.Controls;
 
 namespace OsEngine.Robots.Squeezy.Trading
 {

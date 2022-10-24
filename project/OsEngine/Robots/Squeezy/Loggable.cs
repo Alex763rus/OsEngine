@@ -11,7 +11,10 @@ namespace OsEngine.Robots.Squeezy
     {
         public void sendLog(string message, LogMessageType logMessageType);
 
+        public bool loggingEnabled();
         public int getCountBufferLogLine();
         public string getFilePath();
+
+        public DateTime getTimeServerCurrent();
     }
 }

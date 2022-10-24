@@ -4,6 +4,7 @@ using OsEngine.OsTrader.Panels;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Robots.Squeezy.Tester;
 using OsEngine.Robots.SqueezyBot.Service;
+using System;
 using System.Collections.Generic;
 using System.Windows;
 
@@ -13,11 +14,12 @@ namespace OsEngine.Robots.Squeezy.Trading
     {
         public static string BOT_NAME = "SqueezyTradingBot";
         private const string VERSION = "0.0.1";
+        private const string TAB_SERVICE_CONTROL_NAME = "Service";
         public static string SEPARATE_PARAMETR_LINE = "=====================================================";
 
         public static int separateCounter = 0;
         private EventServiceTrading eventServiceTrading;
-        private GeneralParametersTrading groupParametersTrading;
+        private GeneralParametersTrading generalParametersTrading;
         private GroupParametersTradingService groupParametersTradingService;
         private BotTabSimple tab;
         private static LogService logService;
@@ -27,14 +29,17 @@ namespace OsEngine.Robots.Squeezy.Trading
             TabCreate(BotTabType.Simple);
             tab = TabsSimple[0];
 
-            groupParametersTrading = new GeneralParametersTrading(
-                          CreateParameter("MovingAverage длина slow", 20, 0, 50, 5)
-                        , CreateParameter("%MovingAverage высота коридора slow", 0.1m, 0.0m, 1.0m, 0.1m)
-                        , CreateParameter("MovingAverage длина fast", 10, 0, 50, 5)
-                        , CreateParameter("% депозита для сделки", 10.0m, 5.0m, 50.0m, 5.0m)
-                        , CreateParameter("Количество баров до выхода", 10, 0, 50, 1)
+            generalParametersTrading = new GeneralParametersTrading(
+                          CreateParameter("MovingAverage длина slow", 150, 0, 150, 5)
+                        , CreateParameter("%MovingAverage высота коридора slow", 0.4m, 0.0m, 0.8m, 0.4m)
+                        , CreateParameter("MovingAverage длина fast", 50, 0, 50, 25)
+                        , CreateParameter("% депозита для сделки ОТКЛЮЧЕН", 10.0m, 10.0m, 50.0m, 5.0m)
+                        , CreateParameter("Сумма для открытия", 10.0m, 5.0m, 50.0m, 5.0m)
+                        , CreateParameter("Количество баров до выхода", 2, 0, 30, 1)
                         , CreateParameter("%Триггер старта", 1m, 1m, 1m, 1m)
-                        , CreateParameter("Количество строк лога в буфере", 50, 0, 50, 1)
+                        , CreateParameter("Количество строк лога в буфере", 50, 0, 50, 1, TAB_SERVICE_CONTROL_NAME)
+                        , CreateParameter("Тестовые параметры", true, TAB_SERVICE_CONTROL_NAME)
+                        , CreateParameter("Логгирование", true, TAB_SERVICE_CONTROL_NAME)
                         );
             addSeparateParameter();
             addSeparateParameter();
@@ -78,35 +83,76 @@ namespace OsEngine.Robots.Squeezy.Trading
                         , CreateParameter("%Триггер старта sl DownShort", 1m, 1.0m, 1.0m, 1.0m)
                         , CreateParameter("%StopLoss DownShort", 3m, 0.0m, 1.0m, 10.0m)
                         );
+
+            //==Панель с техническими параметрами: ======================================================================================================================
+            addSeparateParameter(TAB_SERVICE_CONTROL_NAME);
+            GroupParametersTrading testTest = new GroupParametersTrading(
+                          GroupType.TestTest
+                        , CreateParameter("Включить TestTest торговлю", true, TAB_SERVICE_CONTROL_NAME)
+                        , CreateParameter("%Триггер отложенного ордера TestTest", 1.5m, 0.0m, 0.5m, 5.0m, TAB_SERVICE_CONTROL_NAME)
+                        , CreateParameter("%Триггер старта tp TestTest", 1m, 1.0m, 1.0m, 1.0m, TAB_SERVICE_CONTROL_NAME)
+                        , CreateParameter("%TakeProfit TestTest", 1.5m, 0.0m, 0.5m, 5.0m, TAB_SERVICE_CONTROL_NAME)
+                        , CreateParameter("%Триггер старта sl TestTest", 1m, 1.0m, 1.0m, 1.0m, TAB_SERVICE_CONTROL_NAME)
+                        , CreateParameter("%StopLoss TestTest", 3m, 0.0m, 1.0m, 10.0m, TAB_SERVICE_CONTROL_NAME)
+                        );
+            //===========================================================================================================================================================
             groupParametersTradingService = new GroupParametersTradingService();
             groupParametersTradingService.addGroupParameters(upLong);
             groupParametersTradingService.addGroupParameters(upShort);
             groupParametersTradingService.addGroupParameters(dnLong);
             groupParametersTradingService.addGroupParameters(dnShort);
+            groupParametersTradingService.addGroupParameters(testTest);
 
             logService = new LogService(this);
 
-            eventServiceTrading = new EventServiceTrading(tab, groupParametersTrading, groupParametersTradingService, logService);
+            eventServiceTrading = new EventServiceTrading(tab, generalParametersTrading, groupParametersTradingService, logService);
 
-            tab.CandleFinishedEvent += finishedEventLogic;
+            tab.CandleFinishedEvent += candleFinishedEventLogic;
             tab.PositionClosingSuccesEvent += positionClosingSuccesEventLogic;
             tab.PositionOpeningSuccesEvent += positionOpeningSuccesEventLogic;
             tab.NewTickEvent += newTickEventLogic;
             tab.Connector.BestBidAskChangeEvent += bestBidAskChangeEventLogic;
+            tab.PositionSellAtStopActivateEvent += positionSellAtStopActivateEventlogic;
+            tab.PositionBuyAtStopActivateEvent += positionBuyAtStopActivateEventLogic;
+            tab.PositionOpeningFailEvent += positionOpeningFailEventLogic;
 
             //Логгирование стартовых настроек:
             logService.sendLogSystem(SEPARATE_PARAMETR_LINE);
             logService.sendLogSystem(BOT_NAME + " init successful, started version bot:" + VERSION);
-            logService.sendLogSystem(groupParametersTrading.getAllSettings());
+            logService.sendLogSystem(generalParametersTrading.getAllSettings());
             logService.sendLogSystem(upLong.getAllGroupParameters());
             logService.sendLogSystem(upShort.getAllGroupParameters());
             logService.sendLogSystem(dnLong.getAllGroupParameters());
             logService.sendLogSystem(dnShort.getAllGroupParameters());
+            logService.sendLogSystem(testTest.getAllGroupParameters());
         }
 
-        private void addSeparateParameter()
+        private void positionSellAtStopActivateEventlogic(Position position)
         {
-            CreateParameter(SEPARATE_PARAMETR_LINE + separateCounter, SEPARATE_PARAMETR_LINE);
+            int test = 0;
+        }
+        private void positionBuyAtStopActivateEventLogic(Position position)
+        {
+            int test = 0;
+        }
+        private void positionOpeningFailEventLogic(Position position)
+        {
+            eventServiceTrading.positionOpeningFailEventLogic(position);
+        }
+
+        private void positionClosingSuccesEventLogic(Position position)
+        {
+            eventServiceTrading.positionClosingSuccesEventLogic(position);
+        }
+
+        private void positionOpeningSuccesEventLogic(Position position)
+        {
+            eventServiceTrading.positionOpeningSuccesEventLogic(position);
+        }
+
+        private void addSeparateParameter(string tabControlName = null)
+        {
+            CreateParameter(SEPARATE_PARAMETR_LINE + separateCounter, SEPARATE_PARAMETR_LINE, tabControlName);
             ++separateCounter;
         }
         public override string GetNameStrategyType()
@@ -119,18 +165,9 @@ namespace OsEngine.Robots.Squeezy.Trading
             MessageBox.Show("Нет настроек");
         }
 
-        private void finishedEventLogic(List<Candle> candles)
+        private void candleFinishedEventLogic(List<Candle> candles)
         {
-            eventServiceTrading.finishedEventLogic(candles);
-        }
-        private void positionClosingSuccesEventLogic(Position position)
-        {
-            eventServiceTrading.positionClosingSuccesEventLogic(position);
-        }
-
-        private void positionOpeningSuccesEventLogic(Position position)
-        {
-            eventServiceTrading.positionOpeningSuccesEventLogic(position);
+            eventServiceTrading.candleFinishedEventLogic(candles);
         }
 
         private void newTickEventLogic(Trade trade)
@@ -154,12 +191,22 @@ namespace OsEngine.Robots.Squeezy.Trading
 
         public int getCountBufferLogLine()
         {
-            return groupParametersTrading.getCountBufferLogLine();
+            return generalParametersTrading.getCountBufferLogLine();
         }
 
         public string getFilePath()
         {
             return "C:\\1_LOGS\\" + BOT_NAME + "_log.txt";
+        }
+
+        public DateTime getTimeServerCurrent()
+        {
+            return tab.TimeServerCurrent;
+        }
+
+        public bool loggingEnabled()
+        {
+            return generalParametersTrading.getLogEnabled();
         }
     }
 }

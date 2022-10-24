@@ -30,7 +30,10 @@ namespace OsEngine.Robots.SqueezyBot.Service
         {
             this.squeezy = squeezy;
             logList = new ArrayList();
-
+            if (!squeezy.loggingEnabled())
+            {
+                return;
+            }
             Thread thread = new Thread(new ThreadStart(checkAndSaveLog));
             thread.IsBackground = true;
             thread.SetApartmentState(ApartmentState.STA);
@@ -58,23 +61,31 @@ namespace OsEngine.Robots.SqueezyBot.Service
         public string getPositionInfo(Position position)
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("Number:#").Append(position.Number)
-            .Append(", TimeOpen:").Append(position.TimeOpen)
-            .Append(", TimeClose:").Append(position.TimeClose)
-            .Append(", volume:").Append(position.OpenVolume)
-            .Append(", SignalTypeOpen:").Append(position.SignalTypeOpen)
-            .Append(", SignalTypeClose:").Append(position.SignalTypeClose)
+            sb.Append("[#0000").Append(position.Number)
+            .Append(", ").Append(position.Direction)
+            .Append(", ").Append(position.State)
+            .Append(", tOpen:").Append(position.TimeOpen)
+            .Append(", tClose:").Append(position.TimeClose)
+            .Append(", vol:").Append(position.OpenVolume)
+            .Append(", textOpen:").Append(position.SignalTypeOpen)
+            .Append(", textClose:").Append(position.SignalTypeClose)
             .Append(", TP:").Append(position.ProfitOrderPrice)
             .Append(", SL:").Append(position.StopOrderPrice)
             .Append(", Profit:").Append(position.ProfitPortfolioPunkt)
+            .Append(']');
             ;
             return sb.ToString();
         }
 
         private void sendLogMessage(string message, LogMessageType logMessageType, int level = 0)
         {
-            StringBuilder logMessage = new StringBuilder();
+            if (!squeezy.loggingEnabled())
+            {
+                return;
+            }
+                StringBuilder logMessage = new StringBuilder();
             logMessage.Append(DateTime.Now).Append(" ")
+                        .Append(squeezy.getTimeServerCurrent()).Append(" ")
                         .Append(getIndent(level))
                         .Append(logMessageType.ToString()).Append(":")
                         .Append(message);
