@@ -13,9 +13,8 @@ namespace OsEngine.Robots.Squeezy.Trading
     public class SqueezyTrading : BotPanel, Loggable
     {
         public static string BOT_NAME = "SqueezyTradingBot";
-        private const string VERSION = "0.0.1";
+        public static string VERSION = "0.0.1";
         private const string TAB_SERVICE_CONTROL_NAME = "Service";
-        public static string SEPARATE_PARAMETR_LINE = "=====================================================";
 
         public static int separateCounter = 0;
         private EventServiceTrading eventServiceTrading;
@@ -116,15 +115,6 @@ namespace OsEngine.Robots.Squeezy.Trading
             tab.PositionBuyAtStopActivateEvent += positionBuyAtStopActivateEventLogic;
             tab.PositionOpeningFailEvent += positionOpeningFailEventLogic;
 
-            //Логгирование стартовых настроек:
-            logService.sendLogSystem(SEPARATE_PARAMETR_LINE);
-            logService.sendLogSystem(BOT_NAME + " init successful, started version bot:" + VERSION);
-            logService.sendLogSystem(generalParametersTrading.getAllSettings());
-            logService.sendLogSystem(upLong.getAllGroupParameters());
-            logService.sendLogSystem(upShort.getAllGroupParameters());
-            logService.sendLogSystem(dnLong.getAllGroupParameters());
-            logService.sendLogSystem(dnShort.getAllGroupParameters());
-            logService.sendLogSystem(testTest.getAllGroupParameters());
         }
 
         private void positionSellAtStopActivateEventlogic(Position position)
@@ -152,7 +142,7 @@ namespace OsEngine.Robots.Squeezy.Trading
 
         private void addSeparateParameter(string tabControlName = null)
         {
-            CreateParameter(SEPARATE_PARAMETR_LINE + separateCounter, SEPARATE_PARAMETR_LINE, tabControlName);
+            CreateParameter(LogService.SEPARATE_PARAMETR_LINE + separateCounter, LogService.SEPARATE_PARAMETR_LINE, tabControlName);
             ++separateCounter;
         }
         public override string GetNameStrategyType()

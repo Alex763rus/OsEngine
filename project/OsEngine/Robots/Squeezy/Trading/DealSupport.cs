@@ -19,7 +19,7 @@ namespace OsEngine.Robots.Squeezy.Trading
 
         public DealSupport()
         {
-            processState = ProcessState.WAIT_TRIGGER_START;
+            processState = ProcessState.FREE;
             chartElements = new IChartElement[100];
             chartCounter = 0;
         }

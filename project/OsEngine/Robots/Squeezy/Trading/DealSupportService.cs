@@ -71,7 +71,20 @@ namespace OsEngine.Robots.Squeezy.Service
         {
             return dealSupportBuy.getChartElements();
         }
-
+        public Position getPosition(Side side)
+        {
+            if (side == Side.Sell)
+            {
+                return getSellPosition();
+            }
+            return getBuyPosition();
+        }
+       
+        public bool checkBuyOrSellPosition(Position position)
+        {
+            return (dealSupportBuy.getPosition() != null && position.Number == dealSupportBuy.getPosition().Number)
+                || (dealSupportSell.getPosition() != null && position.Number == dealSupportSell.getPosition().Number);
+        }
         public Position getSellPosition()
         {
             return dealSupportSell.getPosition();
@@ -95,7 +108,7 @@ namespace OsEngine.Robots.Squeezy.Service
             if (side == Side.Sell)
             {
                 return dealSupportSell.getProcessState();
-            }
+            } 
             return dealSupportBuy.getProcessState();
         }
         public void setProcessStateSell(ProcessState processState)
@@ -119,11 +132,11 @@ namespace OsEngine.Robots.Squeezy.Service
         }
         public void dealSupportResetSell()
         {
-            dealSupportSell.dealSupportUpdate(null, ProcessState.WAIT_TRIGGER_START, null);
+            dealSupportSell.dealSupportUpdate(null, ProcessState.FREE, null);
         }
         public void dealSupportResetBuy()
         {
-            dealSupportBuy.dealSupportUpdate(null, ProcessState.WAIT_TRIGGER_START, null);
+            dealSupportBuy.dealSupportUpdate(null, ProcessState.FREE, null);
         }
 
         public string getGroupTypeSell()

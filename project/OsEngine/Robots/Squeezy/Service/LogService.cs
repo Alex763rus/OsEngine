@@ -22,6 +22,7 @@ namespace OsEngine.Robots.SqueezyBot.Service
 {
     public class LogService
     {
+        public static string SEPARATE_PARAMETR_LINE = "=====================================================";
         private readonly Loggable squeezy;
         private ArrayList logList;
         private const int SAVE_LOG_TIME_OUT = 60000;
@@ -61,7 +62,7 @@ namespace OsEngine.Robots.SqueezyBot.Service
         public string getPositionInfo(Position position)
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("[#0000").Append(position.Number)
+            sb.Append(" [#0000").Append(position.Number)
             .Append(", ").Append(position.Direction)
             .Append(", ").Append(position.State)
             .Append(", tOpen:").Append(position.TimeOpen)
@@ -72,6 +73,7 @@ namespace OsEngine.Robots.SqueezyBot.Service
             .Append(", TP:").Append(position.ProfitOrderPrice)
             .Append(", SL:").Append(position.StopOrderPrice)
             .Append(", Profit:").Append(position.ProfitPortfolioPunkt)
+            .Append(", Comment:").Append(position.Comment)
             .Append(']');
             ;
             return sb.ToString();
@@ -135,6 +137,7 @@ namespace OsEngine.Robots.SqueezyBot.Service
             string indent = "";
             switch (level)
             {
+                case -1: indent = "------------> "; break;
                 case 1: indent = "==> "; break;
                 case 2: indent = "====> "; break;
                 case 3: indent = "======> "; break;

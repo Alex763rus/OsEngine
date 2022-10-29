@@ -37,40 +37,6 @@ namespace OsEngine.Robots.SqueezyBot
 
         private const int COUNT_TRY_OPEN_DEAL = 10;
 
-        public Position openBuyDeal(string signalType, string comment, decimal volumeSum = 0)
-        {
-            decimal volume;
-            if (volumeSum == 0)
-            {
-                volume = Math.Round(generalParametersTester.getVolumePercent() / 100.0m * tab.Portfolio.ValueCurrent, 0);
-            }
-            else
-            {
-                volume = volumeSum;
-            }
-            Position position = null;
-            for (int i = 0; i < COUNT_TRY_OPEN_DEAL; ++i)
-            {
-                position = tab.BuyAtMarket(volume, signalType);
-                if (position != null)
-                {
-                    position.Comment = comment;
-                    //logService.sendLogSystem("Успешно открыта BuyAtMarket позиция:" + logService.getPositionInfo(position));
-                    sendLogSystemLocal("Успешно открыта BuyAtMarket позиция:", position);
-                    break;
-                } else {
-                    //logService.sendLogError("Не удалось открыть BuyAtMarket позицию. volume:" + volume + ", signalType:" + signalType + " попытка:" + i);
-                    sendLogErrorLocal("Не удалось открыть BuyAtMarket позицию. volume:" + volume + ", signalType:" + signalType + " попытка:" + i);
-                }
-            }
-            if(position == null)
-            {
-                //logService.sendLogError("Не смогли открыть BuyAtMarket позицию volume:" + volume + ", signalType:" + signalType + " за " + COUNT_TRY_OPEN_DEAL + " попыток");
-                sendLogErrorLocal("Не смогли открыть BuyAtMarket позицию volume:" + volume + ", signalType:" + signalType + " за " + COUNT_TRY_OPEN_DEAL + " попыток");
-            }
-            return position;
-        }
-
         public Position getBuyPosition()
         {
             List<Position> positions = tab.PositionOpenLong;
@@ -132,7 +98,6 @@ namespace OsEngine.Robots.SqueezyBot
                 decimal stopOrderPriceSl = sl + tab.Securiti.PriceStep * orderSleepage;
                 tab.CloseAtStop(position, sl, stopOrderPriceSl, "TpSl");
             }
-            sendLogSystemLocal("Установлен TP =" + tp + ", SL =" + sl + " для позиции:", position);
         }
 
         public Position openSellDeal(string signalType, string comment, decimal volumeSum = 0)
@@ -154,20 +119,50 @@ namespace OsEngine.Robots.SqueezyBot
                 if (position != null)
                 {
                     position.Comment = comment;
-                    //logService.sendLogSystem("Успешно открыта SellAtMarket позиция:" + logService.getPositionInfo(position));
-                    sendLogSystemLocal("Успешно открыта SellAtMarket позиция:", position);
+                    sendLogSystemLocal("Заведена заявка SellAtMarket:", position);
                     break;
                 }
                 else
                 {
-                    //   logService.sendLogError("Не удалось открыть SellAtMarket позицию " + " volume:" + volume + ", signalType:" + signalType + " попытка:" + i);
                     sendLogErrorLocal("Не удалось открыть SellAtMarket позицию " + " volume:" + volume + ", signalType:" + signalType + " попытка:" + i);
                 }
             }
             if (position == null)
             {
-                //logService.sendLogError("Не смогли открыть SellAtMarket позицию volume:" + volume + ", signalType:" + signalType + " за " + COUNT_TRY_OPEN_DEAL + " попыток");
                 sendLogErrorLocal("Не смогли открыть SellAtMarket позицию volume:" + volume + ", signalType:" + signalType + " за " + COUNT_TRY_OPEN_DEAL + " попыток");
+            }
+            return position;
+        }
+
+        public Position openBuyDeal(string signalType, string comment, decimal volumeSum = 0)
+        {
+            decimal volume;
+            if (volumeSum == 0)
+            {
+                volume = Math.Round(generalParametersTester.getVolumePercent() / 100.0m * tab.Portfolio.ValueCurrent, 0);
+            }
+            else
+            {
+                volume = volumeSum;
+            }
+            Position position = null;
+            for (int i = 0; i < COUNT_TRY_OPEN_DEAL; ++i)
+            {
+                position = tab.BuyAtMarket(volume, signalType);
+                if (position != null)
+                {
+                    position.Comment = comment;
+                    sendLogSystemLocal("Заведена заявка BuyAtMarket:", position);
+                    break;
+                }
+                else
+                {
+                    sendLogErrorLocal("Не удалось открыть BuyAtMarket заявку. volume:" + volume + ", signalType:" + signalType + " попытка:" + i);
+                }
+            }
+            if (position == null)
+            {
+                sendLogErrorLocal("Не смогли открыть BuyAtMarket позицию volume:" + volume + ", signalType:" + signalType + " за " + COUNT_TRY_OPEN_DEAL + " попыток");
             }
             return position;
         }
@@ -187,7 +182,6 @@ namespace OsEngine.Robots.SqueezyBot
 
         public void closeAllOrderToPosition(Position position, string signalType)
         {
-            //logService.sendLogSystem("Хотим закрыть позицию:" + logService.getPositionInfo(position) + " по причине:" + signalType);
             sendLogSystemLocal("Хотим закрыть позицию по причине:" + signalType, position);
             tab.CloseAllOrderToPosition(position, signalType);
         }
@@ -203,7 +197,6 @@ namespace OsEngine.Robots.SqueezyBot
             }
             if (positions != null && positions.Count > 0)
             {
-                //   logService.sendLogSystem("Хотим закрыть позицию по направлению:" + direction + " по причине:" + signalCloseType + ". Найдена позиция:" + logService.getPositionInfo(positions[0]));
                 sendLogSystemLocal("Хотим закрыть позицию по направлению:" + direction + " по причине:" + signalCloseType + ". Найдена позиция:", positions[0]);
                 tab.CloseAtMarket(positions[0], positions[0].MaxVolume, signalCloseType);
             }
@@ -213,32 +206,31 @@ namespace OsEngine.Robots.SqueezyBot
         {
             position.StopOrderPrice = sl;
             position.ProfitOrderPrice = tp;
-            //tab.SetNewLogMessage("", Logging.LogMessageType.System);
-            //logService.sendLogSystem("Установлен TP =" + tp + ", SL =" + sl + " для позиции:" + logService.getPositionInfo(position));
             sendLogSystemLocal("Установлен TP =" + tp + ", SL =" + sl + " для позиции:", position);
         }
 
         public Position openSellAtLimit(decimal priceLimit, string signalType, string comment, decimal volumeSum)
         {
-            //decimal volume = generalParametersTester.getVolumePercent() / 100.0m * tab.Portfolio.ValueCurrent;
-            //logService.sendLogSystem("Хотим открыть позицию SellAtLimit, priceLimit = " + priceLimit + ", volume = " + volume);
-            sendLogSystemLocal("Хотим открыть позицию SellAtLimit, priceLimit = " + priceLimit + ", volumeSum = " + volumeSum);
+            priceLimit = Convert.ToDecimal(priceLimit);
             Position position = tab.SellAtLimit(volumeSum, priceLimit, signalType);
-            if(position != null)
+            if (position != null)
             {
+                sendLogSystemLocal("Заведена заявка на позицию SellAtLimit, priceLimit = " + priceLimit + ", volumeSum = " + volumeSum + ", comment = " + comment, position);
                 position.Comment = comment;
             }
             return position;
         }
         public Position openBuyAtLimit(decimal priceLimit, string signalType, string comment, decimal volumeSum)
         {
-            //decimal volume = generalParametersTester.getVolumePercent() / 100.0m * tab.Portfolio.ValueCurrent;
-            //logService.sendLogSystem("Хотим открыть позицию BuyAtLimit, priceLimit = " + priceLimit + ", volume = " + volume);
-            sendLogSystemLocal("Хотим открыть позицию BuyAtLimit, priceLimit = " + priceLimit + ", volumeSum = " + volumeSum);
             Position position = tab.BuyAtLimit(volumeSum, priceLimit, signalType);
             if (position != null)
             {
+                sendLogSystemLocal("Заведена заявка на позицию BuyAtLimit, priceLimit = " + priceLimit + ", volumeSum = " + volumeSum + ", comment = " + comment, position);
                 position.Comment = comment;
+            }
+            else
+            {
+                sendLogSystemLocal("ОШИБКА при заведении заявки на позицию BuyAtLimit, priceLimit = " + priceLimit + ", volumeSum = " + volumeSum + ", comment = " + comment, position);
             }
             return position;
         }

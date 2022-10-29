@@ -1,5 +1,6 @@
 ﻿using OsEngine.Charts.CandleChart.Elements;
 using OsEngine.Entity;
+using OsEngine.Market.Servers.Bitfinex.BitfitnexEntity;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Robots.Squeezy.Trading;
 using System;
@@ -27,8 +28,16 @@ namespace OsEngine.Robots.SqueezyBot.Service
         }
 
 
+        public void deleteAllChartElement()
+        {
+            tab.DeleteAllChartElement();
+        }
         public void deleteChartElements(IChartElement[] chartElements)
         {
+            if(chartElements == null)
+            {
+                return;
+            }
             foreach (IChartElement chartElement in chartElements)
             {
                 if(chartElement == null)
@@ -51,6 +60,14 @@ namespace OsEngine.Robots.SqueezyBot.Service
 
             tab.SetChartElement(point);
             return point;
+        }
+
+        public IChartElement paintClosedPosition(Position position, TimeSpan timeFrame)
+        {
+            string label = "#" + position.Number + " " + position.SignalTypeOpen + " \n" + position.Direction;
+            DateTime timeStart = position.TimeOpen.AddMinutes(-timeFrame.TotalMinutes);
+            DateTime timeEnd = position.TimeClose.AddMinutes(-timeFrame.TotalMinutes);
+            return paintLine(timeStart, position.EntryPrice, timeEnd, position.ClosePrice, label, Color.Yellow, 2);
         }
 
         public IChartElement paintClosedPosition(Position position)
