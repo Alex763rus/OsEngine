@@ -1,9 +1,10 @@
-﻿using OkonkwoOandaV20.TradeLibrary.DataTypes.Position;
+﻿using Kraken.WebSockets;
+using OkonkwoOandaV20.TradeLibrary.DataTypes.Position;
+using OkonkwoOandaV20.TradeLibrary.DataTypes.Pricing;
 using OsEngine.Entity;
 using OsEngine.Market.Servers.Bitfinex.BitfitnexEntity;
 using OsEngine.Market.Servers.GateIo.Futures.Response;
 using OsEngine.OsTrader.Panels.Tab;
-using OsEngine.Robots.Squeezy.Service;
 using OsEngine.Robots.Squeezy.Tester;
 using OsEngine.Robots.Squeezy.Trading;
 using OsEngine.Robots.SqueezyBot;
@@ -18,6 +19,7 @@ using System.Windows.Controls;
 using static protobuf.ws.TradesRequest;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using Position = OsEngine.Entity.Position;
+using Side = OsEngine.Entity.Side;
 
 namespace OsEngine.Robots.Squeezy.Trading
 {
@@ -29,10 +31,8 @@ namespace OsEngine.Robots.Squeezy.Trading
 
         private MovingAverageService movingAverageService;
         private DealService dealService;
-        private CountBarService countBarService;
         private PaintService paintService;
         private LogService logService;
-        private DealSupportService dealSupportService;
 
         private Candle lastCandle;
         private GroupParametersTrading lastCandleGroupParameters; //группа для текущей свечи
@@ -43,6 +43,8 @@ namespace OsEngine.Robots.Squeezy.Trading
         private decimal lastBestAsc;          //последняя известная лучшая цена продажи
         private decimal lastBestBid;          //последняя известная лучшая цена покупки
 
+        private DealSupport dealSupportBuy;     //сопровождение Buy сделок
+        private DealSupport dealSupportSell;    //сопровождение Sell сделок
         public EventServiceTrading(BotTabSimple tab, GeneralParametersTrading generalParameters, GroupParametersTradingService groupParametersService, LogService logService)
         {
             this.generalParameters = generalParameters;
@@ -51,9 +53,10 @@ namespace OsEngine.Robots.Squeezy.Trading
 
             movingAverageService = new MovingAverageService(tab, generalParameters);
             dealService = new DealService(tab, generalParameters, logService);
-            countBarService = new CountBarService();
+
             paintService = new PaintService(tab);
-            dealSupportService = new DealSupportService();
+            dealSupportBuy = new DealSupport(Side.Buy);
+            dealSupportSell = new DealSupport(Side.Sell);
         }
 
         public void candleFinishedEventLogic(List<Candle> candles)
@@ -63,11 +66,9 @@ namespace OsEngine.Robots.Squeezy.Trading
                 if (candles.Count == 1)
                 {
                     logBotSettings();
-                    countBarService.resetCountBarSell();
-                    countBarService.resetCountBarBuy();
                     paintService.deleteAllChartElement();
-                    dealSupportService.dealSupportResetSell();
-                    dealSupportService.dealSupportResetBuy();
+                    dealSupportBuy.reset();
+                    dealSupportSell.reset();
                 }
                 return;
             }
@@ -80,37 +81,34 @@ namespace OsEngine.Robots.Squeezy.Trading
             priceOpenLimitSell = getValueAddPercent(lastCandle.Close, lastCandleGroupParameters.getTriggerCandleDiff());
             priceOpenLimitBuy = getValueSubtractPercent(lastCandle.Close, lastCandleGroupParameters.getTriggerCandleDiff());
 
-            if (dealSupportService.getProcessState(Side.Sell) == ProcessState.OK_TRIGGER_START)
-            {
-                dealService.closeAllOrderToPosition(dealSupportService.getSellPosition(), "Новая свеча");
-                resetSide(Side.Sell);
-            }
-            if (dealSupportService.getProcessState(Side.Buy) == ProcessState.OK_TRIGGER_START)
-            {
-                dealService.closeAllOrderToPosition(dealSupportService.getBuyPosition(), "Новая свеча");
-                resetSide(Side.Buy);
-            }
+            newBarProcess(dealSupportBuy);
+            newBarProcess(dealSupportSell);
 
-            if (dealSupportService.getProcessState(Side.Sell) == ProcessState.WAIT_TP_SL)
+            barCounterProcess(dealSupportBuy);
+            barCounterProcess(dealSupportSell);
+        }
+        private void newBarProcess(DealSupport dealSupport)
+        {
+            if (dealSupport.getProcessState() != ProcessState.OK_TRIGGER_START)
             {
-                countBarService.addCounterBarSell();
-                if (countBarService.getCounterBarSell() > generalParameters.getCountBarForClose())
-                {
-                    dealService.closeAllDeals(Side.Sell, "Закрылись по барам");
-                    resetSide(Side.Sell);
-                }
+                return;
             }
-            if (dealSupportService.getProcessState(Side.Buy) == ProcessState.WAIT_TP_SL)
+            dealService.closeAllOrderToPosition(dealSupport.getPosition(), "Новая свеча");
+            resetSide(dealSupport);
+        }
+        private void barCounterProcess(DealSupport dealSupport)
+        {
+            if (dealSupport.getProcessState() != ProcessState.WAIT_TP_SL)
             {
-                countBarService.addCounterBarBuy();
-                if (countBarService.getCounterBarBuy() > generalParameters.getCountBarForClose())
-                {
-                    dealService.closeAllDeals(Side.Buy, "Закрылись по барам");
-                    resetSide(Side.Buy);
-                }
+                return;
+            }
+            dealSupport.addCounterBar();
+            if (dealSupport.getCounterBar() > generalParameters.getCountBarForClose())
+            {
+                dealService.closeAllDeals(dealSupport.getSide(), "Закрылись по барам");
+                resetSide(dealSupport);
             }
         }
-
         public void positionClosingSuccesEventLogic(Position position)
         {
             if (position.SignalTypeClose!= null && position.SignalTypeClose.Equals("TpSl"))
@@ -124,13 +122,16 @@ namespace OsEngine.Robots.Squeezy.Trading
                     position.SignalTypeClose = "Закрылись по SL";
                 }
             }
-            //Значит мы еще ждем эту позицию
-            if (dealSupportService.checkBuyOrSellPosition(position))
+            //Значит ждем эту позицию:
+            if(dealSupportBuy.getPosition() != null && position.Number == dealSupportBuy.getPosition().Number)
             {
                 sendLogSystemLocal("Успешно закрыта позиция:" + position.SignalTypeClose, position);
-                resetSide(position.Direction);
-            }
-            else
+                resetSide(dealSupportBuy);
+            } else if(dealSupportSell.getPosition() != null && position.Number == dealSupportSell.getPosition().Number)
+            {
+                sendLogSystemLocal("Успешно закрыта позиция:" + position.SignalTypeClose, position);
+                resetSide(dealSupportSell);
+            } else
             {
                 sendLogSystemLocal("Успешно закрыта старая позиция:" + position.SignalTypeClose, position);
             }
@@ -146,35 +147,20 @@ namespace OsEngine.Robots.Squeezy.Trading
             {
                 tp = getValueAddPercent(tp, lastCandleGroupParameters.getTakeProfit());
                 sl = getValueSubtractPercent(sl, lastCandleGroupParameters.getStopLoss());
-                if (position.Comment.Equals("BuyAtLimit"))
-                {
-                    dealSupportService.setProcessStateBuy(ProcessState.WAIT_TP_SL);
-                }
-                else
-                {
-                    dealSupportService.setProcessStateBuy(ProcessState.WAIT_TP_SL); 
-                }
-                dealSupportService.addChartElementBuy(paintService.paintSlTp(lastCandle, dealService.getTimeFrame(), sl, tp, dealSupportService.getGroupTypeBuy()));
+                dealSupportBuy.setProcessState(ProcessState.WAIT_TP_SL);
+                dealSupportBuy.addChartElement(paintService.paintSlTp(lastCandle, dealService.getTimeFrame(), sl, tp, dealSupportBuy.getGroupType()));
             }
             else if (position.Direction == Side.Sell)
             {
                 tp = getValueSubtractPercent(tp, lastCandleGroupParameters.getTakeProfit());
                 sl = getValueAddPercent(sl, lastCandleGroupParameters.getStopLoss());
-                if (position.Comment.Equals("SellAtLimit"))
-                {
-                    dealSupportService.setProcessStateSell(ProcessState.WAIT_TP_SL);
-                }
-                else
-                {
-                    dealSupportService.setProcessStateSell(ProcessState.WAIT_TP_SL);
-                } 
-                dealSupportService.addChartElementSell(paintService.paintSlTp(lastCandle, dealService.getTimeFrame(), sl, tp, dealSupportService.getGroupTypeSell()));
+                dealSupportSell.setProcessState(ProcessState.WAIT_TP_SL);
+                dealSupportSell.addChartElement(paintService.paintSlTp(lastCandle, dealService.getTimeFrame(), sl, tp, dealSupportSell.getGroupType()));
             }
             position.ProfitOrderRedLine = tp;
             position.StopOrderRedLine = sl;
             dealService.setTpSl(position, tp, sl, 0);
             sendLogSystemLocal("Установлен TP =" + tp + ", SL =" + sl + " для позиции:", position);
-            
         }
 
         public void bestBidAskChangeEventLogic(decimal bestBid, decimal bestAsk)
@@ -187,114 +173,72 @@ namespace OsEngine.Robots.Squeezy.Trading
             lastBestBid = bestBid;
             lastBestAsc = bestAsk;
 
-            waitTriggerStartLogic(Side.Buy, bestBid);
-            waitTriggerStartLogic(Side.Sell, bestAsk);
+            waitTriggerStartLogic(bestBid, dealSupportBuy, dealSupportSell, candleTriggerStartBid, priceOpenLimitBuy);
+            waitTriggerStartLogic(bestAsk, dealSupportSell, dealSupportBuy, candleTriggerStartAsc, priceOpenLimitSell);
         }
-        private void waitTriggerStartLogic(Side side, decimal price)
+        private void waitTriggerStartLogic(decimal price, DealSupport dealSupport, DealSupport dealSupportAnother, decimal tgStart, decimal priceOpenLimit)
         {
-            ProcessState processState = dealSupportService.getProcessState(side);
+            ProcessState processState = dealSupport.getProcessState();
             //группа свободна, или лимитка зарегистрирована
             if (processState != ProcessState.FREE)
             {
                 return;
             }
+
+            ProcessState processStateAnother = dealSupportAnother.getProcessState();
+            Position positionAnother = dealSupportAnother.getPosition();
+            Side side = dealSupport.getSide();
+
             Position position;
             string groupType = lastCandleGroupParameters.getGroupType().ToString();
-            if (side == Side.Sell && price > candleTriggerStartAsc) //продать по цене дороже
+            if (  (side == Side.Sell && price > tgStart) //продать по цене дороже
+                ||(side == Side.Buy && price < tgStart)  //купить по цене дешевле
+                ) 
             {
-
-                string message = groupType + ":" + side + " предыдущая свеча:" + logService.getCandleInfo(lastCandle) + " price = " + price + " пересекли стартовый процент:" + candleTriggerStartAsc;
-                sendLogSystemLocal(message);
-                
-                ProcessState processStateAnother = dealSupportService.getProcessState(Side.Buy);
-                Position positionAnother = dealSupportService.getBuyPosition();
-                if (processStateAnother == ProcessState.WAIT_TP_SL) {
-                    sendLogSystemLocal("Открываться не будем, найдена открытая сделка в другую сторону:" + logService.getPositionInfo(positionAnother));
-                    return;
-                }
-                if (processStateAnother == ProcessState.OK_TRIGGER_START)
-                {
-                    sendLogSystemLocal("Нашли неоткрытую зарегистрированную лимитку в противоположную сторону, будем ее закрывать" + logService.getPositionInfo(positionAnother));
-                    dealService.closeAllOrderToPosition(positionAnother, "Новая лимитка");
-                    resetSide(Side.Buy);
-                }
-                //Если нет активностей в противоположную сторону:
-                if(dealSupportService.getProcessState(Side.Buy) == ProcessState.FREE)
-                {
-                    //Если уже пробили отслеживаемые величины, то открываемся по рынку
-                    if (price > priceOpenLimitSell)
-                    {
-                        position = dealService.openSellDeal(groupType, "Продажа по рынку", generalParameters.getVolumeSum());
-                        if (position != null)
-                        {
-                            sendLogSystemLocal("-> OK_TRIGGER_START : выставили заявку по рынку:", position);
-                            dealSupportService.saveNewLimitPosition(side, ProcessState.OK_TRIGGER_START, lastCandleGroupParameters, position);
-                            dealSupportService.addChartElementSell(paintService.paintLimitPosition(lastCandle, dealService.getTimeFrame(), candleTriggerStartAsc, position.EntryPrice, groupType));
-                            dealSupportService.addChartElementSell(paintService.paintLimitPosition(lastCandle, dealService.getTimeFrame(), candleTriggerStartBid, position.EntryPrice, groupType));
-                        }
-                    }
-                    else
-                    {
-                        position = dealService.openSellAtLimit(priceOpenLimitSell, groupType, "SellAtLimit", generalParameters.getVolumeSum());
-                        if (position != null)
-                        {
-                            sendLogSystemLocal("-> OK_TRIGGER_START выставили заявку на открытие лимитки:", position);
-                            dealSupportService.saveNewLimitPosition(side, ProcessState.OK_TRIGGER_START, lastCandleGroupParameters, position);
-                            dealSupportService.addChartElementSell(paintService.paintLimitPosition(lastCandle, dealService.getTimeFrame(), candleTriggerStartAsc, priceOpenLimitSell, groupType));
-                            dealSupportService.addChartElementSell(paintService.paintLimitPosition(lastCandle, dealService.getTimeFrame(), candleTriggerStartBid, priceOpenLimitBuy, groupType));
-                        }
-                    }
-                }
-
-            }
-            if (side == Side.Buy && price < candleTriggerStartBid) //купить по цене дешевле
-            {
-                string message = groupType + ":" + side + " предыдущая свеча:" + logService.getCandleInfo(lastCandle) + " price = " + price + " пересекли стартовый процент:" + candleTriggerStartBid;
-                sendLogSystemLocal(message);
-
-                ProcessState processStateAnother = dealSupportService.getProcessState(Side.Sell);
-                Position positionAnother = dealSupportService.getSellPosition();
                 if (processStateAnother == ProcessState.WAIT_TP_SL)
                 {
-                    sendLogSystemLocal("Открываться не будем, найдена открытая сделка в другую сторону:" + logService.getPositionInfo(positionAnother));
+                   //sendLogSystemLocal("Открываться не будем, найдена открытая сделка в другую сторону:" + logService.getPositionInfo(positionAnother));
                     return;
                 }
+                string message = groupType + ":" + side + " предыдущая свеча:" + logService.getCandleInfo(lastCandle) + " price = " + price + " пересекли стартовый процент:" + tgStart;
+                sendLogSystemLocal(message);
                 if (processStateAnother == ProcessState.OK_TRIGGER_START)
                 {
                     sendLogSystemLocal(side + " нашли неоткрытую зарегистрированную лимитку в противоположную сторону, будем ее закрывать" + logService.getPositionInfo(positionAnother));
                     dealService.closeAllOrderToPosition(positionAnother, "Новая лимитка");
-                    resetSide(Side.Sell);
+                    resetSide(dealSupportAnother);
                 }
-
                 //Если нет активностей в противоположную сторону:
-                if (dealSupportService.getProcessState(Side.Sell) == ProcessState.FREE)
+                if (processStateAnother == ProcessState.FREE)
                 {
                     //Если уже пробили отслеживаемые величины, то открываемся по рынку
-                    if (price < priceOpenLimitBuy)
+                    if (  (side == Side.Sell && price > priceOpenLimit)
+                        ||(side == Side.Buy && price < priceOpenLimit)
+                        )
                     {
-                        position = dealService.openBuyDeal(groupType, "Покупка по рынку", generalParameters.getVolumeSum());
+                        position = dealService.openDeal(side, groupType, "Вход по рынку", generalParameters.getVolumeSum());
                         if (position != null)
                         {
-                            sendLogSystemLocal("-> OK_TRIGGER_START выставили заявку по рынку:", position);
-                            dealSupportService.saveNewLimitPosition(side, ProcessState.OK_TRIGGER_START, lastCandleGroupParameters, position);
-                            dealSupportService.addChartElementSell(paintService.paintLimitPosition(lastCandle, dealService.getTimeFrame(), candleTriggerStartBid, position.EntryPrice, groupType));
-                            dealSupportService.addChartElementSell(paintService.paintLimitPosition(lastCandle, dealService.getTimeFrame(), candleTriggerStartAsc, position.EntryPrice, groupType));
+                            sendLogSystemLocal("-> OK_TRIGGER_START : выставили заявку по рынку:", position);
+                            dealSupport.dealSupportUpdate(lastCandleGroupParameters, ProcessState.OK_TRIGGER_START, position);
+                            dealSupport.addChartElement(paintService.paintLimitPosition(lastCandle, dealService.getTimeFrame(), tgStart, position.EntryPrice, groupType));
                         }
                     }
                     else
                     {
-                        position = dealService.openBuyAtLimit(priceOpenLimitBuy, groupType, "BuyAtLimit", generalParameters.getVolumeSum());
+                        position = dealService.openLimit(side, priceOpenLimit, groupType, side + "AtLimit", generalParameters.getVolumeSum());
                         if (position != null)
                         {
                             sendLogSystemLocal("-> OK_TRIGGER_START выставили заявку на открытие лимитки:", position);
-                            dealSupportService.saveNewLimitPosition(side, ProcessState.OK_TRIGGER_START, lastCandleGroupParameters, position);
-                            dealSupportService.addChartElementBuy(paintService.paintLimitPosition(lastCandle, dealService.getTimeFrame(), candleTriggerStartBid, priceOpenLimitBuy, groupType));
-                            dealSupportService.addChartElementBuy(paintService.paintLimitPosition(lastCandle, dealService.getTimeFrame(), candleTriggerStartAsc, priceOpenLimitSell, groupType));
+                            dealSupport.dealSupportUpdate(lastCandleGroupParameters, ProcessState.OK_TRIGGER_START, position);
+                            dealSupport.addChartElement(paintService.paintLimitPosition(lastCandle, dealService.getTimeFrame(), tgStart, priceOpenLimit, groupType));
                         }
                     }
                 }
             }
+            
         }
+
         private void sendLogSystemLocal(string text, Position position = null, int level = 0)
         {
             StringBuilder sb = new StringBuilder();
@@ -304,7 +248,14 @@ namespace OsEngine.Robots.Squeezy.Trading
             {
                 sb.Append("#0000").Append(position.Number).Append(" ");
                 positionInfo = logService.getPositionInfo(position);
-                processState = dealSupportService.getProcessState(position.Direction);
+                if(position.Direction == Side.Buy && dealSupportBuy.getPosition() != null && dealSupportBuy.getPosition().Number == position.Number)
+                {
+                    processState = dealSupportBuy.getProcessState();
+                }
+                else if (position.Direction == Side.Sell && dealSupportSell.getPosition() != null && dealSupportSell.getPosition().Number == position.Number)
+                {
+                    processState = dealSupportSell.getProcessState();
+                }
             }
             if (level == 0)
             {
@@ -360,30 +311,31 @@ namespace OsEngine.Robots.Squeezy.Trading
         public void positionOpeningFailEventLogic(Position position)
         {
             sendLogSystemLocal("Позиция переведена в статус Fail:" + lastBestAsc, position);
-            resetSide(position.Direction);
+            //Значит ждем эту позицию:
+            if (dealSupportBuy.getPosition() != null && position.Number == dealSupportBuy.getPosition().Number)
+            {
+                sendLogSystemLocal("Успешно удалилил Fail позицию:" + position.SignalTypeClose, position);
+                resetSide(dealSupportBuy);
+            }
+            else if (dealSupportSell.getPosition() != null && position.Number == dealSupportSell.getPosition().Number)
+            {
+                sendLogSystemLocal("Успешно удалилил Fail позицию:" + position.SignalTypeClose, position);
+                resetSide(dealSupportSell);
+            }
+            else
+            {
+                sendLogSystemLocal("Успешно удалили старую Fail позицию:" + position.SignalTypeClose, position);
+            }
         }
 
-        private void resetSide(Side side)
+        private void resetSide(DealSupport dealSupport)
         {
-            sendLogSystemLocal("Обнуляем " + side + " нашли позицию:", dealSupportService.getPosition(side), -1);
-            if (side == Side.Sell)
+            sendLogSystemLocal("Обнуляем " + dealSupport.getSide() + " нашли позицию:", dealSupport.getPosition(), -1);
+            if (dealSupport.getChartElementCount() <= 2)
             {
-                countBarService.resetCountBarSell();
-                if (dealSupportService.getChartElementsSellCount() <= 4)
-                {
-                    paintService.deleteChartElements(dealSupportService.getChartElementsSell());
-                }
-                dealSupportService.dealSupportResetSell();
+                paintService.deleteChartElements(dealSupport.getChartElements());
             }
-            if (side == Side.Buy)
-            {
-                countBarService.resetCountBarBuy();
-                if (dealSupportService.getChartElementsBuyCount() <= 4)
-                {
-                    paintService.deleteChartElements(dealSupportService.getChartElementsBuy());
-                }
-                dealSupportService.dealSupportResetBuy();
-            }
+            dealSupport.reset();
         }
 
         private decimal getValueAddPercent(decimal value, decimal percent)
@@ -397,7 +349,8 @@ namespace OsEngine.Robots.Squeezy.Trading
 
         private void logBotSettings()
         {
-            logService.sendLogSystem("/n/n");
+            logService.sendLogSystem("");
+            logService.sendLogSystem("");
             logService.sendLogSystem(LogService.SEPARATE_PARAMETR_LINE);
             logService.sendLogSystem(LogService.SEPARATE_PARAMETR_LINE);
             logService.sendLogSystem(SqueezyTrading.BOT_NAME + " init successful, started version bot:" + SqueezyTrading.VERSION);
@@ -416,7 +369,6 @@ namespace OsEngine.Robots.Squeezy.Trading
     {
         FREE                           //группа свободна, ожидаем достижения триггера старта
       , OK_TRIGGER_START               //сработал триггер старта, оформили заявку на открытие лимитки или по рынку. Ждем открытия
-//      , OK_LIMIT_REGISTERED            //пришло подтверждение, что лимитка заведена, но еще не открыта
       , WAIT_TP_SL                     //пришло подтверждение, что лимитка заведена, открыта, выставили sl/tp ждем окончания сделки
     }
 

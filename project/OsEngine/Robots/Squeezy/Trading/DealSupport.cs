@@ -11,17 +11,18 @@ namespace OsEngine.Robots.Squeezy.Trading
 {
     public class DealSupport
     {
+        private Side side;
         private GroupParametersTrading groupParametersTrading;
         private ProcessState processState;
         private Position position;
         private IChartElement[] chartElements;
         private int chartCounter;
+        private int counterBar;
 
-        public DealSupport()
+        public DealSupport(Side side)
         {
-            processState = ProcessState.FREE;
-            chartElements = new IChartElement[100];
-            chartCounter = 0;
+            this.side = side;
+            reset();
         }
 
         public void dealSupportUpdate(GroupParametersTrading groupParametersTrading, ProcessState processState, Position position)
@@ -31,6 +32,27 @@ namespace OsEngine.Robots.Squeezy.Trading
             this.position = position;
             chartElements = new IChartElement[100];
             chartCounter = 0;
+            counterBar = 0;
+        }
+
+        public void addCounterBar()
+        {
+            counterBar = counterBar + 1;
+        }
+        public int getCounterBar()
+        {
+            return counterBar;
+        }
+        public Side getSide()
+        {
+            return side;
+        }
+        public void reset()
+        {
+            processState = ProcessState.FREE;
+            chartElements = new IChartElement[100];
+            chartCounter = 0;
+            counterBar = 0;
         }
         public string getGroupType()
         {
@@ -81,6 +103,23 @@ namespace OsEngine.Robots.Squeezy.Trading
         public void setPosition(Position position)
         {
             this.position = position;
+        }
+
+        public int getChartElementCount()
+        {
+            int count = 0;
+            for (int i = 0; i < chartElements.Length; ++i)
+            {
+                if (chartElements[i] != null)
+                {
+                    ++count;
+                }
+                else
+                {
+                    return count;
+                }
+            }
+            return 0;
         }
     }
 }

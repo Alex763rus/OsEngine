@@ -6,7 +6,6 @@ using OsEngine.Charts.CandleChart.Indicators;
 using OsEngine.Entity;
 using OsEngine.Market.Servers.GateIo.Futures.Response;
 using OsEngine.OsTrader.Panels.Tab;
-using OsEngine.Robots.Squeezy.Service;
 using OsEngine.Robots.Squeezy.Tester;
 using OsEngine.Robots.Squeezy.Trading;
 using OsEngine.Robots.SqueezyBot.Service;
@@ -134,6 +133,15 @@ namespace OsEngine.Robots.SqueezyBot
             return position;
         }
 
+        public Position openDeal(Side side, string signalType, string comment, decimal volumeSum = 0)
+        {
+            if(side == Side.Buy)
+            {
+                return openBuyDeal(signalType, comment, volumeSum);
+            }
+            return openSellDeal(signalType, comment, volumeSum);
+        }
+
         public Position openBuyDeal(string signalType, string comment, decimal volumeSum = 0)
         {
             decimal volume;
@@ -209,6 +217,14 @@ namespace OsEngine.Robots.SqueezyBot
             sendLogSystemLocal("Установлен TP =" + tp + ", SL =" + sl + " для позиции:", position);
         }
 
+        public Position openLimit(Side side, decimal priceLimit, string signalType, string comment, decimal volumeSum)
+        {
+            if(side == Side.Buy)
+            {
+                return openBuyAtLimit(priceLimit, signalType, comment, volumeSum);
+            }
+            return openSellAtLimit(priceLimit, signalType, comment, volumeSum);
+        }
         public Position openSellAtLimit(decimal priceLimit, string signalType, string comment, decimal volumeSum)
         {
             priceLimit = Convert.ToDecimal(priceLimit);
