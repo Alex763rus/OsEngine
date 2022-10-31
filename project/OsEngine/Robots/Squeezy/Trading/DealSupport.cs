@@ -121,5 +121,10 @@ namespace OsEngine.Robots.Squeezy.Trading
             }
             return 0;
         }
+
+        public int getCountBarForClose()
+        {
+            return groupParametersTrading.getCountBarForClose();
+        }
     }
 }

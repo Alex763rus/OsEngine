@@ -72,6 +72,11 @@ namespace OsEngine.Robots.Squeezy.Trading
                 }
                 return;
             }
+            //Если нет медленной, ничего ен делаем:
+            if (movingAverageService.getMaLastValueSlow() == 0)
+            {
+                return;
+            }
 
             lastCandle = candles[candles.Count - 1];
             lastCandleGroupParameters = groupParametersService.getGroupParameters(getGroupType(lastCandle.Close));   
@@ -103,7 +108,7 @@ namespace OsEngine.Robots.Squeezy.Trading
                 return;
             }
             dealSupport.addCounterBar();
-            if (dealSupport.getCounterBar() > generalParameters.getCountBarForClose())
+            if (dealSupport.getCounterBar() > dealSupport.getCountBarForClose())
             {
                 dealService.closeAllDeals(dealSupport.getSide(), "Закрылись по барам");
                 resetSide(dealSupport);
@@ -165,7 +170,7 @@ namespace OsEngine.Robots.Squeezy.Trading
 
         public void bestBidAskChangeEventLogic(decimal bestBid, decimal bestAsk)
         {
-            if(lastCandle == null)
+            if(lastCandle == null || movingAverageService.getMaLastValueSlow() == 0)
             {
                 return;
             }
@@ -274,36 +279,36 @@ namespace OsEngine.Robots.Squeezy.Trading
             {
                 return GroupType.TestTest;
             }
-            GroupType groupType;
             //Группа по дефолту, пока нет медленной:
             if (movingAverageService.getMaLastValueSlow() == 0)
             {
-                return GroupType.UpLong;
+                return GroupType.UpBuy;
             }
+            GroupType groupType;
             if (movingAverageService.getMaLastValueFast() > movingAverageService.getMaLastValueSlow())
             {
                 //up:
-                decimal maCorridor = movingAverageService.getMaLastValueSlow() + movingAverageService.getMaLastValueSlow() * (generalParameters.getMaCorridorHighSlow() / 100);
+                decimal maCorridor = getValueAddPercent(movingAverageService.getMaLastValueSlow(), generalParameters.getMaCorridorHighSlow());
                 if (lastCandleClose > maCorridor)
                 {
-                    groupType = GroupType.UpLong;
+                    groupType = GroupType.UpBuy;
                 }
                 else
                 {
-                    groupType = GroupType.UpShort;
+                    groupType = GroupType.UpSell;
                 }
             }
             else
             {
                 //down:
-                decimal maCorridor = movingAverageService.getMaLastValueSlow() - movingAverageService.getMaLastValueSlow() * (generalParameters.getMaCorridorHighSlow() / 100);
+                decimal maCorridor = getValueSubtractPercent(movingAverageService.getMaLastValueSlow(), generalParameters.getMaCorridorHighSlow());
                 if (lastCandleClose > maCorridor)
                 {
-                    groupType = GroupType.DownLong;
+                    groupType = GroupType.DownBuy;
                 }
                 else
                 {
-                    groupType = GroupType.DownShort;
+                    groupType = GroupType.DownSell;
                 }
             }
             return groupType;

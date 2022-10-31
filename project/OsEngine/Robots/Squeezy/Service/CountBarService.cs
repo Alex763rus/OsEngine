@@ -11,6 +11,9 @@ namespace OsEngine.Robots.SqueezyBot
         private int counterBarSell;
         private int counterBarBuy;
 
+        private int limitBarSell;
+        private int limitBarBuy;
+
         public CountBarService()
         {
             resetCountBarSell();
@@ -43,5 +46,25 @@ namespace OsEngine.Robots.SqueezyBot
         {
             return counterBarBuy;
         }
+
+
+        public void setLimitBarSell(int limitBarSell)
+        {
+            this.limitBarSell = limitBarSell;
+        }
+        public void setLimitBarBuy(int limitBarBuy)
+        {
+            this.limitBarBuy = limitBarBuy;
+        }
+        public int getLimitBarSell()
+        {
+            return limitBarSell;
+        }
+
+        public int getLimitBarBuy()
+        {
+            return limitBarBuy;
+        }
+
     }
 }

@@ -9,14 +9,15 @@ namespace OsEngine.Robots.Squeezy.Tester
         private StrategyParameterDecimal triggerCandleDiff;
         private StrategyParameterDecimal takeProfit;
         private StrategyParameterDecimal stopLoss;
-
-        public GroupParametersTester(GroupType groupType, StrategyParameterBool groupOn, StrategyParameterDecimal triggerCandleDiff, StrategyParameterDecimal takeProfit, StrategyParameterDecimal stopLoss)
+        private StrategyParameterInt countBarForClose;
+        public GroupParametersTester(GroupType groupType, StrategyParameterBool groupOn, StrategyParameterDecimal triggerCandleDiff, StrategyParameterDecimal takeProfit, StrategyParameterDecimal stopLoss, StrategyParameterInt countBarForClose)
         {
             this.groupType = groupType;
             this.groupOn = groupOn;
             this.triggerCandleDiff = triggerCandleDiff;
             this.takeProfit = takeProfit;
             this.stopLoss = stopLoss;
+            this.countBarForClose = countBarForClose;
         }
 
         public GroupType getGroupType()
@@ -44,6 +45,11 @@ namespace OsEngine.Robots.Squeezy.Tester
             return takeProfit.ValueDecimal;
         }
 
+        public int getCountBarForClose()
+        {
+            return countBarForClose.ValueInt;
+        }
+
         public string getAllGroupParameters()
         {
             string settings = " GroupSettings:"
@@ -52,6 +58,7 @@ namespace OsEngine.Robots.Squeezy.Tester
                             + ", triggerCandleDiff = " + getTriggerCandleDiff()
                             + ", takeProfit = " + getTakeProfit()
                             + ", stopLoss = " + getStopLoss()
+                            + ", countBarForClose = " + getCountBarForClose()
                             ;
             return settings;
         }
@@ -65,10 +72,12 @@ namespace OsEngine.Robots.Squeezy.Tester
 
     public enum GroupType
     {
-        UpLong,
-        UpShort,
-        DownLong,
-        DownShort,
+        UpBuy,
+        UpSell,
+        DownBuy,
+        DownSell,
+        FlatBuy,
+        FlatSell,
         TestTest
     }
 

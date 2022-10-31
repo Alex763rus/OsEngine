@@ -10,8 +10,8 @@ namespace OsEngine.Robots.Squeezy.Trading
         private StrategyParameterDecimal takeProfitTriggerStart;
         private StrategyParameterDecimal stopLossTriggerStart;
 
-        public GroupParametersTrading(GroupType groupType, StrategyParameterBool groupOn, StrategyParameterDecimal triggerCandleDiff, StrategyParameterDecimal takeProfitTriggerStart, StrategyParameterDecimal takeProfit, StrategyParameterDecimal stopLossTriggerStart, StrategyParameterDecimal stopLoss)
-            :base(groupType, groupOn, triggerCandleDiff, takeProfit, stopLoss)
+        public GroupParametersTrading(GroupType groupType, StrategyParameterBool groupOn, StrategyParameterDecimal triggerCandleDiff, StrategyParameterDecimal takeProfitTriggerStart, StrategyParameterDecimal takeProfit, StrategyParameterDecimal stopLossTriggerStart, StrategyParameterDecimal stopLoss, StrategyParameterInt countBarForClose)
+            :base(groupType, groupOn, triggerCandleDiff, takeProfit, stopLoss, countBarForClose)
          { 
             this.takeProfitTriggerStart = takeProfitTriggerStart;
             this.stopLossTriggerStart = stopLossTriggerStart;

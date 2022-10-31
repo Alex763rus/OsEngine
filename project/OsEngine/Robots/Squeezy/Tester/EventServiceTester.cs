@@ -51,7 +51,7 @@ namespace OsEngine.Robots.Squeezy.Tester
             if (dealService.hasOpendeal(Side.Sell))
             {
                 countBarService.addCounterBarSell();
-                if (countBarService.getCounterBarSell() > generalParameters.getCountBarForClose())
+                if (countBarService.getCounterBarSell() > countBarService.getLimitBarSell())
                 {
                     dealService.closeAllDeals(Side.Sell, "Закрылись по барам");
                 }
@@ -63,13 +63,14 @@ namespace OsEngine.Robots.Squeezy.Tester
                                     + " настройки:" + groupParameters.getTriggerCandleDiff() + "%";
                 logService.sendLogSystem(message);
                 dealService.openSellDeal(groupType.ToString(), "Продажа по рынку");
+                countBarService.setLimitBarSell(groupParameters.getCountBarForClose());
             }
             
             //Buy:
             if (dealService.hasOpendeal(Side.Buy))
             {
                 countBarService.addCounterBarBuy();
-                if(countBarService.getCounterBarBuy() > generalParameters.getCountBarForClose())
+                if(countBarService.getCounterBarBuy() > countBarService.getLimitBarBuy())
                 {
                     dealService.closeAllDeals(Side.Buy, "Закрылись по барам");
                 }
@@ -80,6 +81,7 @@ namespace OsEngine.Robots.Squeezy.Tester
                                     + " настройки:" + groupParameters.getTriggerCandleDiff() + "%";
                 logService.sendLogSystem(message);
                 dealService.openBuyDeal(groupType.ToString(), "Покупка по рынку");
+                countBarService.setLimitBarBuy(groupParameters.getCountBarForClose());
             }
         }
 
@@ -93,7 +95,7 @@ namespace OsEngine.Robots.Squeezy.Tester
             //Группа по дефолту, пока нет медленной:
             if (movingAverageService.getMaLastValueSlow() == 0)
             {
-                return GroupType.UpLong;
+                return GroupType.UpBuy;
             }
             if (movingAverageService.getMaLastValueFast() > movingAverageService.getMaLastValueSlow())
             {
@@ -101,11 +103,11 @@ namespace OsEngine.Robots.Squeezy.Tester
                 decimal maCorridor = movingAverageService.getMaLastValueSlow() + movingAverageService.getMaLastValueSlow() * (generalParameters.getMaCorridorHighSlow() / 100);
                 if (lastCandleClose > maCorridor)
                 {
-                    groupType = GroupType.UpLong;
+                    groupType = GroupType.UpBuy;
                 }
                 else
                 {
-                    groupType = GroupType.UpShort;
+                    groupType = GroupType.UpSell;
                 }
             }
             else
@@ -114,11 +116,11 @@ namespace OsEngine.Robots.Squeezy.Tester
                 decimal maCorridor = movingAverageService.getMaLastValueSlow() - movingAverageService.getMaLastValueSlow() * (generalParameters.getMaCorridorHighSlow() / 100);
                 if (lastCandleClose > maCorridor)
                 {
-                    groupType = GroupType.DownLong;
+                    groupType = GroupType.DownBuy;
                 }
                 else
                 {
-                    groupType = GroupType.DownShort;
+                    groupType = GroupType.DownSell;
                 }
             }
             return groupType;

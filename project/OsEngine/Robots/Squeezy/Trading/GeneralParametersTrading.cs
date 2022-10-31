@@ -8,8 +8,8 @@ namespace OsEngine.Robots.Squeezy.Trading
         private StrategyParameterDecimal triggerStartPercent;
         private StrategyParameterDecimal volumeSum;
         
-        public GeneralParametersTrading(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow, StrategyParameterInt maLenFast, StrategyParameterDecimal volumePercent, StrategyParameterDecimal volumeSum, StrategyParameterInt countBarForClose, StrategyParameterDecimal triggerStartPercent, StrategyParameterInt countBufferLogLine, StrategyParameterBool testSettings, StrategyParameterBool logEnabled)
-        : base(maLenSlow, maCorridorHighSlow, maLenFast, volumePercent, countBarForClose, countBufferLogLine, testSettings, logEnabled)
+        public GeneralParametersTrading(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow, StrategyParameterInt maLenFast, StrategyParameterDecimal volumePercent, StrategyParameterDecimal volumeSum, StrategyParameterDecimal triggerStartPercent, StrategyParameterInt countBufferLogLine, StrategyParameterBool testSettings, StrategyParameterBool logEnabled)
+        : base(maLenSlow, maCorridorHighSlow, maLenFast, volumePercent, countBufferLogLine, testSettings, logEnabled)
         {
             this.triggerStartPercent = triggerStartPercent;
             this.volumeSum = volumeSum;
