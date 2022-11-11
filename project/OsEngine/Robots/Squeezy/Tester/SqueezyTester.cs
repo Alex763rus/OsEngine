@@ -34,69 +34,89 @@ namespace OsEngine.Robots.Squeezy.Tester
 
             generalParameters = new GeneralParametersTester(
                           CreateParameter("MovingAverage длина slow", 20, 0, 50, 5)
-                        , CreateParameter("%MovingAverage высота коридора slow", 0.1m, 0.0m, 1.0m, 0.1m)
+                        , CreateParameter("%ОТКЛЮЧЕН MovingAverage высота коридора slow", 0.1m, 0.0m, 1.0m, 0.1m)
                         , CreateParameter("MovingAverage длина fast", 10, 0, 50, 5)
-                        , CreateParameter("% депозита для сделки", 10.0m, 5.0m, 50.0m, 5.0m)
+                        , CreateParameter("ОТКЛЮЧЕН % депозита для сделки", 10.0m, 5.0m, 50.0m, 5.0m)
+                        , CreateParameter("Сумма для открытия", 10.0m, 5.0m, 50.0m, 5.0m)
                         , CreateParameter("Количество строк лога в буфере", 5000, 5000, 5000, 5000, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("Тестовые параметры", false, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("Логгирование", false, TAB_SERVICE_CONTROL_NAME)
+                        , CreateParameter("%MA ширина канала", 1m, 1m, 1m, 1m)
                         );
             addSeparateParameter();
             addSeparateParameter();
 
-            GroupParametersTester upLong = new GroupParametersTester(
-                          GroupType.UpBuy
-                        , CreateParameter("Включить UpBuy торговлю", true)
-                        , CreateParameter("%Триггер отложенного ордера UpBuy", 1.5m, 0.0m, 1.5m, 7.5m)
-                        , CreateParameter("%TakeProfit UpBuy", 1.5m, 0.0m, 1.5m, 7.5m)
-                        , CreateParameter("%StopLoss UpBuy", 2m, 0.0m, 4.0m, 10.0m)
-                        , CreateParameter("Количество баров до выхода UpBuy", 10, 0, 50, 1)
-                        );
+            GroupParametersTester upBuy = new GroupParametersTester(
+                                      GroupType.UpBuy
+                                    , CreateParameter("Включить UpBuy торговлю", true)
+                                    , CreateParameter("%Триггер отложенного ордера UpBuy", 1.5m, 0.0m, 0.5m, 5.0m)
+                                    , CreateParameter("%TakeProfit UpBuy", 1.5m, 0.0m, 0.5m, 5.0m)
+                                    , CreateParameter("%StopLoss UpBuy", 3m, 0.0m, 1.0m, 10.0m)
+                                    , CreateParameter("Количество баров до выхода UpBuy", 2, 0, 30, 1)
+                                    );
             addSeparateParameter();
-            GroupParametersTester upShort = new GroupParametersTester(
+            GroupParametersTester upSell = new GroupParametersTester(
                           GroupType.UpSell
                         , CreateParameter("Включить UpSell торговлю", true)
-                        , CreateParameter("%Триггер отложенного ордера UpSell", 1.5m, 0.0m, 1.5m, 7.5m)
-                        , CreateParameter("%TakeProfit UpSell", 1.5m, 0.0m, 1.5m, 7.5m)
-                        , CreateParameter("%StopLoss UpSell", 2m, 0.0m, 4.0m, 10.0m)
-                        , CreateParameter("Количество баров до выхода UpSell", 10, 0, 50, 1)
+                        , CreateParameter("%Триггер отложенного ордера UpSell", 1.5m, 0.0m, 0.5m, 5.0m)
+                        , CreateParameter("%TakeProfit UpSell", 1.5m, 0.0m, 0.5m, 5.0m)
+                        , CreateParameter("%StopLoss UpSell", 3m, 0.0m, 1.0m, 10.0m)
+                        , CreateParameter("Количество баров до выхода UpSell", 2, 0, 30, 1)
                         );
             addSeparateParameter();
-            GroupParametersTester dnLong = new GroupParametersTester(
+            GroupParametersTester dnBuy = new GroupParametersTester(
                           GroupType.DownBuy
                         , CreateParameter("Включить DownBuy торговлю", true)
-                        , CreateParameter("%Триггер отложенного ордера DownBuy", 1.5m, 0.0m, 1.5m, 7.5m)
-                        , CreateParameter("%TakeProfit DownBuy", 1.5m, 0.0m, 1.5m, 7.5m)
-                        , CreateParameter("%StopLoss DownBuy", 2m, 0.0m, 4.0m, 10.0m)
-                        , CreateParameter("Количество баров до выхода DownBuy", 10, 0, 50, 1)
+                        , CreateParameter("%Триггер отложенного ордера DownBuy", 1.5m, 0.0m, 0.5m, 5.0m)
+                        , CreateParameter("%TakeProfit DownBuy", 1.5m, 0.0m, 0.5m, 5.0m)
+                        , CreateParameter("%StopLoss DownBuy", 3m, 0.0m, 1.0m, 10.0m)
+                        , CreateParameter("Количество баров до выхода DownBuy", 2, 0, 30, 1)
                         );
             addSeparateParameter();
-            GroupParametersTester dnShort = new GroupParametersTester(
+            GroupParametersTester dnSell = new GroupParametersTester(
                           GroupType.DownSell
                         , CreateParameter("Включить DownSell торговлю", true)
-                        , CreateParameter("%Триггер отложенного ордера DownSell", 1.5m, 0.0m, 1.5m, 7.5m)
-                        , CreateParameter("%TakeProfit DownSell", 1.5m, 0.0m, 1.5m, 7.5m)
-                        , CreateParameter("%StopLoss DownSell", 2m, 0.0m, 4.0m, 10.0m)
-                        , CreateParameter("Количество баров до выхода DownSell", 10, 0, 50, 1)
+                        , CreateParameter("%Триггер отложенного ордера DownSell", 1.5m, 0.0m, 0.5m, 5.0m)
+                        , CreateParameter("%TakeProfit DownSell", 1.5m, 0.0m, 0.5m, 5.0m)
+                        , CreateParameter("%StopLoss DownSell", 3m, 0.0m, 1.0m, 10.0m)
+                        , CreateParameter("Количество баров до выхода DownSell", 2, 0, 30, 1)
+                        );
+            addSeparateParameter();
+            GroupParametersTester flatBuy = new GroupParametersTester(
+                          GroupType.FlatBuy
+                        , CreateParameter("Включить FlatBuy торговлю", true)
+                        , CreateParameter("%Триггер отложенного ордера FlatBuy", 1.5m, 0.0m, 0.5m, 5.0m)
+                        , CreateParameter("%TakeProfit FlatBuy", 1.5m, 0.0m, 0.5m, 5.0m)
+                        , CreateParameter("%StopLoss FlatBuy", 3m, 0.0m, 1.0m, 10.0m)
+                        , CreateParameter("Количество баров до выхода FlatBuy", 2, 0, 30, 1)
+                        );
+            addSeparateParameter();
+            GroupParametersTester flatSell = new GroupParametersTester(
+                          GroupType.FlatSell
+                        , CreateParameter("Включить FlatSell торговлю", true)
+                        , CreateParameter("%Триггер отложенного ордера FlatSell", 1.5m, 0.0m, 0.5m, 5.0m)
+                        , CreateParameter("%TakeProfit FlatSell", 1.5m, 0.0m, 0.5m, 5.0m)
+                        , CreateParameter("%StopLoss FlatSell", 3m, 0.0m, 1.0m, 10.0m)
+                        , CreateParameter("Количество баров до выхода FlatSell", 2, 0, 30, 1)
                         );
             //==Панель с техническими параметрами: ======================================================================================================================
             addSeparateParameter(TAB_SERVICE_CONTROL_NAME);
-            GroupParametersTrading testTest = new GroupParametersTrading(
+            GroupParametersTester testTest = new GroupParametersTester(
                           GroupType.TestTest
                         , CreateParameter("Включить TestTest торговлю", true, TAB_SERVICE_CONTROL_NAME)
-                        , CreateParameter("%Триггер отложенного ордера TestTest", 1.5m, 0.0m, 1.5m, 7.5m, TAB_SERVICE_CONTROL_NAME)
-                        //, CreateParameter("%Триггер старта tp TestTest", 1m, 1.0m, 1.0m, 1.0m, TAB_SERVICE_CONTROL_NAME)
-                        , CreateParameter("%TakeProfit TestTest", 1.5m, 0.0m, 1.5m, 7.5m, TAB_SERVICE_CONTROL_NAME)
-                        //, CreateParameter("%Триггер старта sl TestTest", 1m, 1.0m, 1.0m, 1.0m, TAB_SERVICE_CONTROL_NAME)
-                        , CreateParameter("%StopLoss TestTest", 2m, 0.0m, 4.0m, 10.0m, TAB_SERVICE_CONTROL_NAME)
-                        , CreateParameter("Количество баров до выхода TestTest", 10, 0, 50, 1)
+                        , CreateParameter("%Триггер отложенного ордера TestTest", 1.5m, 0.0m, 0.5m, 5.0m, TAB_SERVICE_CONTROL_NAME)
+                        , CreateParameter("%TakeProfit TestTest", 1.5m, 0.0m, 0.5m, 5.0m, TAB_SERVICE_CONTROL_NAME)
+                        , CreateParameter("%StopLoss TestTest", 3m, 0.0m, 1.0m, 10.0m, TAB_SERVICE_CONTROL_NAME)
+                        , CreateParameter("Количество баров до выхода", 2, 0, 30, 1)
                         );
             //===========================================================================================================================================================
             groupParametersTesterService = new GroupParametersTesterService();
-            groupParametersTesterService.addGroupParameters(upLong);
-            groupParametersTesterService.addGroupParameters(upShort);
-            groupParametersTesterService.addGroupParameters(dnLong);
-            groupParametersTesterService.addGroupParameters(dnShort);
+            groupParametersTesterService.addGroupParameters(upBuy);
+            groupParametersTesterService.addGroupParameters(upSell);
+            groupParametersTesterService.addGroupParameters(dnBuy);
+            groupParametersTesterService.addGroupParameters(dnSell);
+            groupParametersTesterService.addGroupParameters(flatBuy);
+            groupParametersTesterService.addGroupParameters(flatSell);
             groupParametersTesterService.addGroupParameters(testTest);
 
             logService = new LogService(this);
@@ -106,16 +126,6 @@ namespace OsEngine.Robots.Squeezy.Tester
             tab.CandleFinishedEvent += finishedEventLogic;
             tab.PositionClosingSuccesEvent += positionClosingSuccesEventLogic;
             tab.PositionOpeningSuccesEvent += positionOpeningSuccesEventLogic;
-
-            //Логгирование стартовых настроек:
-            logService.sendLogSystem(SEPARATE_PARAMETR_LINE);
-            logService.sendLogSystem(BOT_NAME + " init successful, started version bot:" + VERSION);
-            logService.sendLogSystem(generalParameters.getAllSettings());
-            logService.sendLogSystem(upLong.getAllGroupParameters());
-            logService.sendLogSystem(upShort.getAllGroupParameters());
-            logService.sendLogSystem(dnLong.getAllGroupParameters());
-            logService.sendLogSystem(dnShort.getAllGroupParameters());
-            logService.sendLogSystem(testTest.getAllGroupParameters());
         }
 
         private void addSeparateParameter(string tabControlName = null)

@@ -160,17 +160,17 @@ namespace OsEngine.Robots.SqueezyBot
                 if (position != null)
                 {
                     position.Comment = comment;
-                    sendLogSystemLocal("Заведена заявка BuyAtMarket:", position);
+                    sendLogSystemLocal("Заведена заявка " + signalType, position);
                     break;
                 }
                 else
                 {
-                    sendLogErrorLocal("Не удалось открыть BuyAtMarket заявку. volume:" + volume + ", signalType:" + signalType + " попытка:" + i);
+                    sendLogErrorLocal("Не удалось открыть  заявку. volume:" + volume + ", signalType:" + signalType + " попытка:" + i);
                 }
             }
             if (position == null)
             {
-                sendLogErrorLocal("Не смогли открыть BuyAtMarket позицию volume:" + volume + ", signalType:" + signalType + " за " + COUNT_TRY_OPEN_DEAL + " попыток");
+                sendLogErrorLocal("Не смогли открыть позицию volume:" + volume + ", signalType:" + signalType + " за " + COUNT_TRY_OPEN_DEAL + " попыток");
             }
             return position;
         }

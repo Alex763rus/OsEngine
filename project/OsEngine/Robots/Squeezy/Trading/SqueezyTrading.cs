@@ -47,9 +47,7 @@ namespace OsEngine.Robots.Squeezy.Trading
                           GroupType.UpBuy
                         , CreateParameter("Включить UpBuy торговлю", true)
                         , CreateParameter("%Триггер отложенного ордера UpBuy", 1.5m, 0.0m, 0.5m, 5.0m)
-                        //, CreateParameter("%Триггер старта tp UpBuy", 1m, 1.0m, 1.0m, 1.0m)
                         , CreateParameter("%TakeProfit UpBuy", 1.5m, 0.0m, 0.5m, 5.0m)
-                        //, CreateParameter("%Триггер старта sl UpBuy", 1m, 1.0m, 1.0m, 1.0m)
                         , CreateParameter("%StopLoss UpBuy", 3m, 0.0m, 1.0m, 10.0m)
                         , CreateParameter("Количество баров до выхода UpBuy", 2, 0, 30, 1)
                         );
@@ -58,9 +56,7 @@ namespace OsEngine.Robots.Squeezy.Trading
                           GroupType.UpSell
                         , CreateParameter("Включить UpSell торговлю", true)
                         , CreateParameter("%Триггер отложенного ордера UpSell", 1.5m, 0.0m, 0.5m, 5.0m)
-                        //, CreateParameter("%Триггер старта tp UpSell", 1m, 1.0m, 1.0m, 1.0m)
                         , CreateParameter("%TakeProfit UpSell", 1.5m, 0.0m, 0.5m, 5.0m)
-                        //, CreateParameter("%Триггер старта sl UpSell", 1m, 1.0m, 1.0m, 1.0m)
                         , CreateParameter("%StopLoss UpSell", 3m, 0.0m, 1.0m, 10.0m)
                         , CreateParameter("Количество баров до выхода UpSell", 2, 0, 30, 1)
                         );
@@ -69,9 +65,7 @@ namespace OsEngine.Robots.Squeezy.Trading
                           GroupType.DownBuy
                         , CreateParameter("Включить DownBuy торговлю", true)
                         , CreateParameter("%Триггер отложенного ордера DownBuy", 1.5m, 0.0m, 0.5m, 5.0m)
-                        //, CreateParameter("%Триггер старта tp DownBuy", 1m, 1.0m, 1.0m, 1.0m)
                         , CreateParameter("%TakeProfit DownBuy", 1.5m, 0.0m, 0.5m, 5.0m)
-                        //, CreateParameter("%Триггер старта sl DownBuy", 1m, 1.0m, 1.0m, 1.0m)
                         , CreateParameter("%StopLoss DownBuy", 3m, 0.0m, 1.0m, 10.0m)
                         , CreateParameter("Количество баров до выхода DownBuy", 2, 0, 30, 1)
                         );
@@ -80,9 +74,7 @@ namespace OsEngine.Robots.Squeezy.Trading
                           GroupType.DownSell
                         , CreateParameter("Включить DownSell торговлю", true)
                         , CreateParameter("%Триггер отложенного ордера DownSell", 1.5m, 0.0m, 0.5m, 5.0m)
-                        //, CreateParameter("%Триггер старта tp DownSell", 1m, 1.0m, 1.0m, 1.0m)
                         , CreateParameter("%TakeProfit DownSell", 1.5m, 0.0m, 0.5m, 5.0m)
-                        //, CreateParameter("%Триггер старта sl DownSell", 1m, 1.0m, 1.0m, 1.0m)
                         , CreateParameter("%StopLoss DownSell", 3m, 0.0m, 1.0m, 10.0m)
                         , CreateParameter("Количество баров до выхода DownSell", 2, 0, 30, 1)
                         );
@@ -91,9 +83,7 @@ namespace OsEngine.Robots.Squeezy.Trading
                           GroupType.FlatBuy
                         , CreateParameter("Включить FlatBuy торговлю", true)
                         , CreateParameter("%Триггер отложенного ордера FlatBuy", 1.5m, 0.0m, 0.5m, 5.0m)
-                        //, CreateParameter("%Триггер старта tp FlatBuy", 1m, 1.0m, 1.0m, 1.0m)
                         , CreateParameter("%TakeProfit FlatBuy", 1.5m, 0.0m, 0.5m, 5.0m)
-                        //, CreateParameter("%Триггер старта sl FlatBuy", 1m, 1.0m, 1.0m, 1.0m)
                         , CreateParameter("%StopLoss FlatBuy", 3m, 0.0m, 1.0m, 10.0m)
                         , CreateParameter("Количество баров до выхода FlatBuy", 2, 0, 30, 1)
                         );
@@ -102,9 +92,7 @@ namespace OsEngine.Robots.Squeezy.Trading
                           GroupType.FlatSell
                         , CreateParameter("Включить FlatSell торговлю", true)
                         , CreateParameter("%Триггер отложенного ордера FlatSell", 1.5m, 0.0m, 0.5m, 5.0m)
-                        //, CreateParameter("%Триггер старта tp FlatSell", 1m, 1.0m, 1.0m, 1.0m)
                         , CreateParameter("%TakeProfit FlatSell", 1.5m, 0.0m, 0.5m, 5.0m)
-                        //, CreateParameter("%Триггер старта sl FlatSell", 1m, 1.0m, 1.0m, 1.0m)
                         , CreateParameter("%StopLoss FlatSell", 3m, 0.0m, 1.0m, 10.0m)
                         , CreateParameter("Количество баров до выхода FlatSell", 2, 0, 30, 1)
                         );
@@ -114,9 +102,7 @@ namespace OsEngine.Robots.Squeezy.Trading
                           GroupType.TestTest
                         , CreateParameter("Включить TestTest торговлю", true, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("%Триггер отложенного ордера TestTest", 1.5m, 0.0m, 0.5m, 5.0m, TAB_SERVICE_CONTROL_NAME)
-                        //, CreateParameter("%Триггер старта tp TestTest", 1m, 1.0m, 1.0m, 1.0m, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("%TakeProfit TestTest", 1.5m, 0.0m, 0.5m, 5.0m, TAB_SERVICE_CONTROL_NAME)
-                        //, CreateParameter("%Триггер старта sl TestTest", 1m, 1.0m, 1.0m, 1.0m, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("%StopLoss TestTest", 3m, 0.0m, 1.0m, 10.0m, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("Количество баров до выхода", 2, 0, 30, 1)
                         );
