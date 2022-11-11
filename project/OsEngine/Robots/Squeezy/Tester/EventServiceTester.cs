@@ -42,7 +42,6 @@ namespace OsEngine.Robots.Squeezy.Tester
         public void finishedEventLogic(List<Candle> candles)
         {
             //Если мало баров или нет медленной, ничего не делаем:
-           
             if (candles.Count < 2 || movingAverageService.getMaLastValueSlow() == 0)
             {
                 if (candles.Count == 1)
@@ -63,57 +62,60 @@ namespace OsEngine.Robots.Squeezy.Tester
 
             directionTypeCurrent = directionTypeTmp;
 
-            decimal candleClose1 = candles[candles.Count - 1].Close;
+            decimal candleLow1 = candles[candles.Count - 1].Low;
+            decimal candleHigh1 = candles[candles.Count - 1].High;
             decimal candleClose2 = candles[candles.Count - 2].Close;
-            dealService.checkSlTpAndClose(candleClose1);
-            GroupParametersTester groupParameters;
+
+            dealService.checkSlTpAndClose(candleLow1);
+            dealService.checkSlTpAndClose(candleHigh1);
+
             //Sell:
+            GroupParametersTester groupParameters;
             groupParameters = groupParametersService.getGroupParameters(getGroupType(Side.Sell));
-            if (!groupParameters.getGroupOn())
+            if (groupParameters.getGroupOn())
             {
-                return;
-            }
-            if (dealService.hasOpendeal(Side.Sell))
-            {
-                countBarService.addCounterBarSell();
-                if (countBarService.getCounterBarSell() > countBarService.getLimitBarSell())
+                if (dealService.hasOpendeal(Side.Sell))
                 {
-                    dealService.closeAllDeals(Side.Sell, "Закрылись по барам");
+                    countBarService.addCounterBarSell();
+                    if (countBarService.getCounterBarSell() > countBarService.getLimitBarSell())
+                    {
+                        dealService.closeAllDeals(Side.Sell, "Закрылись по барам");
+                    }
+                } else if (!lockCurrentDirection && candleHigh1 > (candleClose2 + candleClose2 * (groupParameters.getTriggerCandleDiff() / 100)))
+                {
+                    string message = "Обнаружен сквиз " + groupParameters.getGroupType().ToString() + ": предпоследний бар:" + logService.getCandleInfo(candles[candles.Count - 2])
+                                        + " последний бар:" + logService.getCandleInfo(candles[candles.Count - 1])
+                                        + " отношение:" + Math.Round((candleHigh1 - candleClose2) / candleClose2 * 100, 2) + "%"
+                                        + " настройки:" + groupParameters.getTriggerCandleDiff() + "%";
+                    logService.sendLogSystem(message);
+                    dealService.openDeal(Side.Sell, groupParameters.getGroupType().ToString(), "Вход по рынку", generalParameters.getVolumeSum());
+                    countBarService.setLimitBarSell(groupParameters.getCountBarForClose());
                 }
-            } else if (!lockCurrentDirection && candleClose1 > (candleClose2 + candleClose2 * (groupParameters.getTriggerCandleDiff() / 100)))
-            {
-                string message = "Обнаружен сквиз " + groupParameters.getGroupType().ToString() + ": предпоследний бар:" + logService.getCandleInfo(candles[candles.Count - 2])
-                                    + " последний бар:" + logService.getCandleInfo(candles[candles.Count - 1])
-                                    + " отношение:" + Math.Round((candleClose1 - candleClose2) / candleClose2 * 100, 2) + "%"
-                                    + " настройки:" + groupParameters.getTriggerCandleDiff() + "%";
-                logService.sendLogSystem(message);
-                dealService.openDeal(Side.Sell, groupParameters.getGroupType().ToString(), "Вход по рынку", generalParameters.getVolumeSum());
-                countBarService.setLimitBarSell(groupParameters.getCountBarForClose());
             }
 
             //Buy:
             groupParameters = groupParametersService.getGroupParameters(getGroupType(Side.Sell));
-            if (!groupParameters.getGroupOn())
+            if (groupParameters.getGroupOn())
             {
-                return;
-            }
-            if (dealService.hasOpendeal(Side.Buy))
-            {
-                countBarService.addCounterBarBuy();
-                if(countBarService.getCounterBarBuy() > countBarService.getLimitBarBuy())
+                if (dealService.hasOpendeal(Side.Buy))
                 {
-                    dealService.closeAllDeals(Side.Buy, "Закрылись по барам");
+                    countBarService.addCounterBarBuy();
+                    if (countBarService.getCounterBarBuy() > countBarService.getLimitBarBuy())
+                    {
+                        dealService.closeAllDeals(Side.Buy, "Закрылись по барам");
+                    }
                 }
-            } else if(!lockCurrentDirection && candleClose1 < (candleClose2 - candleClose2 * (groupParameters.getTriggerCandleDiff() / 100))) {
-                string message = "Обнаружен сквиз " + groupParameters.getGroupType().ToString() + ": предпоследний бар:" + logService.getCandleInfo(candles[candles.Count - 2])
-                                    + " последний бар:" + logService.getCandleInfo(candles[candles.Count - 1])
-                                    + " отношение:" + Math.Round((candleClose2 - candleClose1) / candleClose1 * 100, 2) + "%"
-                                    + " настройки:" + groupParameters.getTriggerCandleDiff() + "%";
-                logService.sendLogSystem(message);
-                dealService.openDeal(Side.Buy, groupParameters.getGroupType().ToString(), "Вход по рынку", generalParameters.getVolumeSum());
-                countBarService.setLimitBarBuy(groupParameters.getCountBarForClose());
+                else if (!lockCurrentDirection && candleLow1 < (candleClose2 - candleClose2 * (groupParameters.getTriggerCandleDiff() / 100)))
+                {
+                    string message = "Обнаружен сквиз " + groupParameters.getGroupType().ToString() + ": предпоследний бар:" + logService.getCandleInfo(candles[candles.Count - 2])
+                                        + " последний бар:" + logService.getCandleInfo(candles[candles.Count - 1])
+                                        + " отношение:" + Math.Round((candleClose2 - candleLow1) / candleLow1 * 100, 2) + "%"
+                                        + " настройки:" + groupParameters.getTriggerCandleDiff() + "%";
+                    logService.sendLogSystem(message);
+                    dealService.openDeal(Side.Buy, groupParameters.getGroupType().ToString(), "Вход по рынку", generalParameters.getVolumeSum());
+                    countBarService.setLimitBarBuy(groupParameters.getCountBarForClose());
+                }
             }
-
             printEndBarInfo();
         }
 
