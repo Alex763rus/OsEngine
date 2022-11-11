@@ -35,16 +35,22 @@ namespace OsEngine.Robots.Squeezy.Trading
         private LogService logService;
 
         private Candle lastCandle;
-        private GroupParametersTrading lastCandleGroupParameters; //группа для текущей свечи
+        //private GroupParametersTrading lastCandleGroupParameters; //группа для текущей свечи
         private decimal candleTriggerStartBid; //триггер того что есть сквиз. Изменяется с завершением бара
         private decimal candleTriggerStartAsc; //триггер того что есть сквиз. Изменяется с завершением бара
-        private decimal priceOpenLimitSell;    //цена открытия sell лимитки. Изменяется с завершением бара
-        private decimal priceOpenLimitBuy;    //цена открытия buy лимитки. Изменяется с завершением бара
+        //private decimal priceOpenLimitSell;    //цена открытия sell лимитки. Изменяется с завершением бара
+        //private decimal priceOpenLimitBuy;    //цена открытия buy лимитки. Изменяется с завершением бара
         private decimal lastBestAsc;          //последняя известная лучшая цена продажи
         private decimal lastBestBid;          //последняя известная лучшая цена покупки
 
         private DealSupport dealSupportBuy;     //сопровождение Buy сделок
         private DealSupport dealSupportSell;    //сопровождение Sell сделок
+
+
+
+        //private GroupType groupTypeSmallCurrent; //Текущая группа
+        private DirectionType directionTypeCurrent; //Направление текущего бара по МА. 
+        private bool lockCurrentDirection; //признак блокировки текущего направления. Не открывать больше сделок, дождаться завершения текущих.
         public EventServiceTrading(BotTabSimple tab, GeneralParametersTrading generalParameters, GroupParametersTradingService groupParametersService, LogService logService)
         {
             this.generalParameters = generalParameters;
@@ -57,11 +63,15 @@ namespace OsEngine.Robots.Squeezy.Trading
             paintService = new PaintService(tab);
             dealSupportBuy = new DealSupport(Side.Buy);
             dealSupportSell = new DealSupport(Side.Sell);
+
+            directionTypeCurrent = DirectionType.None;
+            lockCurrentDirection = false;
         }
 
         public void candleFinishedEventLogic(List<Candle> candles)
         {
-            if (candles.Count < 2)
+            //Если мало баров или нет медленной, ничего не делаем:
+            if (candles.Count < 2 || movingAverageService.getMaLastValueSlow() == 0)
             {
                 if (candles.Count == 1)
                 {
@@ -72,51 +82,168 @@ namespace OsEngine.Robots.Squeezy.Trading
                 }
                 return;
             }
-            //Если нет медленной, ничего ен делаем:
-            if (movingAverageService.getMaLastValueSlow() == 0)
-            {
-                return;
-            }
-
+           
             lastCandle = candles[candles.Count - 1];
-            lastCandleGroupParameters = groupParametersService.getGroupParameters(getGroupType(lastCandle.Close));   
             candleTriggerStartBid = getValueSubtractPercent(lastCandle.Close, generalParameters.getTriggerStartPercent());
             candleTriggerStartAsc = getValueAddPercent(lastCandle.Close, generalParameters.getTriggerStartPercent());
 
-            priceOpenLimitSell = getValueAddPercent(lastCandle.Close, lastCandleGroupParameters.getTriggerCandleDiff());
-            priceOpenLimitBuy = getValueSubtractPercent(lastCandle.Close, lastCandleGroupParameters.getTriggerCandleDiff());
+            //==todo:============================================
+            //lastCandleGroupParameters = groupParametersService.getGroupParameters(getGroupType());
 
-            newBarProcess(dealSupportBuy);
-            newBarProcess(dealSupportSell);
+            //priceOpenLimitSell = getValueAddPercent(lastCandle.Close, lastCandleGroupParameters.getTriggerCandleDiff());
+            //priceOpenLimitBuy = getValueSubtractPercent(lastCandle.Close, lastCandleGroupParameters.getTriggerCandleDiff());
+            //==============================================
+            barCounterProcess(dealSupportBuy, dealSupportSell);
+            barCounterProcess(dealSupportSell, dealSupportBuy);
 
-            barCounterProcess(dealSupportBuy);
-            barCounterProcess(dealSupportSell);
+            DirectionType directionTypeTmp = getDirectionType();
+            if(!lockCurrentDirection && directionTypeCurrent != directionTypeTmp
+                && (   dealSupportSell.getProcessState() == ProcessState.WAIT_TP_SL 
+                    || dealSupportBuy.getProcessState()  == ProcessState.WAIT_TP_SL))
+            {
+                lockCurrentDirection = true;
+                sendLogSystemLocal("Заблокировали направление:" + directionTypeCurrent + " т.к. пришел новый бар с направлением:" + directionTypeTmp + " и есть незавершенные сделки");
+            }
+            directionTypeCurrent = directionTypeTmp;
+            printEndBarInfo();
         }
-        private void newBarProcess(DealSupport dealSupport)
+
+        private void printEndBarInfo()
         {
-            if (dealSupport.getProcessState() != ProcessState.OK_TRIGGER_START)
+            int countPosition = 0;
+            if(dealSupportBuy.getPosition() != null)
+            {
+                ++countPosition;
+            }
+            if (dealSupportSell.getPosition() != null)
+            {
+                ++countPosition;
+            }
+            StringBuilder currentInfo = new StringBuilder();
+            currentInfo.Append("******> Закрыт бар. Группа:").Append(directionTypeCurrent)
+                .Append(" Позиций:").Append(countPosition)
+                .Append(" Buy:").Append(dealSupportBuy.getProcessState())
+                .Append(" Position:#0000").Append(dealSupportBuy.getPositionNumber())
+                .Append(" Sell:").Append(dealSupportSell.getProcessState())
+                .Append(" Position:#0000").Append(dealSupportSell.getPositionNumber())
+                ;
+            sendLogSystemLocal(currentInfo.ToString());
+        }
+        public void bestBidAskChangeEventLogic(decimal bestBid, decimal bestAsk)
+        {
+            if(lastCandle == null || movingAverageService.getMaLastValueSlow() == 0)
             {
                 return;
             }
-            dealService.closeAllOrderToPosition(dealSupport.getPosition(), "Новая свеча");
-            resetSide(dealSupport);
-        }
-        private void barCounterProcess(DealSupport dealSupport)
-        {
-            if (dealSupport.getProcessState() != ProcessState.WAIT_TP_SL)
+
+            lastBestBid = bestBid;
+            lastBestAsc = bestAsk;
+
+            if (lockCurrentDirection)
             {
                 return;
             }
-            dealSupport.addCounterBar();
-            if (dealSupport.getCounterBar() > dealSupport.getCountBarForClose())
-            {
-                dealService.closeAllDeals(dealSupport.getSide(), "Закрылись по барам");
-                resetSide(dealSupport);
-            }
+            waitTriggerStartLogic(bestBid, dealSupportBuy, dealSupportSell, candleTriggerStartBid);
+            waitTriggerStartLogic(bestAsk, dealSupportSell, dealSupportBuy, candleTriggerStartAsc);
         }
+        private void waitTriggerStartLogic(decimal price, DealSupport dealSupport, DealSupport dealSupportAnother, decimal tgStart)
+        {
+            ProcessState processState = dealSupport.getProcessState();
+            if (processState == ProcessState.WAIT_TP_SL || processState == ProcessState.OK_TRIGGER_START)
+            {
+                return;
+            }
+            Side side = dealSupport.getSide();
+            Position position;
+            if (  (side == Side.Sell && price > tgStart) //продать по цене дороже
+                ||(side == Side.Buy && price < tgStart)  //купить по цене дешевле
+                ) 
+            {
+                //Есть сквиз
+                ProcessState processStateAnother = dealSupportAnother.getProcessState();
+                Position positionAnother = dealSupportAnother.getPosition();
+                string message = side + " Обнаружен сквиз. предыдущая свеча:" + logService.getCandleInfo(lastCandle) + " price = " + price + " пересекли стартовый процент:" + tgStart;
+                sendLogSystemLocal(message, null, dealSupport);
+                if (processStateAnother == ProcessState.OK_TRIGGER_START)
+                {
+                    sendLogSystemLocal(side + " нашли неоткрытую зарегистрированную лимитку в противоположную сторону, будем ее закрывать" + logService.getPositionInfo(positionAnother), null, dealSupport);
+                    dealService.closeAllOrderToPosition(positionAnother, "Новая лимитка");
+                    resetSide(dealSupportAnother, dealSupport);
+                }
+                //Если нет активностей в противоположную сторону активности в противоположной стороне в той же группе
+                //if (processStateAnother == ProcessState.FREE)
+                //{
+                    GroupType groupTypeCurrent = getGroupType(side);
+                    GroupParametersTrading groupParameters = groupParametersService.getGroupParameters(groupTypeCurrent);
+
+                    decimal priceOpenLimit = 0 ;
+                    if(side == Side.Sell)
+                    {
+                        priceOpenLimit = getValueAddPercent(lastCandle.Close, groupParameters.getTriggerCandleDiff());
+                    } else if(side == Side.Buy)
+                    {
+                        priceOpenLimit = getValueSubtractPercent(lastCandle.Close, groupParameters.getTriggerCandleDiff());
+                    }
+                    //Если уже пробили отслеживаемые величины, то открываемся по рынку
+                    if (  (side == Side.Sell && price > priceOpenLimit)
+                        ||(side == Side.Buy && price < priceOpenLimit)
+                        )
+                    {
+                        position = dealService.openDeal(side, groupParameters.getGroupType().ToString(), "Вход по рынку", generalParameters.getVolumeSum());
+                        if (position != null)
+                        {
+                            sendLogSystemLocal("-> OK_TRIGGER_START : выставили заявку по рынку:", position, dealSupport);
+                            dealSupport.dealSupportUpdate(groupParameters, ProcessState.OK_TRIGGER_START, position);
+                            dealSupport.addChartElement(paintService.paintLimitPosition(lastCandle, dealService.getTimeFrame(), tgStart, position.EntryPrice, groupTypeCurrent.ToString()));
+                        }
+                    }
+                    else
+                    {
+                        position = dealService.openLimit(side, priceOpenLimit, groupTypeCurrent.ToString(), side + "AtLimit", generalParameters.getVolumeSum());
+                        if (position != null)
+                        {
+                            sendLogSystemLocal("-> OK_TRIGGER_START выставили заявку на открытие лимитки:", position, dealSupport);
+                            dealSupport.dealSupportUpdate(groupParameters, ProcessState.OK_TRIGGER_START, position);
+                            dealSupport.addChartElement(paintService.paintLimitPosition(lastCandle, dealService.getTimeFrame(), tgStart, priceOpenLimit, groupTypeCurrent.ToString()));
+                        }
+                    }
+                //}
+            }
+            
+        }
+
+
+        public void positionOpeningSuccesEventLogic(Position position)
+        {
+            DealSupport dealSupport;
+            decimal sl = position.EntryPrice;
+            decimal tp = position.EntryPrice;
+            if (position.Direction == Side.Buy)
+            {
+                tp = getValueAddPercent(tp, dealSupportBuy.getGroupParametersTrading().getTakeProfit());
+                sl = getValueSubtractPercent(sl, dealSupportBuy.getGroupParametersTrading().getStopLoss());
+                dealSupportBuy.setProcessState(ProcessState.WAIT_TP_SL);
+                dealSupportBuy.addChartElement(paintService.paintSlTp(lastCandle, dealService.getTimeFrame(), sl, tp, dealSupportBuy.getGroupType()));
+                dealSupport = dealSupportBuy;
+            }
+            else if (position.Direction == Side.Sell)
+            {
+                tp = getValueSubtractPercent(tp, dealSupportSell.getGroupParametersTrading().getTakeProfit());
+                sl = getValueAddPercent(sl, dealSupportSell.getGroupParametersTrading().getStopLoss());
+                dealSupportSell.setProcessState(ProcessState.WAIT_TP_SL);
+                dealSupportSell.addChartElement(paintService.paintSlTp(lastCandle, dealService.getTimeFrame(), sl, tp, dealSupportSell.getGroupType()));
+                dealSupport = dealSupportSell;
+            }
+            position.ProfitOrderRedLine = tp;
+            position.StopOrderRedLine = sl;
+            dealService.setTpSl(position, tp, sl, 0);
+            sendLogSystemLocal("-> WAIT_TP_SL Успешно открыта позиция:" + position.Comment, position, dealSupportSell);
+            sendLogSystemLocal("Установлен TP =" + tp + ", SL =" + sl + " для позиции:", position, dealSupportSell);
+        }
+
         public void positionClosingSuccesEventLogic(Position position)
         {
-            if (position.SignalTypeClose!= null && position.SignalTypeClose.Equals("TpSl"))
+            if (position.SignalTypeClose != null && position.SignalTypeClose.Equals("TpSl"))
             {
                 if (position.ProfitPortfolioPunkt > 0)
                 {
@@ -128,132 +255,135 @@ namespace OsEngine.Robots.Squeezy.Trading
                 }
             }
             //Значит ждем эту позицию:
-            if(dealSupportBuy.getPosition() != null && position.Number == dealSupportBuy.getPosition().Number)
+            if (dealSupportBuy.getPosition() != null && position.Number == dealSupportBuy.getPosition().Number)
             {
-                sendLogSystemLocal("Успешно закрыта позиция:" + position.SignalTypeClose, position);
-                resetSide(dealSupportBuy);
-            } else if(dealSupportSell.getPosition() != null && position.Number == dealSupportSell.getPosition().Number)
+                sendLogSystemLocal("Успешно закрыта позиция:" + position.SignalTypeClose, position, dealSupportBuy);
+                resetSide(dealSupportBuy, dealSupportSell);
+            }
+            else if (dealSupportSell.getPosition() != null && position.Number == dealSupportSell.getPosition().Number)
             {
-                sendLogSystemLocal("Успешно закрыта позиция:" + position.SignalTypeClose, position);
-                resetSide(dealSupportSell);
-            } else
+                sendLogSystemLocal("Успешно закрыта позиция:" + position.SignalTypeClose, position, dealSupportSell);
+                resetSide(dealSupportSell, dealSupportBuy);
+            }
+            else
             {
                 sendLogSystemLocal("Успешно закрыта старая позиция:" + position.SignalTypeClose, position);
             }
             paintService.paintClosedPosition(position, dealService.getTimeFrame());
         }
 
-        public void positionOpeningSuccesEventLogic(Position position)
+        public void positionOpeningFailEventLogic(Position position)
         {
-            sendLogSystemLocal("-> WAIT_TP_SL Успешно открыта позиция:" + position.Comment, position);
-            decimal sl = position.EntryPrice;
-            decimal tp = position.EntryPrice;
-            if (position.Direction == Side.Buy)
+            sendLogSystemLocal("Позиция переведена в статус Fail:" + lastBestAsc, position);
+            //Значит ждем эту позицию:
+            if (dealSupportBuy.getPosition() != null && position.Number == dealSupportBuy.getPosition().Number)
             {
-                tp = getValueAddPercent(tp, lastCandleGroupParameters.getTakeProfit());
-                sl = getValueSubtractPercent(sl, lastCandleGroupParameters.getStopLoss());
-                dealSupportBuy.setProcessState(ProcessState.WAIT_TP_SL);
-                dealSupportBuy.addChartElement(paintService.paintSlTp(lastCandle, dealService.getTimeFrame(), sl, tp, dealSupportBuy.getGroupType()));
+                sendLogSystemLocal("Успешно удалилил Fail позицию:" + position.SignalTypeClose, position, dealSupportBuy);
+                resetSide(dealSupportBuy, dealSupportSell);
             }
-            else if (position.Direction == Side.Sell)
+            else if (dealSupportSell.getPosition() != null && position.Number == dealSupportSell.getPosition().Number)
             {
-                tp = getValueSubtractPercent(tp, lastCandleGroupParameters.getTakeProfit());
-                sl = getValueAddPercent(sl, lastCandleGroupParameters.getStopLoss());
-                dealSupportSell.setProcessState(ProcessState.WAIT_TP_SL);
-                dealSupportSell.addChartElement(paintService.paintSlTp(lastCandle, dealService.getTimeFrame(), sl, tp, dealSupportSell.getGroupType()));
+                sendLogSystemLocal("Успешно удалилил Fail позицию:" + position.SignalTypeClose, position, dealSupportSell);
+                resetSide(dealSupportSell, dealSupportBuy);
             }
-            position.ProfitOrderRedLine = tp;
-            position.StopOrderRedLine = sl;
-            dealService.setTpSl(position, tp, sl, 0);
-            sendLogSystemLocal("Установлен TP =" + tp + ", SL =" + sl + " для позиции:", position);
+            else
+            {
+                sendLogSystemLocal("Успешно удалили старую Fail позицию:" + position.SignalTypeClose, position);
+            }
         }
 
-        public void bestBidAskChangeEventLogic(decimal bestBid, decimal bestAsk)
+        private GroupType getGroupType(Side side)
         {
-            if(lastCandle == null || movingAverageService.getMaLastValueSlow() == 0)
-            {
-                return;
-            }
-
-            lastBestBid = bestBid;
-            lastBestAsc = bestAsk;
-
-            waitTriggerStartLogic(bestBid, dealSupportBuy, dealSupportSell, candleTriggerStartBid, priceOpenLimitBuy);
-            waitTriggerStartLogic(bestAsk, dealSupportSell, dealSupportBuy, candleTriggerStartAsc, priceOpenLimitSell);
-        }
-        private void waitTriggerStartLogic(decimal price, DealSupport dealSupport, DealSupport dealSupportAnother, decimal tgStart, decimal priceOpenLimit)
-        {
-            ProcessState processState = dealSupport.getProcessState();
-            //группа свободна, или лимитка зарегистрирована
-            if (processState != ProcessState.FREE)
-            {
-                return;
-            }
-
-            ProcessState processStateAnother = dealSupportAnother.getProcessState();
-            Position positionAnother = dealSupportAnother.getPosition();
-            Side side = dealSupport.getSide();
-
-            Position position;
-            string groupType = lastCandleGroupParameters.getGroupType().ToString();
-            if (  (side == Side.Sell && price > tgStart) //продать по цене дороже
-                ||(side == Side.Buy && price < tgStart)  //купить по цене дешевле
-                ) 
-            {
-                if (processStateAnother == ProcessState.WAIT_TP_SL)
-                {
-                   //sendLogSystemLocal("Открываться не будем, найдена открытая сделка в другую сторону:" + logService.getPositionInfo(positionAnother));
-                    return;
-                }
-                string message = groupType + ":" + side + " предыдущая свеча:" + logService.getCandleInfo(lastCandle) + " price = " + price + " пересекли стартовый процент:" + tgStart;
-                sendLogSystemLocal(message);
-                if (processStateAnother == ProcessState.OK_TRIGGER_START)
-                {
-                    sendLogSystemLocal(side + " нашли неоткрытую зарегистрированную лимитку в противоположную сторону, будем ее закрывать" + logService.getPositionInfo(positionAnother));
-                    dealService.closeAllOrderToPosition(positionAnother, "Новая лимитка");
-                    resetSide(dealSupportAnother);
-                }
-                //Если нет активностей в противоположную сторону:
-                if (processStateAnother == ProcessState.FREE)
-                {
-                    //Если уже пробили отслеживаемые величины, то открываемся по рынку
-                    if (  (side == Side.Sell && price > priceOpenLimit)
-                        ||(side == Side.Buy && price < priceOpenLimit)
-                        )
-                    {
-                        position = dealService.openDeal(side, groupType, "Вход по рынку", generalParameters.getVolumeSum());
-                        if (position != null)
-                        {
-                            sendLogSystemLocal("-> OK_TRIGGER_START : выставили заявку по рынку:", position);
-                            dealSupport.dealSupportUpdate(lastCandleGroupParameters, ProcessState.OK_TRIGGER_START, position);
-                            dealSupport.addChartElement(paintService.paintLimitPosition(lastCandle, dealService.getTimeFrame(), tgStart, position.EntryPrice, groupType));
-                        }
-                    }
-                    else
-                    {
-                        position = dealService.openLimit(side, priceOpenLimit, groupType, side + "AtLimit", generalParameters.getVolumeSum());
-                        if (position != null)
-                        {
-                            sendLogSystemLocal("-> OK_TRIGGER_START выставили заявку на открытие лимитки:", position);
-                            dealSupport.dealSupportUpdate(lastCandleGroupParameters, ProcessState.OK_TRIGGER_START, position);
-                            dealSupport.addChartElement(paintService.paintLimitPosition(lastCandle, dealService.getTimeFrame(), tgStart, priceOpenLimit, groupType));
-                        }
-                    }
-                }
-            }
+            GroupType groupTypeWithSide = GroupType.TestTest;
             
+            if (directionTypeCurrent == DirectionType.Flat && side == Side.Sell)
+            {
+                groupTypeWithSide = GroupType.FlatSell;
+            } else if (directionTypeCurrent == DirectionType.Flat && side == Side.Buy)
+            {
+                groupTypeWithSide = GroupType.FlatBuy;
+            } else if (directionTypeCurrent == DirectionType.Up && side == Side.Sell)
+            {
+                groupTypeWithSide = GroupType.UpSell;
+            }
+            else if (directionTypeCurrent == DirectionType.Up && side == Side.Buy)
+            {
+                groupTypeWithSide = GroupType.UpBuy;
+            } else if (directionTypeCurrent == DirectionType.Down && side == Side.Sell)
+            {
+                groupTypeWithSide = GroupType.DownSell;
+            }
+            else if (directionTypeCurrent == DirectionType.Down && side == Side.Buy)
+            {
+                groupTypeWithSide = GroupType.DownBuy;
+            }
+            return groupTypeWithSide;
+        }
+        private DirectionType getDirectionType()
+        {
+            DirectionType directionType;
+            if (generalParameters.getTestSettings() || movingAverageService.getMaLastValueSlow() == 0)
+            {
+                directionType = DirectionType.Test;
+            }
+            else if ((movingAverageService.getMaLastValueSlow() < movingAverageService.getMaLastValueFast() && movingAverageService.getMaLastValueFast() < getValueAddPercent(movingAverageService.getMaLastValueSlow(), generalParameters.getMaStrength()))
+                    || (movingAverageService.getMaLastValueFast() < movingAverageService.getMaLastValueSlow() && movingAverageService.getMaLastValueSlow() < getValueAddPercent(movingAverageService.getMaLastValueFast(), generalParameters.getMaStrength())))
+            {
+                directionType = DirectionType.Flat;
+            }
+            else if (movingAverageService.getMaLastValueFast() > movingAverageService.getMaLastValueSlow())
+            {
+                directionType = DirectionType.Up;
+            }
+            else
+            {
+                directionType = DirectionType.Down;
+            }
+            return directionType;
+        }
+        private void resetSide(DealSupport dealSupport, DealSupport dealSupportAnother)
+        {
+            sendLogSystemLocal("Обнуляем " + dealSupport.getSide() + " нашли позицию:", dealSupport.getPosition(), dealSupport, -1);
+            if (dealSupport.getChartElementCount() <= 2)
+            {
+                paintService.deleteChartElements(dealSupport.getChartElements());
+            }
+            if(dealSupportAnother != null && dealSupportAnother.getProcessState() == ProcessState.FREE)
+            {
+                //Если нет открытых сделок в противоположную сторону, можно разблокировать открытие новых сделок в рамках тренда
+                lockCurrentDirection = false;
+            }
+            dealSupport.reset();
+        }
+        private void barCounterProcess(DealSupport dealSupport, DealSupport dealSupportAnother)
+        {
+            if (dealSupport.getProcessState() == ProcessState.OK_TRIGGER_START)
+            {
+                dealService.closeAllOrderToPosition(dealSupport.getPosition(), "Новая свеча");
+                resetSide(dealSupport, dealSupportAnother);
+            }
+            if (dealSupport.getProcessState() == ProcessState.WAIT_TP_SL)
+            {
+                dealSupport.addCounterBar();
+                if (dealSupport.getCounterBar() > dealSupport.getCountBarForClose())
+                {
+                    dealService.closeAllDeals(dealSupport.getSide(), "Закрылись по барам");
+                    resetSide(dealSupport, dealSupportAnother);
+                }
+            }
         }
 
-        private void sendLogSystemLocal(string text, Position position = null, int level = 0)
+        private void sendLogSystemLocal(string text, Position position = null, DealSupport dealSupport = null, int level = 0)
         {
             StringBuilder sb = new StringBuilder();
             string positionInfo = "";
+            string groupType = "";
             ProcessState processState = ProcessState.FREE;
             if (position != null)
             {
                 sb.Append("#0000").Append(position.Number).Append(" ");
                 positionInfo = logService.getPositionInfo(position);
-                if(position.Direction == Side.Buy && dealSupportBuy.getPosition() != null && dealSupportBuy.getPosition().Number == position.Number)
+                if (position.Direction == Side.Buy && dealSupportBuy.getPosition() != null && dealSupportBuy.getPosition().Number == position.Number)
                 {
                     processState = dealSupportBuy.getProcessState();
                 }
@@ -262,85 +392,21 @@ namespace OsEngine.Robots.Squeezy.Trading
                     processState = dealSupportSell.getProcessState();
                 }
             }
+            if(dealSupport != null)
+            {
+                groupType = dealSupport.getGroupType();
+            }
             if (level == 0)
             {
                 level = (int)processState;
             }
             sb.Append(processState).Append(" ");
+            sb.Append(groupType).Append(" ");
             sb.Append(text);
             sb.Append(positionInfo);
             sb.Append(" lastBestBid = ").Append(lastBestBid);
             sb.Append(" lastBestAsc = ").Append(lastBestAsc);
             logService.sendLogSystem(sb.ToString(), level);
-        }
-        private GroupType getGroupType(decimal lastCandleClose)
-        {
-            if (generalParameters.getTestSettings())
-            {
-                return GroupType.TestTest;
-            }
-            //Группа по дефолту, пока нет медленной:
-            if (movingAverageService.getMaLastValueSlow() == 0)
-            {
-                return GroupType.UpBuy;
-            }
-            GroupType groupType;
-            if (movingAverageService.getMaLastValueFast() > movingAverageService.getMaLastValueSlow())
-            {
-                //up:
-                decimal maCorridor = getValueAddPercent(movingAverageService.getMaLastValueSlow(), generalParameters.getMaCorridorHighSlow());
-                if (lastCandleClose > maCorridor)
-                {
-                    groupType = GroupType.UpBuy;
-                }
-                else
-                {
-                    groupType = GroupType.UpSell;
-                }
-            }
-            else
-            {
-                //down:
-                decimal maCorridor = getValueSubtractPercent(movingAverageService.getMaLastValueSlow(), generalParameters.getMaCorridorHighSlow());
-                if (lastCandleClose > maCorridor)
-                {
-                    groupType = GroupType.DownBuy;
-                }
-                else
-                {
-                    groupType = GroupType.DownSell;
-                }
-            }
-            return groupType;
-        }
-        public void positionOpeningFailEventLogic(Position position)
-        {
-            sendLogSystemLocal("Позиция переведена в статус Fail:" + lastBestAsc, position);
-            //Значит ждем эту позицию:
-            if (dealSupportBuy.getPosition() != null && position.Number == dealSupportBuy.getPosition().Number)
-            {
-                sendLogSystemLocal("Успешно удалилил Fail позицию:" + position.SignalTypeClose, position);
-                resetSide(dealSupportBuy);
-            }
-            else if (dealSupportSell.getPosition() != null && position.Number == dealSupportSell.getPosition().Number)
-            {
-                sendLogSystemLocal("Успешно удалилил Fail позицию:" + position.SignalTypeClose, position);
-                resetSide(dealSupportSell);
-            }
-            else
-            {
-                sendLogSystemLocal("Успешно удалили старую Fail позицию:" + position.SignalTypeClose, position);
-            }
-        }
-
-        private void resetSide(DealSupport dealSupport)
-        {
-            sendLogSystemLocal("Обнуляем " + dealSupport.getSide() + " нашли позицию:", dealSupport.getPosition(), -1);
-            if (dealSupport.getChartElementCount() <= 2)
-            {
-                paintService.deleteChartElements(dealSupport.getChartElements());
-            }
-            dealSupport.reset();
         }
 
         private decimal getValueAddPercent(decimal value, decimal percent)

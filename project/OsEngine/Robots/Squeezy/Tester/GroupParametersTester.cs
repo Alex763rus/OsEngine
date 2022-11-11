@@ -81,6 +81,15 @@ namespace OsEngine.Robots.Squeezy.Tester
         TestTest
     }
 
+    public enum DirectionType
+    {
+        Up,
+        Down,
+        Flat,
+        None,
+        Test
+    }
+
     public enum TrendType
     {
         Long,  Short

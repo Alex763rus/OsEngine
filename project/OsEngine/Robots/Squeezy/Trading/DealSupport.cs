@@ -56,6 +56,10 @@ namespace OsEngine.Robots.Squeezy.Trading
         }
         public string getGroupType()
         {
+            if(groupParametersTrading == null)
+            {
+                return "";
+            }
             return groupParametersTrading.getGroupType().ToString();
         }
 
@@ -100,6 +104,14 @@ namespace OsEngine.Robots.Squeezy.Trading
             return position;
         }
 
+        public int getPositionNumber()
+        {
+            if (position != null)
+            {
+                return position.Number;
+            }
+            return 0;
+        }
         public void setPosition(Position position)
         {
             this.position = position;

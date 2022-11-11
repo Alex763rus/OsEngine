@@ -85,9 +85,9 @@ namespace OsEngine.Robots.Squeezy.Tester
                           GroupType.TestTest
                         , CreateParameter("Включить TestTest торговлю", true, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("%Триггер отложенного ордера TestTest", 1.5m, 0.0m, 1.5m, 7.5m, TAB_SERVICE_CONTROL_NAME)
-                        , CreateParameter("%Триггер старта tp TestTest", 1m, 1.0m, 1.0m, 1.0m, TAB_SERVICE_CONTROL_NAME)
+                        //, CreateParameter("%Триггер старта tp TestTest", 1m, 1.0m, 1.0m, 1.0m, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("%TakeProfit TestTest", 1.5m, 0.0m, 1.5m, 7.5m, TAB_SERVICE_CONTROL_NAME)
-                        , CreateParameter("%Триггер старта sl TestTest", 1m, 1.0m, 1.0m, 1.0m, TAB_SERVICE_CONTROL_NAME)
+                        //, CreateParameter("%Триггер старта sl TestTest", 1m, 1.0m, 1.0m, 1.0m, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("%StopLoss TestTest", 2m, 0.0m, 4.0m, 10.0m, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("Количество баров до выхода TestTest", 10, 0, 50, 1)
                         );
