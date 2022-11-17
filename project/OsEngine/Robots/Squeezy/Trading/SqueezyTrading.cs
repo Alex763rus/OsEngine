@@ -156,7 +156,7 @@ namespace OsEngine.Robots.Squeezy.Trading
 
         private void addSeparateParameter(string tabControlName = null)
         {
-            CreateParameter(LogService.SEPARATE_PARAMETR_LINE + separateCounter, LogService.SEPARATE_PARAMETR_LINE, tabControlName);
+            CreateParameter(LogService.SEPARATE_PARAMETR_LINE + BOT_NAME +  separateCounter, LogService.SEPARATE_PARAMETR_LINE, tabControlName);
             ++separateCounter;
         }
         public override string GetNameStrategyType()

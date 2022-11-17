@@ -24,8 +24,10 @@ namespace OsEngine.Robots.Squeezy.Tester
         private LogService logService;
         private PaintService paintService;
 
+
         private DirectionType directionTypeCurrent; //Направление текущего бара по МА. 
         private bool lockCurrentDirection; //признак блокировки текущего направления. Не открывать больше сделок, дождаться завершения текущих.
+
         public EventServiceTester(BotTabSimple tab, GeneralParametersTester generalParameters, GroupParametersTesterService groupParametersService,  LogService logService)
         {
             this.generalParameters = generalParameters;
@@ -39,13 +41,14 @@ namespace OsEngine.Robots.Squeezy.Tester
             lockCurrentDirection = false;
         }
 
-        public void finishedEventLogic(List<Candle> candles)
+        public void candleFinishedEventLogic(List<Candle> candles)
         {
             //Если мало баров или нет медленной, ничего не делаем:
             if (candles.Count < 2 || movingAverageService.getMaLastValueSlow() == 0)
             {
                 if (candles.Count == 1)
                 {
+                    movingAverageService.updateMaLen();
                     logBotSettings();
                     paintService.deleteAllChartElement();
                 }
@@ -94,7 +97,7 @@ namespace OsEngine.Robots.Squeezy.Tester
             }
 
             //Buy:
-            groupParameters = groupParametersService.getGroupParameters(getGroupType(Side.Sell));
+            groupParameters = groupParametersService.getGroupParameters(getGroupType(Side.Buy));
             if (groupParameters.getGroupOn())
             {
                 if (dealService.hasOpendeal(Side.Buy))
@@ -249,6 +252,11 @@ namespace OsEngine.Robots.Squeezy.Tester
                 logService.sendLogSystem(groupParameters.getAllGroupParameters());
             }
 
+        }
+
+        internal void parametrsChangeByUserLogic()
+        {
+            movingAverageService.updateMaLen();
         }
     }
 }

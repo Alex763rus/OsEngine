@@ -123,14 +123,20 @@ namespace OsEngine.Robots.Squeezy.Tester
 
             eventServiceTester = new EventServiceTester(tab, generalParameters, groupParametersTesterService, logService);
 
-            tab.CandleFinishedEvent += finishedEventLogic;
+            tab.CandleFinishedEvent += candleFinishedEventLogic;
             tab.PositionClosingSuccesEvent += positionClosingSuccesEventLogic;
             tab.PositionOpeningSuccesEvent += positionOpeningSuccesEventLogic;
+            ParametrsChangeByUser += parametrsChangeByUserLogic;
         }
 
+
+        private void parametrsChangeByUserLogic()
+        {
+            eventServiceTester.parametrsChangeByUserLogic();
+        }
         private void addSeparateParameter(string tabControlName = null)
         {
-            CreateParameter(SEPARATE_PARAMETR_LINE + separateCounter, SEPARATE_PARAMETR_LINE, tabControlName);
+            CreateParameter(SEPARATE_PARAMETR_LINE + BOT_NAME + separateCounter, SEPARATE_PARAMETR_LINE, tabControlName);
             ++separateCounter;
         }
         public override string GetNameStrategyType()
@@ -143,9 +149,9 @@ namespace OsEngine.Robots.Squeezy.Tester
             MessageBox.Show("Нет настроек");
         }
 
-        private void finishedEventLogic(List<Candle> candles)
+        private void candleFinishedEventLogic(List<Candle> candles)
         {
-            eventServiceTester.finishedEventLogic(candles);
+            eventServiceTester.candleFinishedEventLogic(candles);
         }
         private void positionClosingSuccesEventLogic(Position position)
         {
