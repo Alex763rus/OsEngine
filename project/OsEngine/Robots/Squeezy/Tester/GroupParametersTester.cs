@@ -90,8 +90,12 @@ namespace OsEngine.Robots.Squeezy.Tester
         Test
     }
 
-    public enum TrendType
+    public enum SqueezyType
     {
-        Long,  Short
+        None,
+        Buy,
+        Sell,
+        BuyMissed,
+        SellMissed
     }
 }

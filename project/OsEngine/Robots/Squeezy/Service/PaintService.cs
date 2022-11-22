@@ -1,7 +1,10 @@
-﻿using OsEngine.Charts.CandleChart.Elements;
+﻿using OkonkwoOandaV20.TradeLibrary.DataTypes.Position;
+using OkonkwoOandaV20.TradeLibrary.DataTypes.Pricing;
+using OsEngine.Charts.CandleChart.Elements;
 using OsEngine.Entity;
 using OsEngine.Market.Servers.Bitfinex.BitfitnexEntity;
 using OsEngine.OsTrader.Panels.Tab;
+using OsEngine.Robots.Squeezy.Tester;
 using OsEngine.Robots.Squeezy.Trading;
 using System;
 using System.Collections;
@@ -11,7 +14,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using Color = System.Drawing.Color;
+using Position = OsEngine.Entity.Position;
 
 namespace OsEngine.Robots.SqueezyBot.Service
 {
@@ -19,14 +25,62 @@ namespace OsEngine.Robots.SqueezyBot.Service
     {
         private int uniqNameIncrement;
         private BotTabSimple tab;
-
         
         public PaintService(BotTabSimple tab)
         {
             this.tab = tab;
             uniqNameIncrement = 0;
         }
+        public void paintSqueezy(DateTime timeEnd, TimeSpan timeFrame, decimal price, SqueezyType squeezyType)
+        {
+            Color color;
+            if (squeezyType == SqueezyType.None)
+            {
+                color = Color.Black;
+            }
+            else if (squeezyType == SqueezyType.Buy)
+            {
+                color = Color.Green;
+            }
+            else if (squeezyType == SqueezyType.Sell)
+            {
+                color = Color.Red;
+            }
+            else if (squeezyType == SqueezyType.BuyMissed)
+            {
+                color = Color.Blue;
+            }
+            else if (squeezyType == SqueezyType.SellMissed)
+            {
+                color = Color.Pink;
+            }
+            else
+            {
+                color = Color.White;
+            }
+            DateTime timeStart = timeEnd.AddMinutes(-timeFrame.TotalMinutes);
+            paintLineHorisontal(timeStart, timeEnd, price, "", color, 3);
+        }
 
+        public void paintGroup(DateTime timeStart, DateTime timeEnd, decimal price, DirectionType directionType)
+        {
+            Color color;
+            if(directionType == DirectionType.Up)
+            {
+                color = Color.Green;
+            } else if(directionType == DirectionType.Down)
+            {
+                color = Color.Red;
+            } else if(directionType == DirectionType.Flat)
+            {
+                color = Color.Yellow;
+            }
+            else
+            { 
+                color = Color.White;
+            }
+            paintLineHorisontal(timeStart, timeEnd, price, "", color, 3);
+        }
 
         public void deleteAllChartElement()
         {
@@ -47,33 +101,28 @@ namespace OsEngine.Robots.SqueezyBot.Service
                 tab.DeleteChartElement(chartElement);
             }
         }
-        private IChartElement paintLabel(decimal priceY, DateTime timeX)
-        {
-            PointElement point = new PointElement(getUniqName(), "Prime");
-
-            point.Y = priceY;
-            point.TimePoint = timeX;
-            point.Label = "Тут могла быть ваша реклама!";
-            point.Color = Color.Red;
-            point.Style = System.Windows.Forms.DataVisualization.Charting.MarkerStyle.Star4;
-            point.Size = 12;
-
-            tab.SetChartElement(point);
-            return point;
-        }
 
         public IChartElement paintClosedPosition(Position position, TimeSpan timeFrame)
         {
             string label = "#" + position.Number + " " + position.SignalTypeOpen + " \n" + position.Direction;
             DateTime timeStart = position.TimeOpen.AddMinutes(-timeFrame.TotalMinutes);
             DateTime timeEnd = position.TimeClose.AddMinutes(-timeFrame.TotalMinutes);
-            return paintLine(timeStart, position.EntryPrice, timeEnd, position.ClosePrice, label, Color.Yellow, 2);
+            return paintLine(timeStart, position.EntryPrice, timeEnd, position.ClosePrice, label, Color.Yellow, 3);
         }
 
         public IChartElement paintClosedPosition(Position position)
         {
             string label = "#" + position.Number + " " + position.SignalTypeOpen + " \n" + position.Direction;
-            return paintLine(position.TimeOpen, position.EntryPrice, position.TimeClose, position.ClosePrice, label, Color.Yellow, 2);
+            Color color;
+            if (position.ProfitPortfolioPunkt > 0)
+            {
+                color = Color.White;
+            }
+            else
+            {
+                color = Color.Red;
+            }
+            return paintLine(position.TimeOpen, position.EntryPrice, position.TimeClose, position.ClosePrice, label, color, 2);
         }
         private IChartElement paintLine(DateTime timeStart, decimal valueYStart, DateTime timeEnd, decimal valueYEnd, string label, Color color, int width)
         {
@@ -108,13 +157,10 @@ namespace OsEngine.Robots.SqueezyBot.Service
             chartElements[1] = paintLineHorisontal(timeStart, timeEnd, priceLimit, "limit " + label, Color.Yellow, 1);
             return chartElements;
         }
-        public void paintLineHorisontal(DateTime timeStart, DateTime timeEnd, decimal yValue)
-        {
-            paintLineHorisontal(timeStart, timeEnd, yValue, "LABEL", Color.Red, 1);
-        }
+
         private IChartElement paintLineHorisontal(DateTime timeStart, DateTime timeEnd, decimal yValue, string label, Color color, int width)
         {
-            LineHorisontal lineHorizontal = new LineHorisontal(getUniqName(), "Prime", true);
+            LineHorisontal lineHorizontal = new LineHorisontal(getUniqName(), "Prime", false);
 
             lineHorizontal.TimeStart = timeStart;
             lineHorizontal.TimeEnd = timeEnd;
@@ -123,7 +169,6 @@ namespace OsEngine.Robots.SqueezyBot.Service
             lineHorizontal.Value = yValue;
 
             lineHorizontal.LineWidth = width;
-
             tab.SetChartElement(lineHorizontal);
             return lineHorizontal;
         }

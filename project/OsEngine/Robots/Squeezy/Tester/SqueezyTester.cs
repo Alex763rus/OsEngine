@@ -42,6 +42,10 @@ namespace OsEngine.Robots.Squeezy.Tester
                         , CreateParameter("Тестовые параметры", false, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("Логгирование", false, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("%MA ширина канала", 1m, 1m, 1m, 1m)
+                        , CreateParameter("Графика Линия группы:", true)
+                        , CreateParameter("% отрисовки линии группы", 1.0m, 1.0m, 1.0m, 1.0m)
+                        , CreateParameter("Графика Линия сквиза:", true)
+                        , CreateParameter("% отрисовки линии сквиза", 1.2m, 1.2m, 1.2m, 1.2m)
                         );
             addSeparateParameter();
             addSeparateParameter();
@@ -107,7 +111,7 @@ namespace OsEngine.Robots.Squeezy.Tester
                         , CreateParameter("%Триггер отложенного ордера TestTest", 1.5m, 0.0m, 0.5m, 5.0m, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("%TakeProfit TestTest", 1.5m, 0.0m, 0.5m, 5.0m, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("%StopLoss TestTest", 3m, 0.0m, 1.0m, 10.0m, TAB_SERVICE_CONTROL_NAME)
-                        , CreateParameter("Количество баров до выхода", 2, 0, 30, 1)
+                        , CreateParameter("Количество баров до выхода TestTest", 2, 0, 30, 1, TAB_SERVICE_CONTROL_NAME)
                         );
             //===========================================================================================================================================================
             groupParametersTesterService = new GroupParametersTesterService();

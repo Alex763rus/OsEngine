@@ -18,8 +18,15 @@ namespace OsEngine.Robots.Squeezy.Tester
         private StrategyParameterBool testSettings;
         private StrategyParameterBool logEnabled;
         private StrategyParameterDecimal maStrength;
+        private StrategyParameterBool paintGroupEnabled;
+        private StrategyParameterDecimal paintGroup;
+        private StrategyParameterBool paintSqueezyEnabled;
+        private StrategyParameterDecimal paintSqueezy;
 
-        public GeneralParametersTester(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow, StrategyParameterInt maLenFast, StrategyParameterDecimal volumePercent, StrategyParameterDecimal volumeSum, StrategyParameterInt countBufferLogLine, StrategyParameterBool testSettings, StrategyParameterBool logEnabled, StrategyParameterDecimal maStrength)
+        public GeneralParametersTester(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow, StrategyParameterInt maLenFast, 
+            StrategyParameterDecimal volumePercent, StrategyParameterDecimal volumeSum, StrategyParameterInt countBufferLogLine, StrategyParameterBool testSettings,
+            StrategyParameterBool logEnabled, StrategyParameterDecimal maStrength, StrategyParameterBool paintGroupEnabled, StrategyParameterDecimal paintGroup, 
+            StrategyParameterBool paintSqueezyEnabled, StrategyParameterDecimal paintSqueezy)
         {
             this.maLenSlow = maLenSlow;
             this.maCorridorHighSlow = maCorridorHighSlow;
@@ -30,8 +37,28 @@ namespace OsEngine.Robots.Squeezy.Tester
             this.testSettings = testSettings;
             this.logEnabled = logEnabled;
             this.maStrength = maStrength;
+            this.paintGroupEnabled = paintGroupEnabled;
+            this.paintGroup = paintGroup;
+            this.paintSqueezyEnabled = paintSqueezyEnabled;
+            this.paintSqueezy = paintSqueezy;
         }
 
+        public decimal getPaintGroup()
+        {
+            return paintGroup.ValueDecimal;
+        }
+        public decimal getPaintSqueezy()
+        {
+            return paintSqueezy.ValueDecimal;
+        }
+        public bool getPaintSqueezyEnabled()
+        {
+            return paintSqueezyEnabled.ValueBool;
+        }
+        public bool getPaintGroupEnabled()
+        {
+            return paintGroupEnabled.ValueBool;
+        }
         public bool getTestSettings()
         {
             return testSettings.ValueBool;
@@ -75,18 +102,21 @@ namespace OsEngine.Robots.Squeezy.Tester
         }
         public string getAllSettings()
         {
-            string settings = " Settings:"
-                            + " maLenSlow = " + getMaLenSlow()
-                            + ", maCorridorHighSlow = " + getMaCorridorHighSlow()
-                            + ", maLenFast = " + getMaLenFast()
-                            + ", volumePercent = " + getVolumePercent()
-                            + ", volumeSum = " + getVolumeSum()
-                            + ", countBufferLogLine = " + getCountBufferLogLine()
-                            + ", testSettings = " + getTestSettings()
-                            + ", logEnabled = " + getLogEnabled()
-                            + ", maStrength = " + getMaStrength()
-                            ;
-            return settings;
+            StringBuilder str = new StringBuilder(" Settings:");
+            str.Append(" maLenSlow = ").Append(getMaLenSlow());
+            str.Append(", maCorridorHighSlow = ").Append(getMaCorridorHighSlow());
+            str.Append(", maLenFast = ").Append(getMaLenFast());
+            str.Append(", volumePercent = ").Append(getVolumePercent());
+            str.Append(", volumeSum = ").Append(getVolumeSum());
+            str.Append(", countBufferLogLine = ").Append(getCountBufferLogLine());
+            str.Append(", testSettings = ").Append(getTestSettings());
+            str.Append(", logEnabled = ").Append(getLogEnabled());
+            str.Append(", maStrength = ").Append(getMaStrength());
+            str.Append(", PaintGroupEnabled = ").Append(getPaintGroupEnabled());
+            str.Append(", paintGroup = ").Append(getPaintGroup());                           ;
+            str.Append(", PaintSqueezyEnabled = ").Append(getPaintSqueezyEnabled());                           ;
+            str.Append(", PaintSqueezy = ").Append(getPaintSqueezy());                           ;
+            return str.ToString();
         }
     }
 }

@@ -51,6 +51,10 @@ namespace OsEngine.Robots.Squeezy.Trading
         //private GroupType groupTypeSmallCurrent; //Текущая группа
         private DirectionType directionTypeCurrent; //Направление текущего бара по МА. 
         private bool lockCurrentDirection; //признак блокировки текущего направления. Не открывать больше сделок, дождаться завершения текущих.
+
+        private decimal priceForPaintGroup;         //Цена чтобы рисовать тренд. Заполняется единажды
+        private DateTime timeStartGroup;            //Время начала действия группы
+
         public EventServiceTrading(BotTabSimple tab, GeneralParametersTrading generalParameters, GroupParametersTradingService groupParametersService, LogService logService)
         {
             this.generalParameters = generalParameters;
@@ -79,25 +83,28 @@ namespace OsEngine.Robots.Squeezy.Trading
                     paintService.deleteAllChartElement();
                     dealSupportBuy.reset();
                     dealSupportSell.reset();
+                    priceForPaintGroup = getValueSubtractPercent(candles[candles.Count - 1].Low, generalParameters.getPaintGroup());
+                    timeStartGroup = candles[candles.Count - 1].TimeStart;
                 }
                 return;
             }
-           
+
             lastCandle = candles[candles.Count - 1];
             candleTriggerStartBid = getValueSubtractPercent(lastCandle.Close, generalParameters.getTriggerStartPercent());
             candleTriggerStartAsc = getValueAddPercent(lastCandle.Close, generalParameters.getTriggerStartPercent());
 
-            //==todo:============================================
-            //lastCandleGroupParameters = groupParametersService.getGroupParameters(getGroupType());
-
-            //priceOpenLimitSell = getValueAddPercent(lastCandle.Close, lastCandleGroupParameters.getTriggerCandleDiff());
-            //priceOpenLimitBuy = getValueSubtractPercent(lastCandle.Close, lastCandleGroupParameters.getTriggerCandleDiff());
-            //==============================================
             barCounterProcess(dealSupportBuy, dealSupportSell);
             barCounterProcess(dealSupportSell, dealSupportBuy);
 
             DirectionType directionTypeTmp = getDirectionType();
-            if(!lockCurrentDirection && directionTypeCurrent != directionTypeTmp
+
+            if (directionTypeCurrent != directionTypeTmp)
+            {
+                //paintService.paintGroup(timeStartGroup, candles[candles.Count - 1].TimeStart, priceForPaintGroup, directionTypeTmp);
+                timeStartGroup = candles[candles.Count - 1].TimeStart;
+            }
+
+            if (!lockCurrentDirection && directionTypeCurrent != directionTypeTmp
                 && (   dealSupportSell.getProcessState() == ProcessState.WAIT_TP_SL 
                     || dealSupportBuy.getProcessState()  == ProcessState.WAIT_TP_SL))
             {
@@ -215,7 +222,6 @@ namespace OsEngine.Robots.Squeezy.Trading
 
         public void positionOpeningSuccesEventLogic(Position position)
         {
-            DealSupport dealSupport;
             decimal sl = position.EntryPrice;
             decimal tp = position.EntryPrice;
             if (position.Direction == Side.Buy)
@@ -224,7 +230,6 @@ namespace OsEngine.Robots.Squeezy.Trading
                 sl = getValueSubtractPercent(sl, dealSupportBuy.getGroupParametersTrading().getStopLoss());
                 dealSupportBuy.setProcessState(ProcessState.WAIT_TP_SL);
                 dealSupportBuy.addChartElement(paintService.paintSlTp(lastCandle, dealService.getTimeFrame(), sl, tp, dealSupportBuy.getGroupType()));
-                dealSupport = dealSupportBuy;
             }
             else if (position.Direction == Side.Sell)
             {
@@ -232,7 +237,6 @@ namespace OsEngine.Robots.Squeezy.Trading
                 sl = getValueAddPercent(sl, dealSupportSell.getGroupParametersTrading().getStopLoss());
                 dealSupportSell.setProcessState(ProcessState.WAIT_TP_SL);
                 dealSupportSell.addChartElement(paintService.paintSlTp(lastCandle, dealService.getTimeFrame(), sl, tp, dealSupportSell.getGroupType()));
-                dealSupport = dealSupportSell;
             }
             position.ProfitOrderRedLine = tp;
             position.StopOrderRedLine = sl;

@@ -26,8 +26,10 @@ namespace OsEngine.Robots.Squeezy.Tester
 
 
         private DirectionType directionTypeCurrent; //Направление текущего бара по МА. 
-        private bool lockCurrentDirection; //признак блокировки текущего направления. Не открывать больше сделок, дождаться завершения текущих.
-
+        private bool lockCurrentDirection;          //признак блокировки текущего направления. Не открывать больше сделок, дождаться завершения текущих.
+        private decimal priceForPaintGroup;         //Цена чтобы рисовать тренд. Заполняется единажды.
+        private decimal priceForPaintSqueezy;       //Цена чтобы рисовать сквизы. Заполняется единажды
+        DateTime timeStartPaintGroup;               //Время начала тренда
         public EventServiceTester(BotTabSimple tab, GeneralParametersTester generalParameters, GroupParametersTesterService groupParametersService,  LogService logService)
         {
             this.generalParameters = generalParameters;
@@ -44,18 +46,27 @@ namespace OsEngine.Robots.Squeezy.Tester
         public void candleFinishedEventLogic(List<Candle> candles)
         {
             //Если мало баров или нет медленной, ничего не делаем:
-            if (candles.Count < 2 || movingAverageService.getMaLastValueSlow() == 0)
+            if (candles.Count <= 2 || movingAverageService.getMaLastValueSlow() == 0)
             {
-                if (candles.Count == 1)
+                if (candles.Count == 2)
                 {
                     movingAverageService.updateMaLen();
                     logBotSettings();
                     paintService.deleteAllChartElement();
+                    priceForPaintGroup = getValueAddPercent(candles[candles.Count - 1].Low, generalParameters.getPaintGroup());
+                    timeStartPaintGroup = candles[candles.Count - 1].TimeStart;
+                    priceForPaintSqueezy = getValueAddPercent(candles[candles.Count - 1].Low, generalParameters.getPaintSqueezy());
                 }
                 return;
             }
 
+            SqueezyType squeezyType = SqueezyType.None;
             DirectionType directionTypeTmp = getDirectionType();
+            if(generalParameters.getPaintGroupEnabled() && directionTypeCurrent != directionTypeTmp)
+            {
+                paintService.paintGroup(timeStartPaintGroup, candles[candles.Count - 1].TimeStart, priceForPaintGroup, directionTypeCurrent);
+                timeStartPaintGroup = candles[candles.Count - 1].TimeStart;
+            }
             if (!lockCurrentDirection && directionTypeCurrent != directionTypeTmp
                 && (dealService.hasOpendeal(Side.Buy) || dealService.hasOpendeal(Side.Sell)))
             {
@@ -84,15 +95,21 @@ namespace OsEngine.Robots.Squeezy.Tester
                     {
                         dealService.closeAllDeals(Side.Sell, "Закрылись по барам");
                     }
-                } else if (!lockCurrentDirection && candleHigh1 > (candleClose2 + candleClose2 * (groupParameters.getTriggerCandleDiff() / 100)))
+                } else if (candleHigh1 > (candleClose2 + candleClose2 * (groupParameters.getTriggerCandleDiff() / 100)))
                 {
-                    string message = "Обнаружен сквиз " + groupParameters.getGroupType().ToString() + ": предпоследний бар:" + logService.getCandleInfo(candles[candles.Count - 2])
-                                        + " последний бар:" + logService.getCandleInfo(candles[candles.Count - 1])
-                                        + " отношение:" + Math.Round((candleHigh1 - candleClose2) / candleClose2 * 100, 2) + "%"
-                                        + " настройки:" + groupParameters.getTriggerCandleDiff() + "%";
-                    logService.sendLogSystem(message);
-                    dealService.openDeal(Side.Sell, groupParameters.getGroupType().ToString(), "Вход по рынку", generalParameters.getVolumeSum());
-                    countBarService.setLimitBarSell(groupParameters.getCountBarForClose());
+                    if (lockCurrentDirection)
+                    {
+                        squeezyType = SqueezyType.SellMissed;
+                    } else {
+                        string message = "Обнаружен сквиз " + groupParameters.getGroupType().ToString() + ": предпоследний бар:" + logService.getCandleInfo(candles[candles.Count - 2])
+                                            + " последний бар:" + logService.getCandleInfo(candles[candles.Count - 1])
+                                            + " отношение:" + Math.Round((candleHigh1 - candleClose2) / candleClose2 * 100, 2) + "%"
+                                            + " настройки:" + groupParameters.getTriggerCandleDiff() + "%";
+                        logService.sendLogSystem(message);
+                        dealService.openDeal(Side.Sell, groupParameters.getGroupType().ToString(), "Вход по рынку", generalParameters.getVolumeSum());
+                        countBarService.setLimitBarSell(groupParameters.getCountBarForClose());
+                        squeezyType = SqueezyType.Sell;
+                    }
                 }
             }
 
@@ -108,16 +125,28 @@ namespace OsEngine.Robots.Squeezy.Tester
                         dealService.closeAllDeals(Side.Buy, "Закрылись по барам");
                     }
                 }
-                else if (!lockCurrentDirection && candleLow1 < (candleClose2 - candleClose2 * (groupParameters.getTriggerCandleDiff() / 100)))
+                else if (candleLow1 < (candleClose2 - candleClose2 * (groupParameters.getTriggerCandleDiff() / 100)))
                 {
-                    string message = "Обнаружен сквиз " + groupParameters.getGroupType().ToString() + ": предпоследний бар:" + logService.getCandleInfo(candles[candles.Count - 2])
-                                        + " последний бар:" + logService.getCandleInfo(candles[candles.Count - 1])
-                                        + " отношение:" + Math.Round((candleClose2 - candleLow1) / candleLow1 * 100, 2) + "%"
-                                        + " настройки:" + groupParameters.getTriggerCandleDiff() + "%";
-                    logService.sendLogSystem(message);
-                    dealService.openDeal(Side.Buy, groupParameters.getGroupType().ToString(), "Вход по рынку", generalParameters.getVolumeSum());
-                    countBarService.setLimitBarBuy(groupParameters.getCountBarForClose());
+                    if (lockCurrentDirection)
+                    {
+                        squeezyType = SqueezyType.BuyMissed;
+                    }
+                    else
+                    {
+                        string message = "Обнаружен сквиз " + groupParameters.getGroupType().ToString() + ": предпоследний бар:" + logService.getCandleInfo(candles[candles.Count - 2])
+                                            + " последний бар:" + logService.getCandleInfo(candles[candles.Count - 1])
+                                            + " отношение:" + Math.Round((candleClose2 - candleLow1) / candleLow1 * 100, 2) + "%"
+                                            + " настройки:" + groupParameters.getTriggerCandleDiff() + "%";
+                        logService.sendLogSystem(message);
+                        dealService.openDeal(Side.Buy, groupParameters.getGroupType().ToString(), "Вход по рынку", generalParameters.getVolumeSum());
+                        countBarService.setLimitBarBuy(groupParameters.getCountBarForClose());
+                        squeezyType = SqueezyType.Buy;
+                    }
                 }
+            }
+            if (generalParameters.getPaintSqueezyEnabled() && squeezyType != SqueezyType.None)
+            {
+               paintService.paintSqueezy(candles[candles.Count - 1].TimeStart, dealService.getTimeFrame(), priceForPaintSqueezy, squeezyType);
             }
             printEndBarInfo();
         }
@@ -257,6 +286,7 @@ namespace OsEngine.Robots.Squeezy.Tester
         internal void parametrsChangeByUserLogic()
         {
             movingAverageService.updateMaLen();
+            paintService.deleteAllChartElement();
         }
     }
 }
