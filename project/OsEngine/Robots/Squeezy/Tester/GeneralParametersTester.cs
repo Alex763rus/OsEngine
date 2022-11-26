@@ -14,6 +14,7 @@ namespace OsEngine.Robots.Squeezy.Tester
         private StrategyParameterInt maLenFast;
         private StrategyParameterDecimal volumePercent;
         private StrategyParameterDecimal volumeSum;
+        private StrategyParameterInt coeffMonkey;
         private StrategyParameterInt countBufferLogLine;
         private StrategyParameterBool testSettings;
         private StrategyParameterBool logEnabled;
@@ -22,9 +23,9 @@ namespace OsEngine.Robots.Squeezy.Tester
         private StrategyParameterDecimal paintGroup;
         private StrategyParameterBool paintSqueezyEnabled;
         private StrategyParameterDecimal paintSqueezy;
-
+        
         public GeneralParametersTester(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow, StrategyParameterInt maLenFast, 
-            StrategyParameterDecimal volumePercent, StrategyParameterDecimal volumeSum, StrategyParameterInt countBufferLogLine, StrategyParameterBool testSettings,
+            StrategyParameterDecimal volumePercent, StrategyParameterDecimal volumeSum, StrategyParameterInt coeffMonkey, StrategyParameterInt countBufferLogLine, StrategyParameterBool testSettings,
             StrategyParameterBool logEnabled, StrategyParameterDecimal maStrength, StrategyParameterBool paintGroupEnabled, StrategyParameterDecimal paintGroup, 
             StrategyParameterBool paintSqueezyEnabled, StrategyParameterDecimal paintSqueezy)
         {
@@ -33,6 +34,7 @@ namespace OsEngine.Robots.Squeezy.Tester
             this.maLenFast = maLenFast;
             this.volumePercent = volumePercent;
             this.volumeSum = volumeSum;
+            this.coeffMonkey = coeffMonkey;
             this.countBufferLogLine = countBufferLogLine;
             this.testSettings = testSettings;
             this.logEnabled = logEnabled;
@@ -43,6 +45,10 @@ namespace OsEngine.Robots.Squeezy.Tester
             this.paintSqueezy = paintSqueezy;
         }
 
+        public int getCoeffMonkey()
+        {
+            return coeffMonkey.ValueInt;
+        }
         public decimal getPaintGroup()
         {
             return paintGroup.ValueDecimal;
@@ -108,6 +114,7 @@ namespace OsEngine.Robots.Squeezy.Tester
             str.Append(", maLenFast = ").Append(getMaLenFast());
             str.Append(", volumePercent = ").Append(getVolumePercent());
             str.Append(", volumeSum = ").Append(getVolumeSum());
+            str.Append(", coeffMonkey = ").Append(getCoeffMonkey());
             str.Append(", countBufferLogLine = ").Append(getCountBufferLogLine());
             str.Append(", testSettings = ").Append(getTestSettings());
             str.Append(", logEnabled = ").Append(getLogEnabled());

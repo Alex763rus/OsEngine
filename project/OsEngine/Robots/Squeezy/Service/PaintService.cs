@@ -102,19 +102,11 @@ namespace OsEngine.Robots.SqueezyBot.Service
             }
         }
 
-        public IChartElement paintClosedPosition(Position position, TimeSpan timeFrame)
-        {
-            string label = "#" + position.Number + " " + position.SignalTypeOpen + " \n" + position.Direction;
-            DateTime timeStart = position.TimeOpen.AddMinutes(-timeFrame.TotalMinutes);
-            DateTime timeEnd = position.TimeClose.AddMinutes(-timeFrame.TotalMinutes);
-            return paintLine(timeStart, position.EntryPrice, timeEnd, position.ClosePrice, label, Color.Yellow, 3);
-        }
-
-        public IChartElement paintClosedPosition(Position position)
+        public IChartElement paintClosedPosition(Position position, TimeSpan timeFrame, bool isProfit)
         {
             string label = "#" + position.Number + " " + position.SignalTypeOpen + " \n" + position.Direction;
             Color color;
-            if (position.ProfitPortfolioPunkt > 0)
+            if (isProfit)
             {
                 color = Color.White;
             }
@@ -122,7 +114,24 @@ namespace OsEngine.Robots.SqueezyBot.Service
             {
                 color = Color.Red;
             }
-            return paintLine(position.TimeOpen, position.EntryPrice, position.TimeClose, position.ClosePrice, label, color, 2);
+            DateTime timeStart = position.TimeOpen.AddMinutes(-timeFrame.TotalMinutes);
+            DateTime timeEnd = position.TimeClose.AddMinutes(-timeFrame.TotalMinutes);
+            return paintLine(timeStart, position.EntryPrice, timeEnd, position.ClosePrice, label, color, 3);
+        }
+
+        public IChartElement paintClosedPosition(Position position, bool isProfit)
+        {
+            string label = "#" + position.Number + " " + position.SignalTypeOpen + " \n" + position.Direction;
+            Color color;
+            if (isProfit)
+            {
+                color = Color.White;
+            }
+            else
+            { 
+                color = Color.Red;
+            }
+            return paintLine(position.TimeOpen, position.EntryPrice, position.TimeClose, position.ClosePrice, label, color, 3);
         }
         private IChartElement paintLine(DateTime timeStart, decimal valueYStart, DateTime timeEnd, decimal valueYEnd, string label, Color color, int width)
         {

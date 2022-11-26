@@ -34,6 +34,7 @@ namespace OsEngine.Robots.Squeezy.Trading
                         , CreateParameter("MovingAverage длина fast", 50, 0, 50, 25)
                         , CreateParameter("ОТКЛЮЧЕН % депозита для сделки", 10.0m, 10.0m, 50.0m, 5.0m)
                         , CreateParameter("Сумма для открытия", 10.0m, 5.0m, 50.0m, 5.0m)
+                        , CreateParameter("Коэфф мартышки:", 1, 5, 5, 1)
                         , CreateParameter("%Триггер старта", 1m, 1m, 1m, 1m)
                         , CreateParameter("Количество строк лога в буфере", 50, 0, 50, 1, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("Тестовые параметры", true, TAB_SERVICE_CONTROL_NAME)
@@ -132,7 +133,12 @@ namespace OsEngine.Robots.Squeezy.Trading
             tab.PositionSellAtStopActivateEvent += positionSellAtStopActivateEventlogic;
             tab.PositionBuyAtStopActivateEvent += positionBuyAtStopActivateEventLogic;
             tab.PositionOpeningFailEvent += positionOpeningFailEventLogic;
+            ParametrsChangeByUser += parametrsChangeByUserLogic;
+        }
 
+        private void parametrsChangeByUserLogic()
+        {
+            eventServiceTrading.parametrsChangeByUserLogic();
         }
 
         private void positionSellAtStopActivateEventlogic(Position position)

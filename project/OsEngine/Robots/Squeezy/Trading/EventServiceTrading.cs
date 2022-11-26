@@ -5,6 +5,7 @@ using OsEngine.Entity;
 using OsEngine.Market.Servers.Bitfinex.BitfitnexEntity;
 using OsEngine.Market.Servers.GateIo.Futures.Response;
 using OsEngine.OsTrader.Panels.Tab;
+using OsEngine.Robots.Squeezy.Service;
 using OsEngine.Robots.Squeezy.Tester;
 using OsEngine.Robots.Squeezy.Trading;
 using OsEngine.Robots.SqueezyBot;
@@ -33,6 +34,7 @@ namespace OsEngine.Robots.Squeezy.Trading
         private DealService dealService;
         private PaintService paintService;
         private LogService logService;
+        private VolumeSumService volumeSumService;
 
         private Candle lastCandle;
         //private GroupParametersTrading lastCandleGroupParameters; //группа для текущей свечи
@@ -63,6 +65,7 @@ namespace OsEngine.Robots.Squeezy.Trading
 
             movingAverageService = new MovingAverageService(tab, generalParameters);
             dealService = new DealService(tab, generalParameters, logService);
+            volumeSumService = new VolumeSumService(generalParameters.getVolumeSum(), generalParameters.getCoeffMonkey(), logService);
 
             paintService = new PaintService(tab);
             dealSupportBuy = new DealSupport(Side.Buy);
@@ -196,7 +199,7 @@ namespace OsEngine.Robots.Squeezy.Trading
                         ||(side == Side.Buy && price < priceOpenLimit)
                         )
                     {
-                        position = dealService.openDeal(side, groupParameters.getGroupType().ToString(), "Вход по рынку", generalParameters.getVolumeSum());
+                        position = dealService.openDeal(side, groupParameters.getGroupType().ToString(), "Вход по рынку", volumeSumService.getVolumeSum(side));
                         if (position != null)
                         {
                             sendLogSystemLocal("-> OK_TRIGGER_START : выставили заявку по рынку:", position, dealSupport);
@@ -206,7 +209,7 @@ namespace OsEngine.Robots.Squeezy.Trading
                     }
                     else
                     {
-                        position = dealService.openLimit(side, priceOpenLimit, groupTypeCurrent.ToString(), side + "AtLimit", generalParameters.getVolumeSum());
+                        position = dealService.openLimit(side, priceOpenLimit, groupTypeCurrent.ToString(), side + "AtLimit", volumeSumService.getVolumeSum(side));
                         if (position != null)
                         {
                             sendLogSystemLocal("-> OK_TRIGGER_START выставили заявку на открытие лимитки:", position, dealSupport);
@@ -247,9 +250,13 @@ namespace OsEngine.Robots.Squeezy.Trading
 
         public void positionClosingSuccesEventLogic(Position position)
         {
+            bool isProfit = position.ProfitPortfolioPunkt > 0;
+            volumeSumService.updateLevel(position.Direction, isProfit);
+            paintService.paintClosedPosition(position, dealService.getTimeFrame(), isProfit);
+
             if (position.SignalTypeClose != null && position.SignalTypeClose.Equals("TpSl"))
             {
-                if (position.ProfitPortfolioPunkt > 0)
+                if (isProfit)
                 {
                     position.SignalTypeClose = "Закрылись по TP";
                 }
@@ -273,7 +280,9 @@ namespace OsEngine.Robots.Squeezy.Trading
             {
                 sendLogSystemLocal("Успешно закрыта старая позиция:" + position.SignalTypeClose, position);
             }
-            paintService.paintClosedPosition(position, dealService.getTimeFrame());
+
+
+
         }
 
         public void positionOpeningFailEventLogic(Position position)
@@ -436,6 +445,13 @@ namespace OsEngine.Robots.Squeezy.Trading
                 logService.sendLogSystem(groupParameters.getAllGroupParameters());
             }
                 
+        }
+
+        public void parametrsChangeByUserLogic()
+        {
+            movingAverageService.updateMaLen();
+            paintService.deleteAllChartElement();
+            volumeSumService.calculateAndSetVolumeSum(generalParameters.getVolumeSum(), generalParameters.getCoeffMonkey());
         }
 
     }

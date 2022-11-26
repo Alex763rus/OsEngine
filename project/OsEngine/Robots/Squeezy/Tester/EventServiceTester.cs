@@ -3,6 +3,7 @@ using OkonkwoOandaV20.TradeLibrary.DataTypes.Position;
 using OsEngine.Entity;
 using OsEngine.Market.Servers.Bitfinex.BitfitnexEntity;
 using OsEngine.OsTrader.Panels.Tab;
+using OsEngine.Robots.Squeezy.Service;
 using OsEngine.Robots.Squeezy.Trading;
 using OsEngine.Robots.SqueezyBot;
 using OsEngine.Robots.SqueezyBot.Service;
@@ -23,6 +24,7 @@ namespace OsEngine.Robots.Squeezy.Tester
         private CountBarService countBarService;
         private LogService logService;
         private PaintService paintService;
+        private VolumeSumService volumeSumService;
 
 
         private DirectionType directionTypeCurrent; //Направление текущего бара по МА. 
@@ -40,6 +42,7 @@ namespace OsEngine.Robots.Squeezy.Tester
             dealService = new DealService(tab, generalParameters, logService);
             countBarService = new CountBarService();
             paintService = new PaintService(tab);
+            volumeSumService = new VolumeSumService(generalParameters.getVolumeSum(), generalParameters.getCoeffMonkey(), logService);
             lockCurrentDirection = false;
         }
 
@@ -106,7 +109,7 @@ namespace OsEngine.Robots.Squeezy.Tester
                                             + " отношение:" + Math.Round((candleHigh1 - candleClose2) / candleClose2 * 100, 2) + "%"
                                             + " настройки:" + groupParameters.getTriggerCandleDiff() + "%";
                         logService.sendLogSystem(message);
-                        dealService.openDeal(Side.Sell, groupParameters.getGroupType().ToString(), "Вход по рынку", generalParameters.getVolumeSum());
+                        dealService.openDeal(Side.Sell, groupParameters.getGroupType().ToString(), "Вход по рынку", volumeSumService.getVolumeSum(Side.Sell));
                         countBarService.setLimitBarSell(groupParameters.getCountBarForClose());
                         squeezyType = SqueezyType.Sell;
                     }
@@ -138,7 +141,7 @@ namespace OsEngine.Robots.Squeezy.Tester
                                             + " отношение:" + Math.Round((candleClose2 - candleLow1) / candleLow1 * 100, 2) + "%"
                                             + " настройки:" + groupParameters.getTriggerCandleDiff() + "%";
                         logService.sendLogSystem(message);
-                        dealService.openDeal(Side.Buy, groupParameters.getGroupType().ToString(), "Вход по рынку", generalParameters.getVolumeSum());
+                        dealService.openDeal(Side.Buy, groupParameters.getGroupType().ToString(), "Вход по рынку", volumeSumService.getVolumeSum(Side.Buy));
                         countBarService.setLimitBarBuy(groupParameters.getCountBarForClose());
                         squeezyType = SqueezyType.Buy;
                     }
@@ -202,7 +205,10 @@ namespace OsEngine.Robots.Squeezy.Tester
         public void positionClosingSuccesEventLogic(Position position)
         {
             logService.sendLogSystem("Подтверждение: Успешно закрыта позиция:" + logService.getPositionInfo(position));
-            paintService.paintClosedPosition(position);
+
+            bool isProfit = position.ProfitPortfolioPunkt > 0;
+            paintService.paintClosedPosition(position, isProfit);
+            volumeSumService.updateLevel(position.Direction, isProfit);
             if (position.Direction == Side.Buy)
             {
                 countBarService.resetCountBarBuy();
@@ -283,10 +289,11 @@ namespace OsEngine.Robots.Squeezy.Tester
 
         }
 
-        internal void parametrsChangeByUserLogic()
+        public void parametrsChangeByUserLogic()
         {
             movingAverageService.updateMaLen();
             paintService.deleteAllChartElement();
+            volumeSumService.calculateAndSetVolumeSum(generalParameters.getVolumeSum(), generalParameters.getCoeffMonkey());
         }
     }
 }

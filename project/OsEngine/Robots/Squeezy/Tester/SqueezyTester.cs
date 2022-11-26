@@ -38,6 +38,7 @@ namespace OsEngine.Robots.Squeezy.Tester
                         , CreateParameter("MovingAverage длина fast", 10, 0, 50, 5)
                         , CreateParameter("ОТКЛЮЧЕН % депозита для сделки", 10.0m, 5.0m, 50.0m, 5.0m)
                         , CreateParameter("Сумма для открытия", 10.0m, 5.0m, 50.0m, 5.0m)
+                        , CreateParameter("Коэфф мартышки:", 1, 5, 5, 1)
                         , CreateParameter("Количество строк лога в буфере", 5000, 5000, 5000, 5000, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("Тестовые параметры", false, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("Логгирование", false, TAB_SERVICE_CONTROL_NAME)
