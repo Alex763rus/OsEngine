@@ -126,6 +126,9 @@ namespace OsEngine.Market.Servers.OKX
 
         public void Subscrible(Security security)
         {
+
+            _client._rateGateWebSocket.WaitToProceed();
+
             _client.SubscribleTrades(security);
             _client.SubscribleDepths(security);
             _client.SubscriblePositions(security);
@@ -159,7 +162,6 @@ namespace OsEngine.Market.Servers.OKX
                 MyOrderEvent(order);
             }
         }
-
 
         private void OrderUpdate(ObjectChanel<OrderResponseData> OrderResponse, OrderStateType stateType)
         {
@@ -197,31 +199,38 @@ namespace OsEngine.Market.Servers.OKX
         {
             while (true)
             {
-                if (OrdersToCheckMyTrades.IsEmpty == false)
+                try
                 {
-                    Thread.Sleep(1000);
-
-                    Order orderToCheck = null;
-
-                    if (OrdersToCheckMyTrades.TryDequeue(out orderToCheck))
+                    if (OrdersToCheckMyTrades.IsEmpty == false)
                     {
-                        List<MyTrade> tradesInOrder = GenerateTradesToOrder(orderToCheck);
+                        Thread.Sleep(1000);
 
-                        for (int i = 0; i < tradesInOrder.Count; i++)
+                        Order orderToCheck = null;
+
+                        if (OrdersToCheckMyTrades.TryDequeue(out orderToCheck))
                         {
-                            lock (lockerMyTrades)
+                            List<MyTrade> tradesInOrder = GenerateTradesToOrder(orderToCheck);
+
+                            for (int i = 0; i < tradesInOrder.Count; i++)
                             {
-                                MyTradeEvent(tradesInOrder[i]);
+                                lock (lockerMyTrades)
+                                {
+                                    MyTradeEvent(tradesInOrder[i]);
+                                }
                             }
                         }
                     }
+                    else
+                    {
+                        Thread.Sleep(1000);
+                    }
                 }
-                else
+                catch (Exception error)
                 {
+                    SendLogMessage($"{error.Message} { error.StackTrace}", LogMessageType.Error);
                     Thread.Sleep(1000);
                 }
             }
-
         }
 
         private List<MyTrade> GenerateTradesToOrder(Order order)
@@ -239,6 +248,11 @@ namespace OsEngine.Market.Servers.OKX
                 var res = client.GetAsync(url).Result;
 
                 var contentStr = res.Content.ReadAsStringAsync().Result;
+
+                if (res.StatusCode != System.Net.HttpStatusCode.OK)
+                {
+                    SendLogMessage(contentStr, LogMessageType.Error);
+                }
 
                 var quotes = JsonConvert.DeserializeAnonymousType(contentStr, new TradeDetailsResponce());
 
@@ -439,7 +453,7 @@ namespace OsEngine.Market.Servers.OKX
             }
             catch (Exception error)
             {
-                SendLogMessage(error.ToString(), LogMessageType.Error);
+                SendLogMessage($"{error.Message} { error.StackTrace}", LogMessageType.Error);
             }
         }
 
@@ -452,14 +466,17 @@ namespace OsEngine.Market.Servers.OKX
         private void SetCoinZeroBalance(Portfolio portfolio)
         {
 
-            for (int i = 0; i < CoinsWithNonZeroBalance.Count; i++)
+            var array = portfolio.GetPositionOnBoard();
+
+
+            for (int i = 0; i < array.Count; i++)
             {
-                var coin = portfolio.GetPositionOnBoard().Find(pos => pos.SecurityNameCode.Equals(CoinsWithNonZeroBalance[i].SecurityNameCode));
+                var coin = CoinsWithNonZeroBalance.Find(pos => pos.SecurityNameCode.Equals(array[i].SecurityNameCode));
 
                 if (coin == null)
                 {
                     PositionOnBoard newPortf = new PositionOnBoard();
-                    newPortf.SecurityNameCode = CoinsWithNonZeroBalance[i].SecurityNameCode;
+                    newPortf.SecurityNameCode = array[i].SecurityNameCode;
                     newPortf.ValueBegin = 0;
                     newPortf.ValueCurrent = 0;
                     newPortf.ValueBlocked = 0;
@@ -525,7 +542,7 @@ namespace OsEngine.Market.Servers.OKX
             }
             catch (Exception error)
             {
-                SendLogMessage(error.ToString(), LogMessageType.Error);
+                SendLogMessage($"{error.Message} { error.StackTrace}", LogMessageType.Error);
             }
         }
 
@@ -568,14 +585,14 @@ namespace OsEngine.Market.Servers.OKX
                 if (securityType == SecurityType.CurrencyPair)
                 {
                     security.Name = item.instId;
-                    security.NameFull = item.baseCcy;
-                    security.NameClass = item.quoteCcy + "_SPOT";
+                    security.NameFull = item.quoteCcy + "_SPOT";
+                    security.NameClass = "SPOT";
                 }
                 if (securityType == SecurityType.Futures)
                 {
-                    security.Name = item.instId; //+ "_" + item.alias;
-                    security.NameFull = item.settleCcy;
-                    security.NameClass = item.ctValCcy + "_SWAP";
+                    security.Name = item.instId;
+                    security.NameFull = item.ctValCcy + "_SWAP";
+                    security.NameClass = "SWAP";
                 }
 
 
