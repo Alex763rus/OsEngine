@@ -127,6 +127,8 @@ namespace OsEngine.Market.Servers.OKX
         public void Subscrible(Security security)
         {
 
+            _client.SetLeverage(security);
+
             _client._rateGateWebSocket.WaitToProceed();
 
             _client.SubscribleTrades(security);
@@ -468,6 +470,10 @@ namespace OsEngine.Market.Servers.OKX
 
             var array = portfolio.GetPositionOnBoard();
 
+            if (array == null)
+            {
+                return;
+            }
 
             for (int i = 0; i < array.Count; i++)
             {

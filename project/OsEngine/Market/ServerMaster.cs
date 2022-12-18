@@ -24,7 +24,6 @@ using OsEngine.Market.Servers.Finam;
 using OsEngine.Market.Servers.GateIo;
 using OsEngine.Market.Servers.InteractiveBrokers;
 using OsEngine.Market.Servers.Kraken;
-using OsEngine.Market.Servers.Livecoin;
 using OsEngine.Market.Servers.Lmax;
 using OsEngine.Market.Servers.NinjaTrader;
 using OsEngine.Market.Servers.Optimizer;
@@ -44,7 +43,6 @@ using OsEngine.Market.Servers.MOEX;
 using OsEngine.Market.Servers.Tinkoff;
 using MessageBox = System.Windows.MessageBox;
 using OsEngine.Market.Servers.GateIo.Futures;
-using OsEngine.Market.Servers.FTX;
 using OsEngine.Market.Servers.Bybit;
 using OsEngine.Market.Servers.OKX;
 
@@ -95,14 +93,12 @@ namespace OsEngine.Market
                 serverTypes.Add(ServerType.BitStamp);
                 serverTypes.Add(ServerType.Bitfinex);
                 serverTypes.Add(ServerType.Kraken);
-                serverTypes.Add(ServerType.Livecoin);
                 serverTypes.Add(ServerType.Exmo);
                 serverTypes.Add(ServerType.Zb);
                 serverTypes.Add(ServerType.Hitbtc);
                 serverTypes.Add(ServerType.HuobiSpot);
                 serverTypes.Add(ServerType.HuobiFutures);
                 serverTypes.Add(ServerType.HuobiFuturesSwap);
-                serverTypes.Add(ServerType.FTX);
                 serverTypes.Add(ServerType.Bybit);
                 serverTypes.Add(ServerType.OKX);
 
@@ -155,6 +151,47 @@ namespace OsEngine.Market
 
                     serverTypes.Insert(0, popularity[i].ServerType);
                 }
+
+                for (int i = 0; i < serverTypes.Count; i++)
+                {
+                    if(serverTypes[i].ToString() == "None")
+                    {
+                        serverTypes.RemoveAt(i);
+                        break;
+                    }
+                }
+
+                return serverTypes;
+            }
+        }
+
+        /// <summary>
+        /// take trade server typre from system
+        /// взять типы торговых серверов в системе
+        /// </summary>
+        public static List<ServerType> ServersTypesToOsData
+        {
+            get
+            {
+                List<ServerType> serverTypes = new List<ServerType>();
+
+                serverTypes.Add(ServerType.Finam);
+                serverTypes.Add(ServerType.MoexDataServer);
+                serverTypes.Add(ServerType.MfdWeb);
+
+                serverTypes.Add(ServerType.BitMax);
+                serverTypes.Add(ServerType.Binance);
+                serverTypes.Add(ServerType.BinanceFutures);
+                serverTypes.Add(ServerType.BitMex);
+                serverTypes.Add(ServerType.BitStamp);
+                serverTypes.Add(ServerType.Bitfinex);
+                serverTypes.Add(ServerType.Kraken);
+                serverTypes.Add(ServerType.Exmo);
+                serverTypes.Add(ServerType.HuobiSpot);
+                serverTypes.Add(ServerType.HuobiFutures);
+                serverTypes.Add(ServerType.HuobiFuturesSwap);
+                serverTypes.Add(ServerType.Bybit);
+                serverTypes.Add(ServerType.OKX);
 
                 return serverTypes;
             }
@@ -255,10 +292,6 @@ namespace OsEngine.Market
                 {
                     newServer = new OkxServer();
                 }
-                if (type == ServerType.FTX)
-                {
-                    newServer = new FTXServer();
-                }
                 if (type == ServerType.HuobiFuturesSwap)
                 {
                     newServer = new HuobiFuturesSwapServer();
@@ -306,10 +339,6 @@ namespace OsEngine.Market
                 if (type == ServerType.Exmo)
                 {
                     newServer = new ExmoServer();
-                }
-                if (type == ServerType.Livecoin)
-                {
-                    newServer = new LivecoinServer();
                 }
                 if (type == ServerType.BitMax)
                 {
@@ -899,13 +928,15 @@ namespace OsEngine.Market
                         return;
                     }
                 }
+
+                _needServerTypes.Add(type);
             }
             catch(Exception error)
             {
                 LogMessageEvent(error.ToString(), LogMessageType.Error);
             }
 
-            _needServerTypes.Add(type);
+           
         }
 
         /// <summary>
@@ -1116,12 +1147,6 @@ namespace OsEngine.Market
         Hitbtc,
 
         /// <summary>
-        /// cryptocurrency exchange FTX
-        /// биржа криптовалют FTX
-        /// </summary>
-        FTX,
-
-        /// <summary>
         /// cryptocurrency exchange Gate.io
         /// биржа криптовалют Gate.io
         /// </summary>
@@ -1138,12 +1163,6 @@ namespace OsEngine.Market
         /// биржа криптовалют ZB
         /// </summary>
         Zb,
-
-        /// <summary>
-        /// Livecoin exchange
-        /// биржа Livecoin
-        /// </summary>
-        Livecoin,
 
         /// <summary>
         /// BitMax exchange

@@ -184,7 +184,7 @@ namespace OsEngine.Entity
                 _grid.CellValueChanged -= _grid_CellValueChanged;
                 _grid.CellClick -= _grid_Click;
                 _grid.Rows.Clear();
-                DataGridFactory.ClearLink(_grid);
+                DataGridFactory.ClearLinks(_grid);
                 _grid = null;
             }
 
@@ -265,7 +265,8 @@ namespace OsEngine.Entity
                         cell.Value = param.ValueString;
                         row.Cells.Add(cell);
                     }
-                    else if (param.ValuesString.Count == 1)
+                    else if (param.ValuesString.Count == 1
+                        || (param.ValuesString.Count == 0 && param.ValueString != null))
                     {
                         DataGridViewTextBoxCell cell = new DataGridViewTextBoxCell();
                         cell.Value = param.ValueString;

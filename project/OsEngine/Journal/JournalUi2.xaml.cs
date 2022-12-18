@@ -92,7 +92,7 @@ namespace OsEngine.Journal
             CreateBotsGrid();
             PaintBotsGrid();
 
-            Task task2 = new Task(LeftBotsPanelPainter);
+            Thread task2 = new Thread(LeftBotsPanelPainter);
             task2.Start();
 
             CreateSlidersShowPositions();
@@ -162,7 +162,7 @@ namespace OsEngine.Journal
 
             if (_gridStatistics != null)
             {
-                DataGridFactory.ClearLink(_gridStatistics);
+                DataGridFactory.ClearLinks(_gridStatistics);
                 _gridStatistics.Rows.Clear();
                 _gridStatistics = null;
                 HostStatistics.Child.Hide();
@@ -172,7 +172,7 @@ namespace OsEngine.Journal
 
             if (_openPositionGrid != null)
             {
-                DataGridFactory.ClearLink(_openPositionGrid);
+                DataGridFactory.ClearLinks(_openPositionGrid);
                 _openPositionGrid.Rows.Clear();
                 _openPositionGrid.Click -= _openPositionGrid_Click;
                 _openPositionGrid.DoubleClick -= _openPositionGrid_DoubleClick;
@@ -184,7 +184,7 @@ namespace OsEngine.Journal
 
             if (_closePositionGrid != null)
             {
-                DataGridFactory.ClearLink(_closePositionGrid);
+                DataGridFactory.ClearLinks(_closePositionGrid);
                 _closePositionGrid.Rows.Clear();
                 _closePositionGrid.Click -= _closePositionGrid_Click;
                 _closePositionGrid.DoubleClick -= _closePositionGrid_DoubleClick;
@@ -192,6 +192,15 @@ namespace OsEngine.Journal
                 HostClosePosition.Child.Hide();
                 HostClosePosition.Child = null;
                 HostClosePosition = null;
+            }
+
+            if(_gridLeftBotsPanel != null)
+            {
+                HostBotsSelected.Child = null;
+                _gridLeftBotsPanel.CellEndEdit -= _gridLeftBotsPanel_CellEndEdit;
+                _gridLeftBotsPanel.CellBeginEdit -= _gridLeftBotsPanel_CellBeginEdit;
+                DataGridFactory.ClearLinks(_gridLeftBotsPanel);
+                _gridLeftBotsPanel = null;
             }
         }
 
@@ -217,6 +226,11 @@ namespace OsEngine.Journal
             }
 
             if (IsErase == true)
+            {
+                return;
+            }
+
+            if(_allPositions == null)
             {
                 return;
             }
@@ -2421,7 +2435,7 @@ namespace OsEngine.Journal
             column22.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
             _gridLeftBotsPanel.Columns.Add(column22);
 
-            DataGridViewComboBoxColumn column4 = new DataGridViewComboBoxColumn();
+            DataGridViewCheckBoxColumn column4 = new DataGridViewCheckBoxColumn();
             column4.HeaderText = OsLocalization.Journal.Label12;
             column4.ReadOnly = false;
             column4.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
@@ -2438,6 +2452,7 @@ namespace OsEngine.Journal
             HostBotsSelected.Child.Show();
 
             _gridLeftBotsPanel.CellEndEdit += _gridLeftBotsPanel_CellEndEdit;
+            _gridLeftBotsPanel.CellBeginEdit += _gridLeftBotsPanel_CellBeginEdit;
         }
 
         private void PaintBotsGrid()
@@ -2497,11 +2512,8 @@ namespace OsEngine.Journal
             row.Cells.Add(new DataGridViewTextBoxCell()); // имя
             row.Cells.Add(new DataGridViewTextBoxCell()); // класс 
 
-            DataGridViewComboBoxCell cell = new DataGridViewComboBoxCell();
-            cell.Items.Add("True");
-            cell.Items.Add("False");
-            cell.Items.Add("massive");
-            cell.Value = "massive";
+            DataGridViewCheckBoxCell cell = new DataGridViewCheckBoxCell();
+            cell.Value = group.Panels[0].IsOn;
 
             row.Cells.Add(cell); // вкл / выкл
 
@@ -2542,10 +2554,9 @@ namespace OsEngine.Journal
             row.Cells.Add(new DataGridViewTextBoxCell()); // класс 
             row.Cells[row.Cells.Count - 1].Value = panel.BotClass;
 
-            DataGridViewComboBoxCell cell = new DataGridViewComboBoxCell();
-            cell.Items.Add("True");
-            cell.Items.Add("False");
+            DataGridViewCheckBoxCell cell = new DataGridViewCheckBoxCell();
             cell.Value = panel.IsOn.ToString();
+
             row.Cells.Add(cell); // вкл / выкл
 
             row.Cells.Add(new DataGridViewTextBoxCell()); // мультипликатор
@@ -2758,46 +2769,73 @@ namespace OsEngine.Journal
             }
         }
 
+        private void _gridLeftBotsPanel_CellBeginEdit(object sender, DataGridViewCellCancelEventArgs e)
+        {
+            if (e.ColumnIndex == 4)
+            {
+                _lastChangeRow = e.RowIndex;
+               Task.Run(ChangeOnOffAwait);
+            }
+        }
+
         private void _gridLeftBotsPanel_CellEndEdit(object sender, DataGridViewCellEventArgs e)
         {
             if(e.ColumnIndex == 0)
             {
                 ChangeGroup(e);
             }
-            else if(e.ColumnIndex == 4)
-            {
-                ChangeOnOff(e);
-            }
             else if (e.ColumnIndex == 5)
             {
                 ChangeMult(e);
             }
+
         }
 
-        private void ChangeOnOff(DataGridViewCellEventArgs e)
+        int _lastChangeRow;
+
+        private void ChangeOnOffAwait()
         {
-            string textInCell = _gridLeftBotsPanel.Rows[e.RowIndex].Cells[4].Value.ToString();
+            Thread.Sleep(200);
+            ChangeOnOff(_lastChangeRow);
+        }
 
-            BotPanelJournal bot = GetBotByNum(e.RowIndex);
-
-            if (bot == null)
+        private void ChangeOnOff(int rowIndx)
+        {
+            if(TextBoxFrom.Dispatcher.CheckAccess() == false)
             {
-                ChangeOnOffByGroup(e);
+                TextBoxFrom.Dispatcher.Invoke(new Action<int>(ChangeOnOff), rowIndx);
                 return;
             }
 
-            bot.IsOn = Convert.ToBoolean(textInCell);
+            string textInCell = _gridLeftBotsPanel.Rows[rowIndx].Cells[4].Value.ToString();
+
+            BotPanelJournal bot = GetBotByNum(rowIndx);
+
+            if (bot == null)
+            {
+                ChangeOnOffByGroup(rowIndx);
+                return;
+            }
+
+            if(Convert.ToBoolean(textInCell) == false)
+            {
+                bot.IsOn = true;
+            }
+            else
+            {
+                bot.IsOn = false;
+            }
 
             SaveGroups();
-            _neadToRapaintBotsGrid = true;
             CreatePositionsLists();
+            _neadToRapaintBotsGrid = true;
         }
 
-        private void ChangeOnOffByGroup(DataGridViewCellEventArgs e)
+        private void ChangeOnOffByGroup(int rowIndx)
         {
-            string textInCell = _gridLeftBotsPanel.Rows[e.RowIndex].Cells[4].Value.ToString();
+            string textInCell = _gridLeftBotsPanel.Rows[rowIndx].Cells[4].Value.ToString();
 
-            PanelGroups group = GetGroupByNum(e.RowIndex);
+            PanelGroups group = GetGroupByNum(rowIndx);
 
             if (group == null)
             {
@@ -2808,11 +2846,11 @@ namespace OsEngine.Journal
             {
                 if(textInCell =="True")
                 {
-                    group.Panels[i].IsOn = true;
+                    group.Panels[i].IsOn = false;
                 }
                 else if(textInCell == "False")
                 {
-                    group.Panels[i].IsOn = false;
+                    group.Panels[i].IsOn = true;
                 }
             }
 
