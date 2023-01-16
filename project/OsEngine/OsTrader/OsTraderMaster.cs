@@ -27,6 +27,8 @@ using System.Windows.Forms.Integration;
 using System.Windows.Shapes;
 using OsEngine.PrimeSettings;
 using Grid = System.Windows.Controls.Grid;
+using OsEngine.Robots.Squeezy.Service;
+using OsEngine.Robots.Squeezy.Service.statistic;
 
 namespace OsEngine.OsTrader
 {
@@ -1063,6 +1065,10 @@ namespace OsEngine.OsTrader
             }
         }
 
+        public void ShowStatisticBot()
+        {
+            StatisticForm.showStatistic();
+        }
         public void HotUpdateActiveBot()
         {
             SendNewLogMessage(OsLocalization.Trader.Label161, LogMessageType.System);

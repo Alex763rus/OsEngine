@@ -244,6 +244,11 @@ namespace OsEngine.OsTrader.Gui
             _strategyKeeper.HotUpdateActiveBot();
         }
 
+        private void ShowStatistic_Click(object sender, RoutedEventArgs e)
+        {
+            _strategyKeeper.ShowStatisticBot();
+        }
+
         private void ButtonJournalCommunity_Click(object sender, RoutedEventArgs e)
         {
             _strategyKeeper.ShowCommunityJournal(1);

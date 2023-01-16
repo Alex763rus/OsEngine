@@ -17,7 +17,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
-using static protobuf.ws.TradesRequest;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using Position = OsEngine.Entity.Position;
 using Side = OsEngine.Entity.Side;
@@ -34,6 +33,7 @@ namespace OsEngine.Robots.Squeezy.Trading
         private DealService dealService;
         private PaintService paintService;
         private LogService logService;
+        private StatisticService statisticService;
         private VolumeSumService volumeSumService;
 
         private Candle lastCandle;
@@ -57,11 +57,12 @@ namespace OsEngine.Robots.Squeezy.Trading
         private decimal priceForPaintGroup;         //Цена чтобы рисовать тренд. Заполняется единажды
         private DateTime timeStartGroup;            //Время начала действия группы
 
-        public EventServiceTrading(BotTabSimple tab, GeneralParametersTrading generalParameters, GroupParametersTradingService groupParametersService, LogService logService)
+        public EventServiceTrading(BotTabSimple tab, GeneralParametersTrading generalParameters, GroupParametersTradingService groupParametersService, LogService logService, StatisticService statisticService)
         {
             this.generalParameters = generalParameters;
             this.groupParametersService = groupParametersService;
             this.logService = logService;
+            this.statisticService = statisticService;
 
             movingAverageService = new MovingAverageService(tab, generalParameters);
             dealService = new DealService(tab, generalParameters, logService);
@@ -100,6 +101,15 @@ namespace OsEngine.Robots.Squeezy.Trading
             barCounterProcess(dealSupportSell, dealSupportBuy);
 
             DirectionType directionTypeTmp = getDirectionType();
+
+            if (dealService.hasOpendeal(Side.Sell))
+            {
+                statisticService.recalculateStatistic(getGroupType(Side.Sell), dealService.getSellPosition());
+            }
+            if (dealService.hasOpendeal(Side.Buy))
+            {
+                statisticService.recalculateStatistic(getGroupType(Side.Buy), dealService.getBuyPosition());
+            }
 
             if (directionTypeCurrent != directionTypeTmp)
             {

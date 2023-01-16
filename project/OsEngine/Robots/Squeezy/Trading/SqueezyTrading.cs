@@ -2,6 +2,7 @@
 using OsEngine.Logging;
 using OsEngine.OsTrader.Panels;
 using OsEngine.OsTrader.Panels.Tab;
+using OsEngine.Robots.Squeezy.Service;
 using OsEngine.Robots.Squeezy.Tester;
 using OsEngine.Robots.SqueezyBot.Service;
 using System;
@@ -10,7 +11,7 @@ using System.Windows;
 
 namespace OsEngine.Robots.Squeezy.Trading
 {
-    public class SqueezyTrading : BotPanel, Loggable
+    public class SqueezyTrading : BotPanel, Loggable, Statisticable
     {
         public static string BOT_NAME = "SqueezyTradingBot";
         public static string VERSION = "0.0.1";
@@ -39,6 +40,7 @@ namespace OsEngine.Robots.Squeezy.Trading
                         , CreateParameter("Количество строк лога в буфере", 50, 0, 50, 1, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("Тестовые параметры", true, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("Логгирование", true, TAB_SERVICE_CONTROL_NAME)
+                        , CreateParameter("Статистика", false, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("%MA ширина канала", 1m, 1m, 1m, 1m)
                         , CreateParameter("Графика Линия группы:", true)
                         , CreateParameter("% отрисовки линии группы", 1.0m, 1.0m, 1.0m, 1.0m)
@@ -122,8 +124,9 @@ namespace OsEngine.Robots.Squeezy.Trading
             groupParametersTradingService.addGroupParameters(testTest);
 
             logService = new LogService(this);
+            StatisticService statisticService = new StatisticService(this);
 
-            eventServiceTrading = new EventServiceTrading(tab, generalParametersTrading, groupParametersTradingService, logService);
+            eventServiceTrading = new EventServiceTrading(tab, generalParametersTrading, groupParametersTradingService, logService, statisticService);
 
             tab.CandleFinishedEvent += candleFinishedEventLogic;
             tab.PositionClosingSuccesEvent += positionClosingSuccesEventLogic;
@@ -221,6 +224,16 @@ namespace OsEngine.Robots.Squeezy.Trading
         public bool loggingEnabled()
         {
             return generalParametersTrading.getLogEnabled();
+        }
+
+        public bool statisticEnabled()
+        {
+            return generalParametersTrading.getStatisticEnabled();
+        }
+
+        public string getFilePathStatistic()
+        {
+            return "C:\\1_LOGS\\" + BOT_NAME + "_statistic.txt";
         }
     }
 }

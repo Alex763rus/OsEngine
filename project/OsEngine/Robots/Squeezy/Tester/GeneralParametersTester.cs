@@ -18,6 +18,7 @@ namespace OsEngine.Robots.Squeezy.Tester
         private StrategyParameterInt countBufferLogLine;
         private StrategyParameterBool testSettings;
         private StrategyParameterBool logEnabled;
+        private StrategyParameterBool statisticEnabled;
         private StrategyParameterDecimal maStrength;
         private StrategyParameterBool paintGroupEnabled;
         private StrategyParameterDecimal paintGroup;
@@ -26,7 +27,7 @@ namespace OsEngine.Robots.Squeezy.Tester
         
         public GeneralParametersTester(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow, StrategyParameterInt maLenFast, 
             StrategyParameterDecimal volumePercent, StrategyParameterDecimal volumeSum, StrategyParameterInt coeffMonkey, StrategyParameterInt countBufferLogLine, StrategyParameterBool testSettings,
-            StrategyParameterBool logEnabled, StrategyParameterDecimal maStrength, StrategyParameterBool paintGroupEnabled, StrategyParameterDecimal paintGroup, 
+            StrategyParameterBool logEnabled, StrategyParameterBool statisticEnabled, StrategyParameterDecimal maStrength, StrategyParameterBool paintGroupEnabled, StrategyParameterDecimal paintGroup, 
             StrategyParameterBool paintSqueezyEnabled, StrategyParameterDecimal paintSqueezy)
         {
             this.maLenSlow = maLenSlow;
@@ -38,6 +39,7 @@ namespace OsEngine.Robots.Squeezy.Tester
             this.countBufferLogLine = countBufferLogLine;
             this.testSettings = testSettings;
             this.logEnabled = logEnabled;
+            this.statisticEnabled = statisticEnabled;
             this.maStrength = maStrength;
             this.paintGroupEnabled = paintGroupEnabled;
             this.paintGroup = paintGroup;
@@ -73,6 +75,11 @@ namespace OsEngine.Robots.Squeezy.Tester
         public bool getLogEnabled()
         {
             return logEnabled.ValueBool;
+        }
+
+        public bool getStatisticEnabled()
+        {
+            return statisticEnabled.ValueBool;
         }
         public int getMaLenSlow()
         {

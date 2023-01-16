@@ -25,6 +25,7 @@ namespace OsEngine.Robots.Squeezy.Tester
         private LogService logService;
         private PaintService paintService;
         private VolumeSumService volumeSumService;
+        private StatisticService statisticService;
 
 
         private DirectionType directionTypeCurrent; //Направление текущего бара по МА. 
@@ -32,11 +33,12 @@ namespace OsEngine.Robots.Squeezy.Tester
         private decimal priceForPaintGroup;         //Цена чтобы рисовать тренд. Заполняется единажды.
         private decimal priceForPaintSqueezy;       //Цена чтобы рисовать сквизы. Заполняется единажды
         DateTime timeStartPaintGroup;               //Время начала тренда
-        public EventServiceTester(BotTabSimple tab, GeneralParametersTester generalParameters, GroupParametersTesterService groupParametersService,  LogService logService)
+        public EventServiceTester(BotTabSimple tab, GeneralParametersTester generalParameters, GroupParametersTesterService groupParametersService,  LogService logService, StatisticService statisticService)
         {
             this.generalParameters = generalParameters;
             this.groupParametersService = groupParametersService;
             this.logService = logService;
+            this.statisticService = statisticService;
 
             movingAverageService = new MovingAverageService(tab, generalParameters);
             dealService = new DealService(tab, generalParameters, logService);
@@ -85,6 +87,15 @@ namespace OsEngine.Robots.Squeezy.Tester
 
             dealService.checkSlTpAndClose(candleLow1);
             dealService.checkSlTpAndClose(candleHigh1);
+
+            if (dealService.hasOpendeal(Side.Sell))
+            {
+                statisticService.recalculateStatistic(getGroupType(Side.Sell), dealService.getSellPosition());
+            }
+            if(dealService.hasOpendeal(Side.Buy))
+            {
+                statisticService.recalculateStatistic(getGroupType(Side.Buy), dealService.getBuyPosition());
+            }
 
             //Sell:
             GroupParametersTester groupParameters;

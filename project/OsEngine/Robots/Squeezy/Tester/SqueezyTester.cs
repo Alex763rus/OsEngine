@@ -4,6 +4,8 @@ using OsEngine.Logging;
 using OsEngine.OsTrader.Panels;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Robots.Squeezy;
+using OsEngine.Robots.Squeezy.Service;
+using OsEngine.Robots.Squeezy.Service.statistic;
 using OsEngine.Robots.Squeezy.Tester;
 using OsEngine.Robots.Squeezy.Trading;
 using OsEngine.Robots.SqueezyBot.Service;
@@ -13,7 +15,7 @@ using System.Windows;
 
 namespace OsEngine.Robots.Squeezy.Tester
 {
-    public class SqueezyTester : BotPanel, Loggable
+    public class SqueezyTester : BotPanel, Loggable, Statisticable
     {
         public static string BOT_NAME = "SqueezyTesterBot";
         private const string VERSION = "0.0.1";
@@ -42,6 +44,7 @@ namespace OsEngine.Robots.Squeezy.Tester
                         , CreateParameter("Количество строк лога в буфере", 5000, 5000, 5000, 5000, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("Тестовые параметры", false, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("Логгирование", false, TAB_SERVICE_CONTROL_NAME)
+                        , CreateParameter("Статистика", false, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("%MA ширина канала", 1m, 1m, 1m, 1m)
                         , CreateParameter("Графика Линия группы:", true)
                         , CreateParameter("% отрисовки линии группы", 1.0m, 1.0m, 1.0m, 1.0m)
@@ -125,8 +128,9 @@ namespace OsEngine.Robots.Squeezy.Tester
             groupParametersTesterService.addGroupParameters(testTest);
 
             logService = new LogService(this);
+            StatisticService statisticService = new StatisticService(this);
 
-            eventServiceTester = new EventServiceTester(tab, generalParameters, groupParametersTesterService, logService);
+            eventServiceTester = new EventServiceTester(tab, generalParameters, groupParametersTesterService, logService, statisticService);
 
             tab.CandleFinishedEvent += candleFinishedEventLogic;
             tab.PositionClosingSuccesEvent += positionClosingSuccesEventLogic;
@@ -195,6 +199,16 @@ namespace OsEngine.Robots.Squeezy.Tester
         public bool loggingEnabled()
         {
             return generalParameters.getLogEnabled();
+        }
+
+        public bool statisticEnabled()
+        {
+            return generalParameters.getStatisticEnabled();
+        }
+
+        public string getFilePathStatistic()
+        {
+            return "C:\\1_LOGS\\" + BOT_NAME + "_statistic.txt";
         }
     }
 }

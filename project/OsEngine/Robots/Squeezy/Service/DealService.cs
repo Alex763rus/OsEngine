@@ -14,7 +14,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static protobuf.ws.TradesRequest;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using Position = OsEngine.Entity.Position;
 
@@ -53,6 +52,11 @@ namespace OsEngine.Robots.SqueezyBot
                 return positions[0];
             }
             return null;
+        }
+
+        public List<Position> getAllPosition()
+        {
+            return tab.PositionsOpenAll;
         }
         private void sendLogErrorLocal(string text, Position position = null)
         {
