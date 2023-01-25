@@ -15,6 +15,7 @@ namespace OsEngine.Robots.Squeezy
         public int getCountBufferLogLine();
         public string getFilePath();
 
+        public string getUniqBotName();
         public DateTime getTimeServerCurrent();
     }
 }

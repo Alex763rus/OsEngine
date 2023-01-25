@@ -53,6 +53,7 @@ namespace OsEngine.Robots.Squeezy.Trading
             chartElements = new IChartElement[100];
             chartCounter = 0;
             counterBar = 0;
+            position = null;
         }
         public string getGroupType()
         {

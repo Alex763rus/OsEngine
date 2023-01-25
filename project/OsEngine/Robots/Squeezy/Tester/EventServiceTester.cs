@@ -33,6 +33,7 @@ namespace OsEngine.Robots.Squeezy.Tester
         private decimal priceForPaintGroup;         //Цена чтобы рисовать тренд. Заполняется единажды.
         private decimal priceForPaintSqueezy;       //Цена чтобы рисовать сквизы. Заполняется единажды
         DateTime timeStartPaintGroup;               //Время начала тренда
+        private bool isStart;                       //Признак начала работы
         public EventServiceTester(BotTabSimple tab, GeneralParametersTester generalParameters, GroupParametersTesterService groupParametersService,  LogService logService, StatisticService statisticService)
         {
             this.generalParameters = generalParameters;
@@ -46,23 +47,25 @@ namespace OsEngine.Robots.Squeezy.Tester
             paintService = new PaintService(tab);
             volumeSumService = new VolumeSumService(generalParameters.getVolumeSum(), generalParameters.getCoeffMonkey(), logService);
             lockCurrentDirection = false;
+            isStart = true;
         }
 
         public void candleFinishedEventLogic(List<Candle> candles)
         {
-            //Если мало баров или нет медленной, ничего не делаем:
+            //Для тестовой среды: Если мало баров или нет медленной, ничего не делаем:
             if (candles.Count <= 2 || movingAverageService.getMaLastValueSlow() == 0)
             {
-                if (candles.Count == 2)
-                {
-                    movingAverageService.updateMaLen();
-                    logBotSettings();
-                    paintService.deleteAllChartElement();
-                    priceForPaintGroup = getValueAddPercent(candles[candles.Count - 1].Low, generalParameters.getPaintGroup());
-                    timeStartPaintGroup = candles[candles.Count - 1].TimeStart;
-                    priceForPaintSqueezy = getValueAddPercent(candles[candles.Count - 1].Low, generalParameters.getPaintSqueezy());
-                }
                 return;
+            }
+            if (isStart)
+            {
+                movingAverageService.updateMaLen();
+                logBotSettings();
+                paintService.deleteAllChartElement();
+                priceForPaintGroup = getValueAddPercent(candles[candles.Count - 1].Low, generalParameters.getPaintGroup());
+                timeStartPaintGroup = candles[candles.Count - 1].TimeStart;
+                priceForPaintSqueezy = getValueAddPercent(candles[candles.Count - 1].Low, generalParameters.getPaintSqueezy());
+                isStart = false;
             }
 
             SqueezyType squeezyType = SqueezyType.None;

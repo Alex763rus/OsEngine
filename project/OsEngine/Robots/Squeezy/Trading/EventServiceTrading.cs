@@ -56,6 +56,7 @@ namespace OsEngine.Robots.Squeezy.Trading
 
         private decimal priceForPaintGroup;         //Цена чтобы рисовать тренд. Заполняется единажды
         private DateTime timeStartGroup;            //Время начала действия группы
+        private bool isStart;                       //Признак начала работы
 
         public EventServiceTrading(BotTabSimple tab, GeneralParametersTrading generalParameters, GroupParametersTradingService groupParametersService, LogService logService, StatisticService statisticService)
         {
@@ -74,23 +75,25 @@ namespace OsEngine.Robots.Squeezy.Trading
 
             directionTypeCurrent = DirectionType.None;
             lockCurrentDirection = false;
+            isStart = true;
         }
 
         public void candleFinishedEventLogic(List<Candle> candles)
         {
-            //Если мало баров или нет медленной, ничего не делаем:
+            //Для тестов: Если мало баров или нет медленной, ничего не делаем:
             if (candles.Count < 2 || movingAverageService.getMaLastValueSlow() == 0)
             {
-                if (candles.Count == 1)
-                {
-                    logBotSettings();
-                    paintService.deleteAllChartElement();
-                    dealSupportBuy.reset();
-                    dealSupportSell.reset();
-                    priceForPaintGroup = getValueSubtractPercent(candles[candles.Count - 1].Low, generalParameters.getPaintGroup());
-                    timeStartGroup = candles[candles.Count - 1].TimeStart;
-                }
                 return;
+            }
+            if (isStart)
+            {
+                logBotSettings();
+                paintService.deleteAllChartElement();
+                dealSupportBuy.reset();
+                dealSupportSell.reset();
+                priceForPaintGroup = getValueSubtractPercent(candles[candles.Count - 1].Low, generalParameters.getPaintGroup());
+                timeStartGroup = candles[candles.Count - 1].TimeStart;
+                isStart = false;
             }
 
             lastCandle = candles[candles.Count - 1];
@@ -113,7 +116,9 @@ namespace OsEngine.Robots.Squeezy.Trading
 
             if (directionTypeCurrent != directionTypeTmp)
             {
-                //paintService.paintGroup(timeStartGroup, candles[candles.Count - 1].TimeStart, priceForPaintGroup, directionTypeTmp);
+                sendLogSystemLocal("Поменялась группа тренда с " + directionTypeCurrent + " на " + directionTypeTmp + ", timeStartGroup = " 
+                    + timeStartGroup + ", candles[candles.Count - 1].TimeStart = " + candles[candles.Count - 1].TimeStart + ", priceForPaintGroup = " + priceForPaintGroup);
+                paintService.paintGroup(timeStartGroup, candles[candles.Count - 1].TimeStart, priceForPaintGroup, directionTypeTmp);
                 timeStartGroup = candles[candles.Count - 1].TimeStart;
             }
 
@@ -209,7 +214,7 @@ namespace OsEngine.Robots.Squeezy.Trading
                         ||(side == Side.Buy && price < priceOpenLimit)
                         )
                     {
-                        position = dealService.openDeal(side, groupParameters.getGroupType().ToString(), "Вход по рынку", volumeSumService.getVolumeSum(side));
+                        position = dealService.openDeal(side, groupParameters.getGroupType().ToString(), "Вход по рынку", 100.0m/*volumeSumService.getVolumeSum(side)*/);
                         if (position != null)
                         {
                             sendLogSystemLocal("-> OK_TRIGGER_START : выставили заявку по рынку:", position, dealSupport);
@@ -254,7 +259,7 @@ namespace OsEngine.Robots.Squeezy.Trading
             position.ProfitOrderRedLine = tp;
             position.StopOrderRedLine = sl;
             dealService.setTpSl(position, tp, sl, 0);
-            sendLogSystemLocal("-> WAIT_TP_SL Успешно открыта позиция:" + position.Comment, position, dealSupportSell);
+            sendLogSystemLocal("Успешно открыта позиция:" + position.Comment, position, dealSupportSell);
             sendLogSystemLocal("Установлен TP =" + tp + ", SL =" + sl + " для позиции:", position, dealSupportSell);
         }
 

@@ -121,7 +121,7 @@ namespace OsEngine.Robots.SqueezyBot.Service
 
         public IChartElement paintClosedPosition(Position position, bool isProfit)
         {
-            string label = "#" + position.Number + " " + position.SignalTypeOpen + " \n" + position.Direction;
+            string label = "#" + position.Number; //+ " " + position.SignalTypeOpen + " \n" + position.Direction;
             Color color;
             if (isProfit)
             {

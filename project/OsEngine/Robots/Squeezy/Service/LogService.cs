@@ -88,6 +88,7 @@ namespace OsEngine.Robots.SqueezyBot.Service
             StringBuilder logMessage = new StringBuilder();
             logMessage.Append(DateTime.Now).Append(" ")
                         .Append(squeezy.getTimeServerCurrent()).Append(" ")
+                        .Append(squeezy.getUniqBotName()).Append(" ")
                         .Append(getIndent(level))
                         .Append(logMessageType.ToString()).Append(":")
                         .Append(message);

@@ -41,7 +41,7 @@ namespace OsEngine.Robots.Squeezy.Tester
                         , CreateParameter("ОТКЛЮЧЕН % депозита для сделки", 10.0m, 5.0m, 50.0m, 5.0m)
                         , CreateParameter("Сумма для открытия", 10.0m, 5.0m, 50.0m, 5.0m)
                         , CreateParameter("Коэфф мартышки:", 1, 5, 5, 1)
-                        , CreateParameter("Количество строк лога в буфере", 5000, 5000, 5000, 5000, TAB_SERVICE_CONTROL_NAME)
+                        , CreateParameter("Количество строк лога в буфере", 1, 1, 1, 1, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("Тестовые параметры", false, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("Логгирование", false, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("Статистика", false, TAB_SERVICE_CONTROL_NAME)
@@ -185,6 +185,11 @@ namespace OsEngine.Robots.Squeezy.Tester
         public int getCountBufferLogLine()
         {
             return generalParameters.getCountBufferLogLine();
+        }
+
+        public string getUniqBotName()
+        {
+            return this.NameStrategyUniq;
         }
 
         public string getFilePath()

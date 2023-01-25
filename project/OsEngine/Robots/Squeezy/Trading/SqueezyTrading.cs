@@ -30,18 +30,18 @@ namespace OsEngine.Robots.Squeezy.Trading
             tab = TabsSimple[0];
 
             generalParametersTrading = new GeneralParametersTrading(
-                          CreateParameter("MovingAverage длина slow", 150, 0, 150, 5)
-                        , CreateParameter("ОТКЛЮЧЕН %MovingAverage высота коридора slow ", 0.4m, 0.0m, 0.8m, 0.4m)
-                        , CreateParameter("MovingAverage длина fast", 50, 0, 50, 25)
+                          CreateParameter("MovingAverage длина slow", 130, 0, 130, 5)
+                        , CreateParameter("ОТКЛЮЧЕН %MovingAverage высота коридора slow ", 0.4m, 0.4m, 0.4m, 0.4m)
+                        , CreateParameter("MovingAverage длина fast", 10, 0, 10, 1)
                         , CreateParameter("ОТКЛЮЧЕН % депозита для сделки", 10.0m, 10.0m, 50.0m, 5.0m)
-                        , CreateParameter("Сумма для открытия", 10.0m, 5.0m, 50.0m, 5.0m)
-                        , CreateParameter("Коэфф мартышки:", 1, 5, 5, 1)
-                        , CreateParameter("%Триггер старта", 1m, 1m, 1m, 1m)
-                        , CreateParameter("Количество строк лога в буфере", 50, 0, 50, 1, TAB_SERVICE_CONTROL_NAME)
-                        , CreateParameter("Тестовые параметры", true, TAB_SERVICE_CONTROL_NAME)
+                        , CreateParameter("Сумма для открытия", 100.0m, 0.0m, 100.0m, 5.0m)
+                        , CreateParameter("Коэфф мартышки:", 1, 1, 1, 1)
+                        , CreateParameter("%Триггер старта", 0.5m, 0.5m, 0.5m, 0.5m)
+                        , CreateParameter("Количество строк лога в буфере", 1, 0, 1, 1, TAB_SERVICE_CONTROL_NAME)
+                        , CreateParameter("Тестовые параметры", false, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("Логгирование", true, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("Статистика", false, TAB_SERVICE_CONTROL_NAME)
-                        , CreateParameter("%MA ширина канала", 1m, 1m, 1m, 1m)
+                        , CreateParameter("%MA ширина канала", 4m, 4m, 4m, 4m)
                         , CreateParameter("Графика Линия группы:", true)
                         , CreateParameter("% отрисовки линии группы", 1.0m, 1.0m, 1.0m, 1.0m)
                         , CreateParameter("Графика Линия сквиза:", true)
@@ -54,60 +54,60 @@ namespace OsEngine.Robots.Squeezy.Trading
                           GroupType.UpBuy
                         , CreateParameter("Включить UpBuy торговлю", true)
                         , CreateParameter("%Триггер отложенного ордера UpBuy", 1.5m, 0.0m, 0.5m, 5.0m)
-                        , CreateParameter("%TakeProfit UpBuy", 1.5m, 0.0m, 0.5m, 5.0m)
-                        , CreateParameter("%StopLoss UpBuy", 3m, 0.0m, 1.0m, 10.0m)
-                        , CreateParameter("Количество баров до выхода UpBuy", 2, 0, 30, 1)
+                        , CreateParameter("%TakeProfit UpBuy", 3.0m, 0.0m, 3.0m, 1.0m)
+                        , CreateParameter("%StopLoss UpBuy", 5.0m, 0.0m, 5.0m, 5.0m)
+                        , CreateParameter("Количество баров до выхода UpBuy", 2, 0, 2, 1)
                         );
             addSeparateParameter();
             GroupParametersTrading upSell = new GroupParametersTrading(
                           GroupType.UpSell
                         , CreateParameter("Включить UpSell торговлю", true)
-                        , CreateParameter("%Триггер отложенного ордера UpSell", 1.5m, 0.0m, 0.5m, 5.0m)
-                        , CreateParameter("%TakeProfit UpSell", 1.5m, 0.0m, 0.5m, 5.0m)
-                        , CreateParameter("%StopLoss UpSell", 3m, 0.0m, 1.0m, 10.0m)
-                        , CreateParameter("Количество баров до выхода UpSell", 2, 0, 30, 1)
+                        , CreateParameter("%Триггер отложенного ордера UpSell", 1.0m, 0.0m, 1.0m, 1.0m)
+                        , CreateParameter("%TakeProfit UpSell", 8.5m, 0.0m, 8.5m, 8.0m)
+                        , CreateParameter("%StopLoss UpSell", 4.0m, 0.0m, 4.0m, 4.0m)
+                        , CreateParameter("Количество баров до выхода UpSell", 5, 0, 5, 5)
                         );
             addSeparateParameter();
             GroupParametersTrading dnBuy = new GroupParametersTrading(
                           GroupType.DownBuy
                         , CreateParameter("Включить DownBuy торговлю", true)
-                        , CreateParameter("%Триггер отложенного ордера DownBuy", 1.5m, 0.0m, 0.5m, 5.0m)
-                        , CreateParameter("%TakeProfit DownBuy", 1.5m, 0.0m, 0.5m, 5.0m)
-                        , CreateParameter("%StopLoss DownBuy", 3m, 0.0m, 1.0m, 10.0m)
-                        , CreateParameter("Количество баров до выхода DownBuy", 2, 0, 30, 1)
+                        , CreateParameter("%Триггер отложенного ордера DownBuy", 1.0m, 0.0m, 0.5m, 5.0m)
+                        , CreateParameter("%TakeProfit DownBuy", 5.0m, 0.0m, 0.5m, 5.0m)
+                        , CreateParameter("%StopLoss DownBuy", 6m, 0.0m, 1.0m, 10.0m)
+                        , CreateParameter("Количество баров до выхода DownBuy", 18, 0, 30, 1)
                         );
             addSeparateParameter();
             GroupParametersTrading dnSell = new GroupParametersTrading (
                           GroupType.DownSell
                         , CreateParameter("Включить DownSell торговлю", true)
-                        , CreateParameter("%Триггер отложенного ордера DownSell", 1.5m, 0.0m, 0.5m, 5.0m)
-                        , CreateParameter("%TakeProfit DownSell", 1.5m, 0.0m, 0.5m, 5.0m)
-                        , CreateParameter("%StopLoss DownSell", 3m, 0.0m, 1.0m, 10.0m)
-                        , CreateParameter("Количество баров до выхода DownSell", 2, 0, 30, 1)
+                        , CreateParameter("%Триггер отложенного ордера DownSell", 1.0m, 0.0m, 0.5m, 5.0m)
+                        , CreateParameter("%TakeProfit DownSell", 5.0m, 0.0m, 5.0m, 5.0m)
+                        , CreateParameter("%StopLoss DownSell", 10.0m, 0.0m, 6.0m, 10.0m)
+                        , CreateParameter("Количество баров до выхода DownSell", 30, 0, 30, 30)
                         );
             addSeparateParameter();
             GroupParametersTrading flatBuy = new GroupParametersTrading(
                           GroupType.FlatBuy
                         , CreateParameter("Включить FlatBuy торговлю", true)
-                        , CreateParameter("%Триггер отложенного ордера FlatBuy", 1.5m, 0.0m, 0.5m, 5.0m)
-                        , CreateParameter("%TakeProfit FlatBuy", 1.5m, 0.0m, 0.5m, 5.0m)
-                        , CreateParameter("%StopLoss FlatBuy", 3m, 0.0m, 1.0m, 10.0m)
-                        , CreateParameter("Количество баров до выхода FlatBuy", 2, 0, 30, 1)
+                        , CreateParameter("%Триггер отложенного ордера FlatBuy", 1.0m, 0.0m, 0.5m, 1.0m)
+                        , CreateParameter("%TakeProfit FlatBuy", 6.0m, 0.0m, 0.5m, 6.0m)
+                        , CreateParameter("%StopLoss FlatBuy", 2m, 0.0m, 1.0m, 2.0m)
+                        , CreateParameter("Количество баров до выхода FlatBuy", 5, 0, 30, 5)
                         );
             addSeparateParameter();
             GroupParametersTrading flatSell = new GroupParametersTrading(
                           GroupType.FlatSell
                         , CreateParameter("Включить FlatSell торговлю", true)
-                        , CreateParameter("%Триггер отложенного ордера FlatSell", 1.5m, 0.0m, 0.5m, 5.0m)
-                        , CreateParameter("%TakeProfit FlatSell", 1.5m, 0.0m, 0.5m, 5.0m)
-                        , CreateParameter("%StopLoss FlatSell", 3m, 0.0m, 1.0m, 10.0m)
-                        , CreateParameter("Количество баров до выхода FlatSell", 2, 0, 30, 1)
+                        , CreateParameter("%Триггер отложенного ордера FlatSell", 1.0m, 0.0m, 0.5m, 1.0m)
+                        , CreateParameter("%TakeProfit FlatSell", 3.0m, 0.0m, 0.5m, 3.0m)
+                        , CreateParameter("%StopLoss FlatSell", 8m, 0.0m, 1.0m, 8.0m)
+                        , CreateParameter("Количество баров до выхода FlatSell", 18, 0, 30, 18)
                         );
             //==Панель с техническими параметрами: ======================================================================================================================
             addSeparateParameter(TAB_SERVICE_CONTROL_NAME);
             GroupParametersTrading testTest = new GroupParametersTrading(
                           GroupType.TestTest
-                        , CreateParameter("Включить TestTest торговлю", true, TAB_SERVICE_CONTROL_NAME)
+                        , CreateParameter("Включить TestTest торговлю", false, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("%Триггер отложенного ордера TestTest", 1.5m, 0.0m, 0.5m, 5.0m, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("%TakeProfit TestTest", 1.5m, 0.0m, 0.5m, 5.0m, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("%StopLoss TestTest", 3m, 0.0m, 1.0m, 10.0m, TAB_SERVICE_CONTROL_NAME)
@@ -211,9 +211,13 @@ namespace OsEngine.Robots.Squeezy.Trading
             return generalParametersTrading.getCountBufferLogLine();
         }
 
+        public string getUniqBotName()
+        {
+            return this.NameStrategyUniq;
+        }
         public string getFilePath()
         {
-            return "C:\\1_LOGS\\" + BOT_NAME + "_log.txt";
+            return "C:\\1_LOGS\\" + BOT_NAME +  "_log.txt";
         }
 
         public DateTime getTimeServerCurrent()

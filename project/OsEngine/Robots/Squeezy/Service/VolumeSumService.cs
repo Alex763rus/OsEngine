@@ -57,11 +57,18 @@ namespace OsEngine.Robots.Squeezy.Service
         }
         public decimal getVolumeSum(Side side)
         {
-            if(side == Side.Buy)
+            decimal volumeSum = 0;
+            if (side == Side.Buy)
             {
-                return calculatedSum[levelBuy];
+                volumeSum = calculatedSum[levelBuy];
             }
-            return calculatedSum[levelSell];
+            else
+            {
+                volumeSum = calculatedSum[levelSell];
+            }
+
+            logService.sendLogSystem("VolumeSumService: levelBuy = " + levelBuy + ", levelSell = " + levelSell + ", side = " + side  + ", volumeSum = " + volumeSum);
+            return volumeSum;
         }
 
         public void updateLevel(Side side, bool isProfit)
