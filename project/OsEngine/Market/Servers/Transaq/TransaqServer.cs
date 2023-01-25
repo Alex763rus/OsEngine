@@ -373,6 +373,11 @@ namespace OsEngine.Market.Servers.Transaq
                     continue;
                 }
 
+                if (_client == null)
+                {
+                    continue;
+                }
+
                 if (!_client.IsConnected)
                 {
                     continue;
@@ -1650,6 +1655,11 @@ namespace OsEngine.Market.Servers.Transaq
             {
                 LogMessageEvent(message, type);
             }
+        }
+
+        public void ResearchTradesToOrders(List<Order> orders)
+        {
+
         }
 
         /// <summary>

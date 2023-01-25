@@ -38,6 +38,7 @@ namespace OsEngine.Charts.CandleChart.Indicators
         public ParabolicSarUi(ParabolicSaR mA)
         {
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
             _mA = mA;
 
             TextBoxAf.Text = _mA.Af.ToString();
@@ -57,8 +58,9 @@ namespace OsEngine.Charts.CandleChart.Indicators
             LabelIndicatorStep.Content = OsLocalization.Charts.LabelIndicatorStep;
             LabelIndicatorMaxStep.Content = OsLocalization.Charts.LabelIndicatorMaxStep;
 
+            this.Activate();
+            this.Focus();
         }
-
 
         /// <summary>
         /// accept button

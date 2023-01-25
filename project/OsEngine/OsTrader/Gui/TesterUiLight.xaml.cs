@@ -10,6 +10,7 @@ using OsEngine.Charts.CandleChart;
 using OsEngine.Entity;
 using OsEngine.Language;
 using OsEngine.Market;
+using OsEngine.Layout;
 
 namespace OsEngine.OsTrader.Gui
 {
@@ -40,6 +41,9 @@ namespace OsEngine.OsTrader.Gui
             TabControlPrime.MouseEnter += TabControlPrime_MouseEnter;
             TabControlPrime.MouseLeave += TabControlPrime_MouseLeave;
 
+            this.Activate();
+            this.Focus();
+            GlobalGUILayout.Listen(this, "testerUiLight");
         }
 
         private void Local()

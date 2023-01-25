@@ -31,6 +31,7 @@ namespace OsEngine.Entity
         public AcceptDialogUi(string text)
         {
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
             LabelText.Content = text;
 
             _numMessage++;
@@ -64,6 +65,8 @@ namespace OsEngine.Entity
             Title = OsLocalization.Entity.TitleAcceptDialog;
             ButtonAccept.Content = OsLocalization.Entity.ButtonAccept;
 
+            this.Activate();
+            this.Focus();
         }
 
         private void ButtonCancel_Click(object sender, RoutedEventArgs e)

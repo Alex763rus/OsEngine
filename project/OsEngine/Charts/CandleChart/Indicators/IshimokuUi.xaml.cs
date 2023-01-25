@@ -40,6 +40,7 @@ namespace OsEngine.Charts.CandleChart.Indicators
         public IshimokuUi(Ichimoku ishimoku)
         {
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
             _ishimoku = ishimoku;
 
             TextBoxPeriodOne.Text = _ishimoku.LenghtFirst.ToString();
@@ -74,7 +75,9 @@ namespace OsEngine.Charts.CandleChart.Indicators
             ButtonFirst.Content = OsLocalization.Charts.LabelButtonIndicatorColor;
             ButtonSecond.Content = OsLocalization.Charts.LabelButtonIndicatorColor;
             LabelIndicatorDeviation.Content = OsLocalization.Charts.LabelIndicatorDeviation;
-            
+
+            this.Activate();
+            this.Focus();
         }
 
         /// <summary>

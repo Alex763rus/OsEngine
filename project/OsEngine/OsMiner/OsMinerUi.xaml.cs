@@ -1,5 +1,6 @@
 ﻿
 using OsEngine.Language;
+using OsEngine.Layout;
 
 namespace OsEngine.OsMiner
 {
@@ -18,6 +19,11 @@ namespace OsEngine.OsMiner
             Label6.Header = OsLocalization.Miner.Label6;
             Label52.Content = OsLocalization.Miner.Label5;
             Label7.Content = OsLocalization.Miner.Label7;
+
+            this.Activate();
+            this.Focus();
+
+            GlobalGUILayout.Listen(this, "OsMinerUi");
         }
 
         private OsMinerMaster _miner;

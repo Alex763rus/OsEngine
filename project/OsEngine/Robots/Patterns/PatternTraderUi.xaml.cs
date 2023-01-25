@@ -24,6 +24,7 @@ namespace OsEngine.Robots.Patterns
         public PatternTraderUi(PatternTrader bot)
         {
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
 
             _bot = bot;
 
@@ -78,6 +79,9 @@ namespace OsEngine.Robots.Patterns
             LabelSlippage4.Content = OsLocalization.Trader.Label92;
             LabelSlippageExitByPatterns.Content = OsLocalization.Trader.Label127;
             LabelWeightForExit.Content = OsLocalization.Trader.Label128;
+
+            this.Activate();
+            this.Focus();
         }
 
         private PatternTrader _bot;

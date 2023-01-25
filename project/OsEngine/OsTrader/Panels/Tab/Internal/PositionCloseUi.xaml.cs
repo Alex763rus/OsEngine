@@ -17,6 +17,7 @@ namespace OsEngine.OsTrader.Panels.Tab.Internal
         {
 
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
 
             TextBoxPrice.Text = lastSecurityPrice.ToStringWithNoEndZero();
             TextBoxSecurity.Text = position.OpenOrders[0].SecurityNameCode;
@@ -39,6 +40,9 @@ namespace OsEngine.OsTrader.Panels.Tab.Internal
             LabelOrderType.Content = OsLocalization.Trader.Label103;
             LabelOrdersToIceberg.Content = OsLocalization.Trader.Label104;
             ButtonAccept.Content = OsLocalization.Trader.Label17;
+
+            this.Activate();
+            this.Focus();
         }
 
         void ComboBoxOrderType_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)

@@ -36,6 +36,7 @@ namespace OsEngine.Charts.CandleChart.Indicators
         public PivotUi(Pivot pivot)
         {
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
             _pivot = pivot;
 
 
@@ -67,6 +68,9 @@ namespace OsEngine.Charts.CandleChart.Indicators
 
             CheckBoxPaintOnOff.Content = OsLocalization.Charts.LabelPaintIntdicatorIsVisible;
             ButtonAccept.Content = OsLocalization.Charts.LabelButtonIndicatorAccept;
+
+            this.Activate();
+            this.Focus();
         }
 
         /// <summary>

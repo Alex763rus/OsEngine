@@ -17,6 +17,9 @@ namespace OsEngine.Entity
         public ProxyHolderAddUi()
         {
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
+            this.Activate();
+            this.Focus();
         }
 
         private void ButtonSave_Click(object sender, RoutedEventArgs e)

@@ -86,7 +86,7 @@ namespace OsEngine.Market
 
                 serverTypes.Add(ServerType.GateIo);
                 serverTypes.Add(ServerType.GateIoFutures);
-                serverTypes.Add(ServerType.BitMax);
+                serverTypes.Add(ServerType.AscendEx_BitMax);
                 serverTypes.Add(ServerType.Binance);
                 serverTypes.Add(ServerType.BinanceFutures);
                 serverTypes.Add(ServerType.BitMex);
@@ -179,7 +179,7 @@ namespace OsEngine.Market
                 serverTypes.Add(ServerType.MoexDataServer);
                 serverTypes.Add(ServerType.MfdWeb);
 
-                serverTypes.Add(ServerType.BitMax);
+                serverTypes.Add(ServerType.AscendEx_BitMax);
                 serverTypes.Add(ServerType.Binance);
                 serverTypes.Add(ServerType.BinanceFutures);
                 serverTypes.Add(ServerType.BitMex);
@@ -340,7 +340,7 @@ namespace OsEngine.Market
                 {
                     newServer = new ExmoServer();
                 }
-                if (type == ServerType.BitMax)
+                if (type == ServerType.AscendEx_BitMax)
                 {
                     newServer = new BitMaxProServer();
                 }
@@ -908,35 +908,38 @@ namespace OsEngine.Market
         /// </summary>
         public static bool NeadToConnectAuto;
 
+        private static string _startServerLocker = "startServLocker";
+
         /// <summary>
         /// select a specific server type for connection
         /// заказать на подключение определённый тип сервера
         /// </summary>
         public static void SetNeedServer(ServerType type)
         {
-            if (_needServerTypes == null)
+            lock (_startServerLocker)
             {
-                _needServerTypes = new List<ServerType>();
-            }
-
-            try
-            {
-                for (int i = 0; i < _needServerTypes.Count; i++)
+                if (_needServerTypes == null)
                 {
-                    if (_needServerTypes[i] == type)
-                    {
-                        return;
-                    }
+                    _needServerTypes = new List<ServerType>();
                 }
 
-                _needServerTypes.Add(type);
-            }
-            catch(Exception error)
-            {
-                LogMessageEvent(error.ToString(), LogMessageType.Error);
-            }
+                try
+                {
+                    for (int i = 0; i < _needServerTypes.Count; i++)
+                    {
+                        if (_needServerTypes[i] == type)
+                        {
+                            return;
+                        }
+                    }
 
-           
+                    _needServerTypes.Add(type);
+                }
+                catch (Exception error)
+                {
+                    LogMessageEvent(error.ToString(), LogMessageType.Error);
+                }
+            }
         }
 
         /// <summary>
@@ -1168,7 +1171,7 @@ namespace OsEngine.Market
         /// BitMax exchange
         /// биржа BitMax
         /// </summary>
-        BitMax,
+        AscendEx_BitMax,
 
         /// <summary>
         /// transaq

@@ -37,6 +37,7 @@ namespace OsEngine.Charts.CandleChart.Indicators
         public IvashovRangeUi(IvashovRange ir)
         {
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
             _ir = ir;
 
             TextBoxLenght.Text = _ir.LenghtMa.ToString();
@@ -52,7 +53,8 @@ namespace OsEngine.Charts.CandleChart.Indicators
             LabelIndicatorPeriod.Content = OsLocalization.Charts.LabelIndicatorPeriod;
             LabelIndicatorSmoothing.Content = OsLocalization.Charts.LabelIndicatorSmoothing;
 
-
+            this.Activate();
+            this.Focus();
         }
 
         /// <summary>

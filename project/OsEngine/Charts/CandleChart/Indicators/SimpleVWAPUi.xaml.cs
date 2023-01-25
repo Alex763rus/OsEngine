@@ -38,6 +38,7 @@ namespace OsEngine.Charts.CandleChart.Indicators
         public SimpleVWAPUi(SimpleVWAP vwap)
         {
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
             _vwap = vwap;
 
             HostColor.Child = new TextBox();
@@ -46,6 +47,9 @@ namespace OsEngine.Charts.CandleChart.Indicators
             ButtonColor.Content = OsLocalization.Charts.LabelButtonIndicatorColor;
             CheckBoxPaintOnOff.Content = OsLocalization.Charts.LabelPaintIntdicatorIsVisible;
             ButtonAccept.Content = OsLocalization.Charts.LabelButtonIndicatorAccept;
+
+            this.Activate();
+            this.Focus();
         }
 
         /// <summary>

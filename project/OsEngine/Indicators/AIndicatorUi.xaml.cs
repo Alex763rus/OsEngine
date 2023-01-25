@@ -17,6 +17,7 @@ namespace OsEngine.Indicators
         public AIndicatorUi(Aindicator indicator)
         {
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
             Title = indicator.GetType().Name + " " + OsLocalization.Charts.Label1;
             _indicator = indicator;
 
@@ -35,6 +36,8 @@ namespace OsEngine.Indicators
             ButtonAccept.Content = OsLocalization.Charts.LabelButtonIndicatorAccept;
             ButtonDefault.Content = OsLocalization.Charts.Label5;
 
+            this.Activate();
+            this.Focus();
         }
 
         private void ButtonAccept_Click(object sender, RoutedEventArgs e)

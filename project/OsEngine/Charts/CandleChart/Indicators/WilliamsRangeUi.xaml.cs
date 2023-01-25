@@ -38,6 +38,7 @@ namespace OsEngine.Charts.CandleChart.Indicators
         public WilliamsRangeUi(WilliamsRange wr)
         {
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
             _wr = wr;
 
             TextBoxLenght.Text = _wr.Nperiod.ToString();
@@ -50,6 +51,9 @@ namespace OsEngine.Charts.CandleChart.Indicators
             LabelIndicatorLongPeriod.Content = OsLocalization.Charts.LabelIndicatorLongPeriod;
             ButtonAccept.Content = OsLocalization.Charts.LabelButtonIndicatorAccept;
             CheckBoxPaintOnOff.Content = OsLocalization.Charts.LabelPaintIntdicatorIsVisible;
+
+            this.Activate();
+            this.Focus();
         }
 
         /// <summary>

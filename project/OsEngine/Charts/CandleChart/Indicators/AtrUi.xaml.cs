@@ -38,6 +38,7 @@ namespace OsEngine.Charts.CandleChart.Indicators
         public AtrUi(Atr atr)
         {
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
             _atr = atr;
 
             TextBoxLenght.Text = _atr.Lenght.ToString();
@@ -52,6 +53,9 @@ namespace OsEngine.Charts.CandleChart.Indicators
             CheckBoxExponential.Content = OsLocalization.Charts.LabelIndicatorExponential;
             ButtonAccept.Content = OsLocalization.Charts.LabelButtonIndicatorAccept;
             LabelIndicatorPeriod.Content = OsLocalization.Charts.LabelIndicatorPeriod;
+
+            this.Activate();
+            this.Focus();
         }
 
         /// <summary>

@@ -27,6 +27,7 @@ using ChartArea = System.Windows.Forms.DataVisualization.Charting.ChartArea;
 using ContextMenu = System.Windows.Forms.ContextMenu;
 using MenuItem = System.Windows.Forms.MenuItem;
 using Series = System.Windows.Forms.DataVisualization.Charting.Series;
+using OsEngine.Layout;
 
 namespace OsEngine.Journal
 {
@@ -82,6 +83,15 @@ namespace OsEngine.Journal
 
             Closing += JournalUi_Closing;
 
+            this.Activate();
+            this.Focus();
+
+            string botNames = "";
+            for (int i = 0; i < botsJournals.Count; i++)
+            {
+                botNames += botsJournals[i].BotName;
+            }
+            GlobalGUILayout.Listen(this, "JournalUi_" + startProgram.ToString() + botNames);
         }
 
         private CultureInfo _currentCulture;
@@ -369,6 +379,8 @@ namespace OsEngine.Journal
         /// </summary>
         public void RePaint()
         {
+            CreatePositionsLists(_botsJournals);
+
             if (!TabControlLeft.CheckAccess())
             {
                 TabControlLeft.Dispatcher.Invoke(RePaint);
@@ -532,7 +544,6 @@ namespace OsEngine.Journal
         private void TabBotsSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             ReloadTabs();
-            CreatePositionsLists(_botsJournals);
             RePaint();
         }
 

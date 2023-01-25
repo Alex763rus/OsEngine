@@ -32,6 +32,7 @@ namespace OsEngine.Entity
         {
             _security = security;
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
 
             CultureInfo culture = new CultureInfo("ru-RU");
 
@@ -49,6 +50,8 @@ namespace OsEngine.Entity
             SecuritiesVolumeDecimals.Content = OsLocalization.Entity.SecuritiesColumn7;
             ButtonAccept.Content = OsLocalization.Entity.ButtonAccept;
 
+            this.Activate();
+            this.Focus();
         }
 
         /// <summary>

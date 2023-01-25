@@ -38,6 +38,7 @@ namespace OsEngine.Charts.CandleChart.Indicators
         public PriceChannelUi(PriceChannel bollinger)
         {
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
             _bollinger = bollinger;
 
             TextBoxLenghtUp.Text = _bollinger.LenghtUpLine.ToString();
@@ -55,6 +56,9 @@ namespace OsEngine.Charts.CandleChart.Indicators
             ButtonAccept.Content = OsLocalization.Charts.LabelButtonIndicatorAccept;
             LabelIndicatorLongPeriod.Content = OsLocalization.Charts.LabelIndicatorLongPeriod;
             LabelIndicatorShortPeriod.Content = OsLocalization.Charts.LabelIndicatorShortPeriod;
+
+            this.Activate();
+            this.Focus();
         }
 
         /// <summary>

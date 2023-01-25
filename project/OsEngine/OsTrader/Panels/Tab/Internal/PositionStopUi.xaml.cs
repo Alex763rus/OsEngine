@@ -16,6 +16,7 @@ namespace OsEngine.OsTrader.Panels.Tab.Internal
         public PositionStopUi(Position position, decimal lastSecurityPrice, string title)
         {
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
             Title = title;
 
             TextBoxPriceOrder.Text = lastSecurityPrice.ToStringWithNoEndZero();
@@ -30,6 +31,9 @@ namespace OsEngine.OsTrader.Panels.Tab.Internal
             ButtonAccept.Content = OsLocalization.Trader.Label17;
             LabelActivationPrice.Content = OsLocalization.Trader.Label108;
             LabelOrderPrice.Content = OsLocalization.Trader.Label109;
+
+            this.Activate();
+            this.Focus();
         }
 
         public bool IsAccept;

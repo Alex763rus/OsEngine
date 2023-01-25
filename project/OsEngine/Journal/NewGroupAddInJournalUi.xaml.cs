@@ -17,9 +17,13 @@ namespace OsEngine.Journal
         public NewGroupAddInJournalUi(List<string> oldGroupNames)
         {
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
             _oldGroupNames = oldGroupNames;
             Title = OsLocalization.Journal.Label13;
             ButtonAccept.Content = OsLocalization.Journal.Label14;
+
+            this.Activate();
+            this.Focus();
         }
 
         public bool IsAccepted;

@@ -25,6 +25,7 @@ using ContextMenu = System.Windows.Forms.ContextMenu;
 using MenuItem = System.Windows.Forms.MenuItem;
 using Series = System.Windows.Forms.DataVisualization.Charting.Series;
 using System.Threading;
+using OsEngine.Layout;
 
 namespace OsEngine.Journal
 {
@@ -60,7 +61,7 @@ namespace OsEngine.Journal
             ComboBoxChartType.SelectedItem = "Absolute";
             ComboBoxChartType.SelectionChanged += ComboBoxChartType_SelectionChanged;
 
-           _currentCulture = CultureInfo.CurrentCulture;
+            _currentCulture = CultureInfo.CurrentCulture;
 
             TabControlPrime.SelectionChanged += TabControlPrime_SelectionChanged;
 
@@ -81,7 +82,12 @@ namespace OsEngine.Journal
             LabelFrom.Content = OsLocalization.Journal.Label5;
             LabelTo.Content = OsLocalization.Journal.Label6;
             ButtonReload.Content = OsLocalization.Journal.Label7;
+            ButtonAutoReload.Content = OsLocalization.Journal.Label15;
+            ButtonAutoReload.Click += ButtonAutoReload_Click;
+            ButtonAutoReload.IsChecked = false;
+
             LabelEqutyCharteType.Content = OsLocalization.Journal.Label8;
+            
 
             CreatePositionsLists();
 
@@ -96,6 +102,21 @@ namespace OsEngine.Journal
             task2.Start();
 
             CreateSlidersShowPositions();
+
+            this.Activate();
+            this.Focus();
+
+            string botNames = "";
+            for (int i = 0; i < botsJournals.Count; i++)
+            {
+                botNames += botsJournals[i].BotName;
+            }
+
+            _journalName = botNames + startProgram.ToString();
+
+            CheckLeftPanel();
+
+            GlobalGUILayout.Listen(this, "Journal2Ui_" + startProgram.ToString() + botNames);
         }
 
         private CultureInfo _currentCulture;
@@ -219,6 +240,8 @@ namespace OsEngine.Journal
         /// </summary>
         public void RePaint()
         {
+            CreatePositionsLists();
+
             if (!TabControlPrime.CheckAccess())
             {
                 TabControlPrime.Dispatcher.Invoke(RePaint);
@@ -379,6 +402,15 @@ namespace OsEngine.Journal
             }
         }
 
+        // авто обновление
+
+        private bool _autoReloadIsOn;
+
+        private void ButtonAutoReload_Click(object sender, RoutedEventArgs e)
+        {
+            _autoReloadIsOn = ButtonAutoReload.IsChecked.Value;
+        }
+
         /// <summary>
         /// the location of stream updating statistics
         /// место работы потока обновляющего статистку
@@ -398,7 +430,19 @@ namespace OsEngine.Journal
                     return;
                 }
 
-                RePaint();
+                if(_autoReloadIsOn == false)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    RePaint();
+                }
+                catch (Exception error)
+                {
+                    SendNewLogMessage(error.ToString(), LogMessageType.Error);
+                }
             }
         }
         // tab management
@@ -1665,7 +1709,6 @@ namespace OsEngine.Journal
             }
         }
 
-        // positions
         // позиции
 
         /// <summary>
@@ -1881,6 +1924,11 @@ namespace OsEngine.Journal
             int number;
             try
             {
+                if(_openPositionGrid.CurrentCell == null)
+                {
+                    return;
+                }
+
                 number = Convert.ToInt32(_openPositionGrid.Rows[_openPositionGrid.CurrentCell.RowIndex].Cells[0].Value);
             }
             catch (Exception)
@@ -1981,6 +2029,7 @@ namespace OsEngine.Journal
             newPos.NameBot = botName;
             _botsJournals[number]._Tabs[0].Journal.SetNewDeal(newPos);
 
+
             RePaint();
         }
 
@@ -2019,7 +2068,7 @@ namespace OsEngine.Journal
                 }
             }
         }
-        // closed positions
+
         // позиции закрытые
 
         /// <summary>
@@ -2175,6 +2224,10 @@ namespace OsEngine.Journal
             int number;
             try
             {
+                if(_closePositionGrid.CurrentCell == null)
+                {
+                    return;
+                }
                 number = Convert.ToInt32(_closePositionGrid.Rows[_closePositionGrid.CurrentCell.RowIndex].Cells[0].Value);
             }
             catch (Exception)
@@ -2194,6 +2247,10 @@ namespace OsEngine.Journal
             int number;
             try
             {
+                if(_closePositionGrid.CurrentCell == null)
+                {
+                    return;
+                }
                 number = Convert.ToInt32(_closePositionGrid.Rows[_closePositionGrid.CurrentCell.RowIndex].Cells[0].Value);
             }
             catch (Exception)
@@ -2327,7 +2384,6 @@ namespace OsEngine.Journal
             }
         }
 
-        // messages to the log
         // сообщения в лог
 
         /// <summary>
@@ -2350,17 +2406,88 @@ namespace OsEngine.Journal
 
         private void ButtonHideLeftPanel_Click(object sender, RoutedEventArgs e)
         {
-            // GridTabPrime
-            GridActivBots.Visibility = Visibility.Hidden;
-            ButtonShowLeftPanel.Visibility = Visibility.Visible;
-            GridTabPrime.Margin = new Thickness(0, 0, -0.333, -0.333); 
+            HideLeftPanel();
+            SaveLeftPanelPosition();
         }
 
         private void ButtonShowLeftPanel_Click(object sender, RoutedEventArgs e)
         {
+            ShowLeftPanel();
+            SaveLeftPanelPosition();
+        }
+
+        private void HideLeftPanel()
+        {
+            // GridTabPrime
+            GridActivBots.Visibility = Visibility.Hidden;
+            ButtonShowLeftPanel.Visibility = Visibility.Visible;
+            GridTabPrime.Margin = new Thickness(0, 0, -0.333, -0.333);
+
+            this.MinWidth = 950;
+            this.MinHeight = 300;
+            _leftPanelIsHide = true;
+        }
+
+        private void ShowLeftPanel()
+        {
             GridActivBots.Visibility = Visibility.Visible;
             ButtonShowLeftPanel.Visibility = Visibility.Hidden;
             GridTabPrime.Margin = new Thickness(510, 0, -0.333, -0.333);
+
+            this.MinWidth = 1450;
+            this.MinHeight = 500;
+            _leftPanelIsHide = false;
+        }
+
+        private string _journalName;
+
+        private bool _leftPanelIsHide;
+
+        private void CheckLeftPanel()
+        {
+            if (!File.Exists(@"Engine\LayoutJournal" + _journalName + ".txt"))
+            {
+                return;
+            }
+
+            try
+            {
+                using (StreamReader reader = new StreamReader(@"Engine\LayoutJournal" + _journalName + ".txt"))
+                {
+                    _leftPanelIsHide = Convert.ToBoolean(reader.ReadLine());
+                    reader.Close();
+                }
+            }
+            catch (Exception)
+            {
+                // ignore
+            }
+
+            if (_leftPanelIsHide)
+            {
+                HideLeftPanel();
+            }
+            else
+            {
+                ShowLeftPanel();
+            }
+        }
+
+        private void SaveLeftPanelPosition()
+        {
+            try
+            {
+                using (StreamWriter writer = new StreamWriter(@"Engine\LayoutJournal" + _journalName + ".txt", false))
+                {
+                    writer.WriteLine(_leftPanelIsHide);
+
+                    writer.Close();
+                }
+            }
+            catch (Exception)
+            {
+                // ignore
+            }
         }
 
         // Left Bots Panel
@@ -3008,7 +3135,6 @@ namespace OsEngine.Journal
 
         }
 
-
         private void SliderTo_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             TextBoxTo.TextChanged -= TextBoxTo_TextChanged;
@@ -3092,6 +3218,7 @@ namespace OsEngine.Journal
         {
             RePaint();
         }
+
     }
 
     /// <summary>

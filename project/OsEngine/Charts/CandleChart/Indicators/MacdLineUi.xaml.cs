@@ -35,6 +35,7 @@ namespace OsEngine.Charts.CandleChart.Indicators
         public MacdLineUi(MacdLine macd)
         {
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
             _macd = macd;
 
             HostColorUp.Child = new TextBox();
@@ -48,6 +49,8 @@ namespace OsEngine.Charts.CandleChart.Indicators
             CheckBoxPaintOnOff.Content = OsLocalization.Charts.LabelPaintIntdicatorIsVisible;
             ButtonAccept.Content = OsLocalization.Charts.LabelButtonIndicatorAccept;
 
+            this.Activate();
+            this.Focus();
         }
 
         /// <summary>

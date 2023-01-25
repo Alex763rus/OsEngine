@@ -29,6 +29,7 @@ namespace OsEngine.Market.Connectors
             try
             {
                 InitializeComponent();
+                OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
 
                 ButtonRightInSearchResults.Visibility = Visibility.Hidden;
                 ButtonLeftInSearchResults.Visibility = Visibility.Hidden;
@@ -205,6 +206,9 @@ namespace OsEngine.Market.Connectors
             }
 
             Closing += ConnectorCandlesUi_Closing;
+
+            this.Activate();
+            this.Focus();
         }
 
         private void CheckBoxSaveTradeArrayInCandle_Click(object sender, RoutedEventArgs e)

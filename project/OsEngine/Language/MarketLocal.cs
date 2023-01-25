@@ -166,11 +166,11 @@ namespace OsEngine.Language
 
         public string Label32 => OsLocalization.ConvertToLocString(
             "Eng:Limit slippage_" +
-            "Ru:Проскальзывание для лимитов_");
+            "Ru:Проскальзывание лимитов_");
 
         public string Label33 => OsLocalization.ConvertToLocString(
             "Eng:Stop slippage_" +
-            "Ru:Проскальзывание для стопов_");
+            "Ru:Проскальзывание стопов_");
 
         public string Label34 => OsLocalization.ConvertToLocString(
             "Eng:Order execution_" +
@@ -760,6 +760,10 @@ namespace OsEngine.Language
         public string ServerParamToken => OsLocalization.ConvertToLocString(
             "Eng:Token_" +
             "Ru:Token_");
+
+        public string ServerParamGrpcConnection => OsLocalization.ConvertToLocString(
+           "Eng:Сonnection in router_" +
+           "Ru:Подключение через роутер_");
 
         public string ServerParamId => OsLocalization.ConvertToLocString(
             "Eng:Id_" +

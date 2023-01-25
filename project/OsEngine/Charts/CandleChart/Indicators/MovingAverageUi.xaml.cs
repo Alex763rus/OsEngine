@@ -38,6 +38,7 @@ namespace OsEngine.Charts.CandleChart.Indicators
         public MovingAverageUi(MovingAverage mA)
         {
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
             _mA = mA;
 
             TextBoxLenght.Text = _mA.Lenght.ToString();
@@ -79,6 +80,8 @@ namespace OsEngine.Charts.CandleChart.Indicators
             LabelIndicatorShortPeriod.Content = OsLocalization.Charts.LabelIndicatorShortPeriod;
             LabelIndicatorLongPeriod.Content = OsLocalization.Charts.LabelIndicatorLongPeriod;
 
+            this.Activate();
+            this.Focus();
         }
 
         void ComboBoxMovingType_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)

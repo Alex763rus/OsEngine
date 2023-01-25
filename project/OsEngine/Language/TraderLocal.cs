@@ -741,5 +741,16 @@ namespace OsEngine.Language
                "Eng: Board_" +
                "Ru: Площадка_");
 
+        public string Label183 => OsLocalization.ConvertToLocString(
+              "Eng: Not all securities are loaded_" +
+              "Ru: Не все инструменты загружены_");
+
+        public string Label184 => OsLocalization.ConvertToLocString(
+              "Eng: On/off_" +
+              "Ru: Вкл/выкл_");
+
+        public string Label185 => OsLocalization.ConvertToLocString(
+              "Eng: Emulator on/off_" +
+              "Ru: Эмулятор вкл/выкл_");
     }
 }

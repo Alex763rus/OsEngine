@@ -16,6 +16,7 @@ namespace OsEngine.Robots.MarketMaker
         public PairTraderSimpleUi(PairTraderSimple strategy)
         {
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
             _strategy = strategy;
 
             CultureInfo culture = new CultureInfo("ru-RU");
@@ -48,6 +49,8 @@ namespace OsEngine.Robots.MarketMaker
             LabelProfit.Content = OsLocalization.Trader.Label145;
             LabelLoss.Content = OsLocalization.Trader.Label146;
 
+            this.Activate();
+            this.Focus();
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

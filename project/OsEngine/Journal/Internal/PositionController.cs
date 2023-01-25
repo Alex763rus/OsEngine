@@ -336,7 +336,8 @@ namespace OsEngine.Journal.Internal
                 return;
             }
 
-            if(_startProgram == StartProgram.IsOsOptimizer)
+            if(_startProgram == StartProgram.IsOsOptimizer
+                || _startProgram == StartProgram.IsTester)
             {
                 return;
             }
@@ -470,13 +471,72 @@ namespace OsEngine.Journal.Internal
                 return;
             }
 
-            _deals.Remove(position);
+            // убираем в общем хранилище
+
+            for (int i = 0; i < _deals.Count; i++)
+            {
+                if (_deals[i].Number == position.Number)
+                {
+                    _deals.RemoveAt(i);
+                    break;
+                }
+            }
+
+            // убираем в хранилищах открытых позиций
 
             for (int i = 0; i < _openPositions.Count; i++)
             {
                 if (_openPositions[i].Number == position.Number)
                 {
                     _openPositions.RemoveAt(i);
+                    break;
+                }
+            }
+
+            for (int i = 0; _openLongPosition != null && i < _openLongPosition.Count; i++)
+            {
+                if (_openLongPosition[i].Number == position.Number)
+                {
+                    _openLongPosition.RemoveAt(i);
+                    break;
+                }
+            }
+
+            for (int i = 0; _openShortPositions != null && i < _openShortPositions.Count; i++)
+            {
+                if (_openShortPositions[i].Number == position.Number)
+                {
+                    _openShortPositions.RemoveAt(i);
+                    break;
+                }
+            }
+
+            // убираем из хранилищь закрытых позиций
+
+            for (int i = 0; _closePositions != null && i < _closePositions.Count; i++)
+            {
+                if (_closePositions[i].Number == position.Number)
+                {
+                    _closePositions.RemoveAt(i);
+                    break;
+                }
+            }
+
+            for (int i = 0; _closeLongPositions != null && i < _closeLongPositions.Count; i++)
+            {
+                if (_closeLongPositions[i].Number == position.Number)
+                {
+                    _closeLongPositions.RemoveAt(i);
+                    break;
+                }
+            }
+
+            for (int i = 0; _closeShortPositions != null &&  i < _closeShortPositions.Count; i++)
+            {
+                if (_closeShortPositions[i].Number == position.Number)
+                {
+                    _closeShortPositions.RemoveAt(i);
+                    break;
                 }
             }
 
@@ -992,6 +1052,7 @@ namespace OsEngine.Journal.Internal
         {
             return _deals.Find(position => position.Number == number);
         }
+
         // Drawing of positions in the tables
         // прорисовка позиций в таблицах
 
@@ -1646,6 +1707,14 @@ namespace OsEngine.Journal.Internal
                     return;
                 }
 
+                AcceptDialogUi ui = new AcceptDialogUi(OsLocalization.Journal.Message5);
+                ui.ShowDialog();
+
+                if (ui.UserAcceptActioin == false)
+                {
+                    return;
+                }
+
                 if (UserSelectActionEvent != null)
                 {
                     UserSelectActionEvent(null, SignalType.CloseAll);
@@ -1783,6 +1852,14 @@ namespace OsEngine.Journal.Internal
         {
             try
             {
+                AcceptDialogUi ui = new AcceptDialogUi(OsLocalization.Journal.Message3);
+                ui.ShowDialog();
+
+                if (ui.UserAcceptActioin == false)
+                {
+                    return;
+                }
+
                 int number;
                 try
                 {

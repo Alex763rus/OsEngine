@@ -17,6 +17,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         public BotTabIndexUi(BotTabIndex spread)
         {
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
             CreateTable();
             _spread = spread;
             ReloadSecurityTable();
@@ -26,6 +27,9 @@ namespace OsEngine.OsTrader.Panels.Tab
             ButtonAccept.Content = OsLocalization.Trader.Label17;
 
             this.Closed += BotTabIndexUi_Closed;
+
+            this.Activate();
+            this.Focus();
         }
 
         public bool IndexOrSourcesChanged = false;

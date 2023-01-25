@@ -6,6 +6,7 @@
 using OsEngine.Entity;
 using System.Windows;
 using OsEngine.Language;
+using OsEngine.Layout;
 
 namespace OsEngine.OsData
 {
@@ -31,6 +32,9 @@ namespace OsEngine.OsData
             CheckBoxPaintOnOff.Content = OsLocalization.Data.Label25;
             Label26.Header = OsLocalization.Data.Label26;
             NewDataSetButton.Content = OsLocalization.Data.Label30;
+
+            this.Activate();
+            this.Focus();
         }
 
         void CheckBoxPaintOnOff_Click(object sender, RoutedEventArgs e)
@@ -46,6 +50,7 @@ namespace OsEngine.OsData
                 _osDataMaster.StopPaint();
                 _osDataMaster.SaveSettings();
             }
+            GlobalGUILayout.Listen(this, "osData");
         }
 
         void OsDataUi_Closing(object sender, System.ComponentModel.CancelEventArgs e)

@@ -14,8 +14,12 @@ namespace OsEngine.Market.Servers.Transaq
         public ChangeTransaqPassword(string message, TransaqServerRealization server)
         {
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
             _server = server;
             TextInfo.Text = message;
+
+            this.Activate();
+            this.Focus();
         }
 
         private void ButtonAccept_Click(object sender, RoutedEventArgs e)

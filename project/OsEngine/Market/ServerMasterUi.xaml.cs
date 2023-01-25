@@ -24,6 +24,7 @@ namespace OsEngine.Market
         public ServerMasterUi(bool isTester)
         {
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
 
             List<IServer> servers = ServerMaster.GetServers();
 
@@ -56,6 +57,9 @@ namespace OsEngine.Market
                 painter.Dispose();
                 painter = null;
             };
+
+            this.Activate();
+            this.Focus();
         }
     }
 }

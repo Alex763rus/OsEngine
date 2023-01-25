@@ -12,6 +12,7 @@ using OsEngine.Entity;
 using OsEngine.Language;
 using OsEngine.Market;
 using Chart = System.Windows.Forms.DataVisualization.Charting.Chart;
+using OsEngine.Layout;
 
 namespace OsEngine.OsTrader.Gui
 {
@@ -40,6 +41,11 @@ namespace OsEngine.OsTrader.Gui
             TabControlBotsName.SizeChanged += TabControlBotsName_SizeChanged;
             Local();
             TabControlMd.SelectedIndex = 2;
+
+            this.Activate();
+            this.Focus();
+
+            GlobalGUILayout.Listen(this, "botStationUi");
         }
 
         /// <summary>
@@ -272,7 +278,7 @@ namespace OsEngine.OsTrader.Gui
 
         private void ButtonJournalCommunity_Click(object sender, RoutedEventArgs e)
         {
-            _strategyKeeper.ShowCommunityJournal(1);
+            _strategyKeeper.ShowCommunityJournal(1, Top + ButtonJournalCommunity.ActualHeight, Left + ButtonJournalCommunity.ActualHeight);
         }
 
         private void ButtonRedactTab_Click(object sender, RoutedEventArgs e)

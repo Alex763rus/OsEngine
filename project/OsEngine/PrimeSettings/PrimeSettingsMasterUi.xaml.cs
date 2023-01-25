@@ -17,6 +17,7 @@ namespace OsEngine.PrimeSettings
         public PrimeSettingsMasterUi()
         {
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
 
             List<OsLocalization.OsLocalType> localizations = OsLocalization.GetExistLocalizationTypes();
 
@@ -55,6 +56,9 @@ namespace OsEngine.PrimeSettings
 
             ChangeText();
             OsLocalization.LocalizationTypeChangeEvent += ChangeText;
+
+            this.Activate();
+            this.Focus();
         }
 
         private void ChangeText()

@@ -38,6 +38,7 @@ namespace OsEngine.Charts.CandleChart.Indicators
         public EfficiencyRatioUi(EfficiencyRatio eR)
         {
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
             _eR = eR;
 
             TextBoxLenght.Text = _eR.Lenght.ToString();
@@ -51,7 +52,8 @@ namespace OsEngine.Charts.CandleChart.Indicators
             ButtonAccept.Content = OsLocalization.Charts.LabelButtonIndicatorAccept;
             LabelIndicatorPeriod.Content = OsLocalization.Charts.LabelIndicatorPeriod;
 
-
+            this.Activate();
+            this.Focus();
         }
 
         /// <summary>

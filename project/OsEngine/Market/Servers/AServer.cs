@@ -105,6 +105,10 @@ namespace OsEngine.Market.Servers
                 Task task4 = new Task(SaveLoadOrdersThreadArea);
                 task4.Start();
 
+                Thread thread = new Thread(ReserchOrdersToDone);
+                thread.Name = "ReserchOrdersToDone";
+                thread.Start();
+
                 _serverIsStart = true;
 
             }
@@ -748,6 +752,25 @@ namespace OsEngine.Market.Servers
 
                     return;
                 }
+            }
+        }
+
+        /// <summary>
+        /// server time of last starting
+        /// проверка ордеров на исполнение
+        /// </summary>
+        private void ReserchOrdersToDone()
+        {
+            while (true)
+            {
+                Thread.Sleep(60000);
+
+                if (_myExecuteOrdersAllSessions.Count == 0)
+                {
+                    continue;
+                }
+
+                _serverRealization.ResearchTradesToOrders(_myExecuteOrdersAllSessions);
             }
         }
 

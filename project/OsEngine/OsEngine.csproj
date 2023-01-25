@@ -419,6 +419,8 @@
     <Compile Include="Language\OsLocalization.cs" />
     <Compile Include="Language\PrimeSettingsMasterUiLocal.cs" />
     <Compile Include="Language\TraderLocal.cs" />
+    <Compile Include="Layout\MouseCoordinates.cs" />
+    <Compile Include="Layout\StartupLocation.cs" />
     <Compile Include="Logging\LogErrorUi.xaml.cs">
       <DependentUpon>LogErrorUi.xaml</DependentUpon>
     </Compile>
@@ -452,6 +454,7 @@
     <Compile Include="Market\Servers\Binance\Futures\Entity\AgregatedHistoryTrade.cs" />
     <Compile Include="Market\Servers\Binance\Futures\Entity\BinanceFutureseDepthResponse.cs" />
     <Compile Include="Market\Servers\Binance\Futures\Entity\OrderUpdResponse.cs" />
+    <Compile Include="Market\Servers\Binance\Futures\Entity\TradesResponseReserches.cs" />
     <Compile Include="Market\Servers\Binance\Spot\BinanceClientSpot.cs" />
     <Compile Include="Market\Servers\Binance\Spot\BinanceSpotEntity\AccountResponse.cs" />
     <Compile Include="Market\Servers\Binance\Spot\BinanceSpotEntity\AccountResponseMargin.cs" />
@@ -774,6 +777,7 @@
     <Compile Include="Market\Servers\Tinkoff\TinkoffJsonSchema\OrdersTInkoff.cs" />
     <Compile Include="Market\Servers\Tinkoff\TinkoffJsonSchema\Portfolios.cs" />
     <Compile Include="Market\Servers\Tinkoff\TinkoffJsonSchema\Securities.cs" />
+    <Compile Include="Market\Servers\Tinkoff\TinkoffJsonSchema\TinkoffTrades.cs" />
     <Compile Include="Market\Servers\Tinkoff\TinkoffServer.cs" />
     <Compile Include="Market\Servers\Tinkoff\TinkoffServerPermission.cs" />
     <Compile Include="Market\Servers\Transaq\ChangeTransaqPassword.xaml.cs">
@@ -846,6 +850,7 @@
     <Compile Include="OsTrader\AdminPanelApi\IApiServer.cs" />
     <Compile Include="OsTrader\AdminPanelApi\ServerModel.cs" />
     <Compile Include="OsTrader\AdminPanelApi\TcpServer.cs" />
+    <Compile Include="Layout\GlobalGUILayout.cs" />
     <Compile Include="OsTrader\GlobalPosition.cs" />
     <Compile Include="Journal\Journal.cs" />
     <Compile Include="Logging\MessageSender.cs" />

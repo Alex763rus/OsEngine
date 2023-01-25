@@ -25,8 +25,9 @@ namespace OsEngine.Market.Servers.Tester
         public GoToUi(DateTime timeStart, DateTime timeEnd, DateTime timeNow)
         {
             InitializeComponent();
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
 
-            if((timeEnd - timeStart).TotalDays <= 0)
+            if ((timeEnd - timeStart).TotalDays <= 0)
             {
                 Close();
                 return;
@@ -46,6 +47,8 @@ namespace OsEngine.Market.Servers.Tester
             Title = OsLocalization.Charts.Label8;
             LabelGoTo.Content = OsLocalization.Charts.Label9;
 
+            this.Activate();
+            this.Focus();
         }
 
         public void SetLocation(double parentRight, double parentTop)

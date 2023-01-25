@@ -19,6 +19,7 @@ using MessageBox = System.Windows.MessageBox;
 using ProgressBar = System.Windows.Controls.ProgressBar;
 using OsEngine.OsOptimizer.OptEntity;
 using System.Threading;
+using OsEngine.Layout;
 
 namespace OsEngine.OsOptimizer
 {
@@ -179,6 +180,11 @@ namespace OsEngine.OsOptimizer
             this.Closing += Ui_Closing;
 
             Task.Run(new Action(StrategyLoader));
+
+            this.Activate();
+            this.Focus();
+
+            GlobalGUILayout.Listen(this, "optimizerUi");
         }
 
         void Ui_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -1242,7 +1248,7 @@ namespace OsEngine.OsOptimizer
             column1.CellTemplate = cell0;
             column1.HeaderText = OsLocalization.Optimizer.Message29;
             column1.ReadOnly = true;
-            column1.Width = 150;
+            column1.Width = 600;
 
             _gridParametrs.Columns.Add(column1);
 
@@ -1250,7 +1256,7 @@ namespace OsEngine.OsOptimizer
             column.CellTemplate = cell0;
             column.HeaderText = OsLocalization.Optimizer.Message24;
             column.ReadOnly = true;
-            column1.Width = 100;
+            column.Width = 100;
             _gridParametrs.Columns.Add(column);
 
             DataGridViewComboBoxColumn column2 = new DataGridViewComboBoxColumn();
