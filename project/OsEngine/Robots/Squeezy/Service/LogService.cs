@@ -1,44 +1,38 @@
 ﻿using OsEngine.Logging;
-using OsEngine.OsTrader.Panels;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using OsEngine.Robots.Squeezy.Trading;
 using System.IO;
-using System.Windows.Controls;
 using System.Collections;
-using ru.micexrts.cgate;
 using System.Threading;
 using OsEngine.Entity;
-using OsEngine.Alerts;
-using OsEngine.Charts.CandleChart.Indicators;
-using OkonkwoOandaV20.TradeLibrary.DataTypes.Position;
 using Position = OsEngine.Entity.Position;
-using OsEngine.Robots.Squeezy;
+using OsEngine.Robots.Squeezy.Tester;
+using OsEngine.OsTrader.Panels.Tab;
 
 namespace OsEngine.Robots.SqueezyBot.Service
 {
     public class LogService
     {
-        public static string SEPARATE_PARAMETR_LINE = "=====================================================";
-        private readonly Loggable squeezy;
-        private ArrayList logList;
+        public static string SEPARATE_PARAMETR_LINE = "==========================================================================================================";
         private const int SAVE_LOG_TIME_OUT = 60000;
 
-        public LogService(Loggable squeezy)
+        private BotTabSimple tab;
+        private string filePath;
+        private GeneralParametersTester generalParameters;
+        private ArrayList logList;
+        private Thread threadSaver;
+        
+        public LogService(BotTabSimple tab, string filePath, GeneralParametersTester generalParameters)
         {
-            this.squeezy = squeezy;
+            this.tab = tab;
+            this.filePath = filePath;
+            this.generalParameters = generalParameters;
+
             logList = new ArrayList();
-            if (!squeezy.loggingEnabled())
-            {
-                return;
-            }
-            Thread thread = new Thread(new ThreadStart(checkAndSaveLog));
-            thread.IsBackground = true;
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Start();
+            threadSaver = new Thread(new ThreadStart(checkAndSaveLog));
+            threadSaver.IsBackground = true;
+            threadSaver.SetApartmentState(ApartmentState.STA);
+            threadSaver.Start();
         }
 
         public void sendLogSystem(string message, int level = 0)
@@ -51,7 +45,7 @@ namespace OsEngine.Robots.SqueezyBot.Service
             sendLogMessage(message, LogMessageType.Error, level);
         }
 
-        public string getCandleInfo(Candle candle)
+        public static string getCandleInfo(Candle candle)
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("TimeStart:").Append(candle.TimeStart)
@@ -59,7 +53,7 @@ namespace OsEngine.Robots.SqueezyBot.Service
             ;
             return sb.ToString();
         }
-        public string getPositionInfo(Position position)
+        public static string getPositionInfo(Position position)
         {
             StringBuilder sb = new StringBuilder();
             sb.Append(" [#0000").Append(position.Number)
@@ -81,23 +75,21 @@ namespace OsEngine.Robots.SqueezyBot.Service
 
         private void sendLogMessage(string message, LogMessageType logMessageType, int level = 0)
         {
-            if (!squeezy.loggingEnabled())
+            if (!generalParameters.getLogEnabled())
             {
                 return;
             }
             StringBuilder logMessage = new StringBuilder();
             logMessage.Append(DateTime.Now).Append(" ")
-                        .Append(squeezy.getTimeServerCurrent()).Append(" ")
-                        .Append(squeezy.getUniqBotName()).Append(" ")
+                        .Append(tab.TimeServerCurrent).Append(" ")
                         .Append(getIndent(level))
                         .Append(logMessageType.ToString()).Append(":")
                         .Append(message);
 
             logList.Add(logMessage.ToString());
-            squeezy.sendLog(logMessage.ToString(), logMessageType);
-            if (logList.Count == squeezy.getCountBufferLogLine())
+            if (logList.Count == generalParameters.getCountBufferLogLine())
             {
-                saveLogInFile(squeezy.getFilePath(), logList);
+                saveLogInFile(filePath, logList);
                 logList.Clear();
             }
         }
@@ -129,7 +121,7 @@ namespace OsEngine.Robots.SqueezyBot.Service
             while (true)
             {
                 Thread.Sleep(SAVE_LOG_TIME_OUT);
-                saveLogInFile(squeezy.getFilePath(), logList);
+                saveLogInFile(filePath, logList);
                 logList.Clear();
             }
         }

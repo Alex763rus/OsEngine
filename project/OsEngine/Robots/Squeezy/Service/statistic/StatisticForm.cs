@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Forms;
 
 namespace OsEngine.Robots.Squeezy.Service.statistic
@@ -16,18 +17,25 @@ namespace OsEngine.Robots.Squeezy.Service.statistic
 
         public static void showStatistic()
         {
-            string squeezyTesterStatistic = getDataFromFile("C:\\1_LOGS\\" + SqueezyTester.BOT_NAME + "_statistic.txt");
-            string squeezyTradingStatistic = getDataFromFile("C:\\1_LOGS\\" + SqueezyTrading.BOT_NAME + "_statistic.txt");
             StringBuilder sb = new StringBuilder();
-            sb.Append(SqueezyTester.BOT_NAME).Append(":").Append("\r\n");
-            sb.Append(squeezyTesterStatistic);
-            sb.Append("\r\n");
-            sb.Append("\r\n");
-            sb.Append(SqueezyTrading.BOT_NAME).Append(":").Append("\r\n");
-            sb.Append(squeezyTradingStatistic);
+            DirectoryInfo directoryInfo = new DirectoryInfo("C:\\1_LOGS");
+            FileInfo [] fileinfo = directoryInfo.GetFiles();
+            foreach (FileInfo file in fileinfo)
+            {
+                if (!file.Name.Contains("statistic"))
+                {
+                    continue;
+                }
+                sb.Append(file.Name).Append(":").Append("\r\n");
+                sb.Append(getDataFromFile(file.FullName));
+                sb.Append("\r\n");
+                sb.Append("\r\n");
+            }
+            
             AlertMessageSimpleUi ui = new AlertMessageSimpleUi(sb.ToString());
-            ui.Width = 1000;
-            ui.Height = 400;
+            ui.SizeToContent = SizeToContent.WidthAndHeight;
+            //ui.Width = 1000;
+            //ui.Height = 400;
             ui.Title = "Статистика";
             ui.Show();
             

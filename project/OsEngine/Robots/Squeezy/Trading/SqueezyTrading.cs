@@ -1,5 +1,4 @@
 ﻿using OsEngine.Entity;
-using OsEngine.Logging;
 using OsEngine.OsTrader.Panels;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Robots.Squeezy.Service;
@@ -11,18 +10,17 @@ using System.Windows;
 
 namespace OsEngine.Robots.Squeezy.Trading
 {
-    public class SqueezyTrading : BotPanel, Loggable, Statisticable
+    public class SqueezyTrading : BotPanel
     {
         public static string BOT_NAME = "SqueezyTradingBot";
         public static string VERSION = "0.0.1";
         private const string TAB_SERVICE_CONTROL_NAME = "Service";
 
-        public static int separateCounter = 0;
+        public int separateCounter = 0;
         private EventServiceTrading eventServiceTrading;
         private GeneralParametersTrading generalParametersTrading;
         private GroupParametersTradingService groupParametersTradingService;
         private BotTabSimple tab;
-        private static LogService logService;
 
         public SqueezyTrading(string name, StartProgram startProgram) : base(name, startProgram)
         {
@@ -123,8 +121,8 @@ namespace OsEngine.Robots.Squeezy.Trading
             groupParametersTradingService.addGroupParameters(flatSell);
             groupParametersTradingService.addGroupParameters(testTest);
 
-            logService = new LogService(this);
-            StatisticService statisticService = new StatisticService(this);
+            StatisticService statisticService = new StatisticService("C:\\1_LOGS\\" + BOT_NAME + "_" + NameStrategyUniq + "_statistic.txt");
+            LogService logService = new LogService(tab, "C:\\1_LOGS\\" + BOT_NAME + "_" + NameStrategyUniq + "_log.txt", generalParametersTrading);
 
             eventServiceTrading = new EventServiceTrading(tab, generalParametersTrading, groupParametersTradingService, logService, statisticService);
 
@@ -133,8 +131,8 @@ namespace OsEngine.Robots.Squeezy.Trading
             tab.PositionOpeningSuccesEvent += positionOpeningSuccesEventLogic;
             tab.NewTickEvent += newTickEventLogic;
             tab.Connector.BestBidAskChangeEvent += bestBidAskChangeEventLogic;
-            tab.PositionSellAtStopActivateEvent += positionSellAtStopActivateEventlogic;
-            tab.PositionBuyAtStopActivateEvent += positionBuyAtStopActivateEventLogic;
+            //tab.PositionSellAtStopActivateEvent += positionSellAtStopActivateEventlogic;
+            //tab.PositionBuyAtStopActivateEvent += positionBuyAtStopActivateEventLogic;
             tab.PositionOpeningFailEvent += positionOpeningFailEventLogic;
             ParametrsChangeByUser += parametrsChangeByUserLogic;
         }
@@ -144,14 +142,6 @@ namespace OsEngine.Robots.Squeezy.Trading
             eventServiceTrading.parametrsChangeByUserLogic();
         }
 
-        private void positionSellAtStopActivateEventlogic(Position position)
-        {
-            int test = 0;
-        }
-        private void positionBuyAtStopActivateEventLogic(Position position)
-        {
-            int test = 0;
-        }
         private void positionOpeningFailEventLogic(Position position)
         {
             eventServiceTrading.positionOpeningFailEventLogic(position);
@@ -195,49 +185,6 @@ namespace OsEngine.Robots.Squeezy.Trading
         private void bestBidAskChangeEventLogic(decimal bestBid, decimal bestAsk)
         {
             eventServiceTrading.bestBidAskChangeEventLogic(bestBid, bestAsk);
-        }
-
-        public void sendLog(string message, LogMessageType logMessageType)
-        {
-            SendNewLogMessage(message, logMessageType);
-        }
-        public new void SendNewLogMessage(string message, LogMessageType system)
-        {
-            base.SendNewLogMessage(message, system);
-        }
-
-        public int getCountBufferLogLine()
-        {
-            return generalParametersTrading.getCountBufferLogLine();
-        }
-
-        public string getUniqBotName()
-        {
-            return this.NameStrategyUniq;
-        }
-        public string getFilePath()
-        {
-            return "C:\\1_LOGS\\" + BOT_NAME +  "_log.txt";
-        }
-
-        public DateTime getTimeServerCurrent()
-        {
-            return tab.TimeServerCurrent;
-        }
-
-        public bool loggingEnabled()
-        {
-            return generalParametersTrading.getLogEnabled();
-        }
-
-        public bool statisticEnabled()
-        {
-            return generalParametersTrading.getStatisticEnabled();
-        }
-
-        public string getFilePathStatistic()
-        {
-            return "C:\\1_LOGS\\" + BOT_NAME + "_statistic.txt";
         }
     }
 }

@@ -118,8 +118,8 @@ namespace OsEngine.Robots.Squeezy.Tester
                     {
                         squeezyType = SqueezyType.SellMissed;
                     } else {
-                        string message = "Обнаружен сквиз " + groupParameters.getGroupType().ToString() + ": предпоследний бар:" + logService.getCandleInfo(candles[candles.Count - 2])
-                                            + " последний бар:" + logService.getCandleInfo(candles[candles.Count - 1])
+                        string message = "Обнаружен сквиз " + groupParameters.getGroupType().ToString() + ": предпоследний бар:" + LogService.getCandleInfo(candles[candles.Count - 2])
+                                            + " последний бар:" + LogService.getCandleInfo(candles[candles.Count - 1])
                                             + " отношение:" + Math.Round((candleHigh1 - candleClose2) / candleClose2 * 100, 2) + "%"
                                             + " настройки:" + groupParameters.getTriggerCandleDiff() + "%";
                         logService.sendLogSystem(message);
@@ -150,8 +150,8 @@ namespace OsEngine.Robots.Squeezy.Tester
                     }
                     else
                     {
-                        string message = "Обнаружен сквиз " + groupParameters.getGroupType().ToString() + ": предпоследний бар:" + logService.getCandleInfo(candles[candles.Count - 2])
-                                            + " последний бар:" + logService.getCandleInfo(candles[candles.Count - 1])
+                        string message = "Обнаружен сквиз " + groupParameters.getGroupType().ToString() + ": предпоследний бар:" + LogService.getCandleInfo(candles[candles.Count - 2])
+                                            + " последний бар:" + LogService.getCandleInfo(candles[candles.Count - 1])
                                             + " отношение:" + Math.Round((candleClose2 - candleLow1) / candleLow1 * 100, 2) + "%"
                                             + " настройки:" + groupParameters.getTriggerCandleDiff() + "%";
                         logService.sendLogSystem(message);
@@ -218,7 +218,7 @@ namespace OsEngine.Robots.Squeezy.Tester
 
         public void positionClosingSuccesEventLogic(Position position)
         {
-            logService.sendLogSystem("Подтверждение: Успешно закрыта позиция:" + logService.getPositionInfo(position));
+            logService.sendLogSystem("Подтверждение: Успешно закрыта позиция:" + LogService.getPositionInfo(position));
 
             bool isProfit = position.ProfitPortfolioPunkt > 0;
             paintService.paintClosedPosition(position, isProfit);
@@ -233,7 +233,7 @@ namespace OsEngine.Robots.Squeezy.Tester
             }
             if (lockCurrentDirection && !dealService.hasOpendeal(Side.Sell) && !dealService.hasOpendeal(Side.Buy))
             {
-                logService.sendLogSystem("Сняли блокировку на открытие сделки по группе, т.к.закрылась последняя сделка:" + logService.getPositionInfo(position));
+                logService.sendLogSystem("Сняли блокировку на открытие сделки по группе, т.к.закрылась последняя сделка:" + LogService.getPositionInfo(position));
                 lockCurrentDirection = false;
             }
         }

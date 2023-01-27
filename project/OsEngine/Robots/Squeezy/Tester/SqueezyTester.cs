@@ -15,7 +15,7 @@ using System.Windows;
 
 namespace OsEngine.Robots.Squeezy.Tester
 {
-    public class SqueezyTester : BotPanel, Loggable, Statisticable
+    public class SqueezyTester : BotPanel
     {
         public static string BOT_NAME = "SqueezyTesterBot";
         private const string VERSION = "0.0.1";
@@ -27,7 +27,6 @@ namespace OsEngine.Robots.Squeezy.Tester
         private GeneralParametersTester generalParameters;
         private GroupParametersTesterService groupParametersTesterService;
         private BotTabSimple tab;
-        private LogService logService;
 
         public SqueezyTester(string name, StartProgram startProgram) : base(name, startProgram)
         {
@@ -127,9 +126,9 @@ namespace OsEngine.Robots.Squeezy.Tester
             groupParametersTesterService.addGroupParameters(flatSell);
             groupParametersTesterService.addGroupParameters(testTest);
 
-            logService = new LogService(this);
-            StatisticService statisticService = new StatisticService(this);
+            StatisticService statisticService = new StatisticService("C:\\1_LOGS\\" + BOT_NAME + "_" + NameStrategyUniq + "_statistic.txt");
 
+            LogService logService = new LogService(tab, "C:\\1_LOGS\\" + BOT_NAME + "_" + NameStrategyUniq + "_log.txt", generalParameters);
             eventServiceTester = new EventServiceTester(tab, generalParameters, groupParametersTesterService, logService, statisticService);
 
             tab.CandleFinishedEvent += candleFinishedEventLogic;
@@ -182,38 +181,5 @@ namespace OsEngine.Robots.Squeezy.Tester
             base.SendNewLogMessage(message, system);
         }
 
-        public int getCountBufferLogLine()
-        {
-            return generalParameters.getCountBufferLogLine();
-        }
-
-        public string getUniqBotName()
-        {
-            return this.NameStrategyUniq;
-        }
-
-        public string getFilePath()
-        {
-            return "C:\\1_LOGS\\" + BOT_NAME + "_log.txt";
-        }
-        public DateTime getTimeServerCurrent()
-        {
-            return tab.TimeServerCurrent;
-        }
-
-        public bool loggingEnabled()
-        {
-            return generalParameters.getLogEnabled();
-        }
-
-        public bool statisticEnabled()
-        {
-            return generalParameters.getStatisticEnabled();
-        }
-
-        public string getFilePathStatistic()
-        {
-            return "C:\\1_LOGS\\" + BOT_NAME + "_statistic.txt";
-        }
     }
 }

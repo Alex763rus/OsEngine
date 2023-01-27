@@ -8,7 +8,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
+using System.IO.Packaging;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -16,12 +18,12 @@ namespace OsEngine.Robots.Squeezy.Service
 {
     public class StatisticService
     {
-        private Statisticable statisticable;
-        public StatisticResult[] statisticResults;  //7 групп
-
-        public StatisticService(Statisticable statisticable)
+        private string filePathStatistic;
+        public StatisticResult[] statisticResults;
+        
+        public StatisticService(string filePathStatistic)
         {
-            this.statisticable = statisticable;
+            this.filePathStatistic = filePathStatistic;
             statisticResults = new StatisticResult[Enum.GetValues(typeof(GroupType)).Length];
             for(int i = 0; i < statisticResults.Length; ++i)
             {
@@ -32,10 +34,6 @@ namespace OsEngine.Robots.Squeezy.Service
 
         public void recalculateStatistic(GroupType groupType, Position position)
         {
-            if (!statisticable.statisticEnabled())
-            {
-                return;
-            }
             if (position.ProfitPortfolioPunkt < statisticResults[(int)groupType].getMaxDrawdown())
             {
                 
@@ -64,7 +62,7 @@ namespace OsEngine.Robots.Squeezy.Service
                     sb.Append(", макс. просадка:").Append(statisticResults[i].getMaxDrawdown());
                     sb.Append("\r\n");
                 }
-                saveMessageInFile(statisticable.getFilePathStatistic(), sb.ToString());
+                saveMessageInFile(filePathStatistic, sb.ToString());
             }
         }
 

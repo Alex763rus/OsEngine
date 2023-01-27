@@ -26,6 +26,7 @@ namespace OsEngine.Robots.Squeezy.Trading
     public class EventServiceTrading
     {
 
+        private BotTabSimple botTabSimple;
         private GeneralParametersTrading generalParameters;
         private GroupParametersTradingService groupParametersService;
 
@@ -187,11 +188,11 @@ namespace OsEngine.Robots.Squeezy.Trading
                 //Есть сквиз
                 ProcessState processStateAnother = dealSupportAnother.getProcessState();
                 Position positionAnother = dealSupportAnother.getPosition();
-                string message = side + " Обнаружен сквиз. предыдущая свеча:" + logService.getCandleInfo(lastCandle) + " price = " + price + " пересекли стартовый процент:" + tgStart;
+                string message = side + " Обнаружен сквиз. предыдущая свеча:" + LogService.getCandleInfo(lastCandle) + " price = " + price + " пересекли стартовый процент:" + tgStart;
                 sendLogSystemLocal(message, null, dealSupport);
                 if (processStateAnother == ProcessState.OK_TRIGGER_START)
                 {
-                    sendLogSystemLocal(side + " нашли неоткрытую зарегистрированную лимитку в противоположную сторону, будем ее закрывать" + logService.getPositionInfo(positionAnother), null, dealSupport);
+                    sendLogSystemLocal(side + " нашли неоткрытую зарегистрированную лимитку в противоположную сторону, будем ее закрывать" + LogService.getPositionInfo(positionAnother), null, dealSupport);
                     dealService.closeAllOrderToPosition(positionAnother, "Новая лимитка");
                     resetSide(dealSupportAnother, dealSupport);
                 }
@@ -219,7 +220,7 @@ namespace OsEngine.Robots.Squeezy.Trading
                         {
                             sendLogSystemLocal("-> OK_TRIGGER_START : выставили заявку по рынку:", position, dealSupport);
                             dealSupport.dealSupportUpdate(groupParameters, ProcessState.OK_TRIGGER_START, position);
-                            dealSupport.addChartElement(paintService.paintLimitPosition(lastCandle, dealService.getTimeFrame(), tgStart, position.EntryPrice, groupTypeCurrent.ToString()));
+                            dealSupport.addChartElement(paintService.paintLimitPosition(lastCandle, dealService.getTimeFrame(), tgStart, position.EntryPrice, "#" + position.Number));
                         }
                     }
                     else
@@ -229,14 +230,13 @@ namespace OsEngine.Robots.Squeezy.Trading
                         {
                             sendLogSystemLocal("-> OK_TRIGGER_START выставили заявку на открытие лимитки:", position, dealSupport);
                             dealSupport.dealSupportUpdate(groupParameters, ProcessState.OK_TRIGGER_START, position);
-                            dealSupport.addChartElement(paintService.paintLimitPosition(lastCandle, dealService.getTimeFrame(), tgStart, priceOpenLimit, groupTypeCurrent.ToString()));
+                            dealSupport.addChartElement(paintService.paintLimitPosition(lastCandle, dealService.getTimeFrame(), tgStart, priceOpenLimit, "#" + position.Number));
                         }
                     }
                 //}
             }
             
         }
-
 
         public void positionOpeningSuccesEventLogic(Position position)
         {
@@ -247,14 +247,14 @@ namespace OsEngine.Robots.Squeezy.Trading
                 tp = getValueAddPercent(tp, dealSupportBuy.getGroupParametersTrading().getTakeProfit());
                 sl = getValueSubtractPercent(sl, dealSupportBuy.getGroupParametersTrading().getStopLoss());
                 dealSupportBuy.setProcessState(ProcessState.WAIT_TP_SL);
-                dealSupportBuy.addChartElement(paintService.paintSlTp(lastCandle, dealService.getTimeFrame(), sl, tp, dealSupportBuy.getGroupType()));
+                dealSupportBuy.addChartElement(paintService.paintSlTp(lastCandle, dealService.getTimeFrame(), sl, tp, "#" + position.Number));
             }
             else if (position.Direction == Side.Sell)
             {
                 tp = getValueSubtractPercent(tp, dealSupportSell.getGroupParametersTrading().getTakeProfit());
                 sl = getValueAddPercent(sl, dealSupportSell.getGroupParametersTrading().getStopLoss());
                 dealSupportSell.setProcessState(ProcessState.WAIT_TP_SL);
-                dealSupportSell.addChartElement(paintService.paintSlTp(lastCandle, dealService.getTimeFrame(), sl, tp, dealSupportSell.getGroupType()));
+                dealSupportSell.addChartElement(paintService.paintSlTp(lastCandle, dealService.getTimeFrame(), sl, tp, "#" + position.Number));
             }
             position.ProfitOrderRedLine = tp;
             position.StopOrderRedLine = sl;
@@ -410,7 +410,7 @@ namespace OsEngine.Robots.Squeezy.Trading
             if (position != null)
             {
                 sb.Append("#0000").Append(position.Number).Append(" ");
-                positionInfo = logService.getPositionInfo(position);
+                positionInfo = LogService.getPositionInfo(position);
                 if (position.Direction == Side.Buy && dealSupportBuy.getPosition() != null && dealSupportBuy.getPosition().Number == position.Number)
                 {
                     processState = dealSupportBuy.getProcessState();

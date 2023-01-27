@@ -3,6 +3,7 @@ using OkonkwoOandaV20.TradeLibrary.DataTypes.Pricing;
 using OsEngine.Charts.CandleChart.Elements;
 using OsEngine.Entity;
 using OsEngine.Market.Servers.Bitfinex.BitfitnexEntity;
+using OsEngine.Market.Servers.GateIo.Futures.Response;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Robots.Squeezy.Tester;
 using OsEngine.Robots.Squeezy.Trading;
@@ -104,7 +105,15 @@ namespace OsEngine.Robots.SqueezyBot.Service
 
         public IChartElement paintClosedPosition(Position position, TimeSpan timeFrame, bool isProfit)
         {
-            string label = "#" + position.Number + " " + position.SignalTypeOpen + " \n" + position.Direction;
+            string label = "#" + position.Number; /* + " " + position.SignalTypeOpen + " \n" + position.Direction*/;
+            if(position.Direction == Side.Buy)
+            {
+                label += "^";
+            }
+            else
+            {
+                label += "v";
+            }
             Color color;
             if (isProfit)
             {
@@ -162,8 +171,8 @@ namespace OsEngine.Robots.SqueezyBot.Service
             IChartElement[] chartElements = new IChartElement[2];
             DateTime timeStart = lastCandle.TimeStart;
             DateTime timeEnd = lastCandle.TimeStart.AddMinutes(timeFrame.TotalMinutes);
-            chartElements[0] = paintLineHorisontal(timeStart, timeEnd, candleTriggerStart, "start " + label, Color.Red, 1);
-            chartElements[1] = paintLineHorisontal(timeStart, timeEnd, priceLimit, "limit " + label, Color.Yellow, 1);
+            chartElements[0] = paintLineHorisontal(timeStart, timeEnd, candleTriggerStart, label, Color.Red, 1);
+            chartElements[1] = paintLineHorisontal(timeStart, timeEnd, priceLimit, label, Color.Yellow, 1);
             return chartElements;
         }
 

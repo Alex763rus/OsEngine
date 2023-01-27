@@ -25,12 +25,11 @@ namespace OsEngine.Robots.SqueezyBot
         private BotTabSimple tab;
         private GeneralParametersTester generalParametersTester;
         private LogService logService;
-
         public DealService(BotTabSimple tab, GeneralParametersTester generalParametersTester, LogService logService)
         {
             this.tab = tab;
             this.generalParametersTester = generalParametersTester;
-            this.logService = logService;
+            this.logService= logService;
         }
 
         private const int COUNT_TRY_OPEN_DEAL = 10;
@@ -65,7 +64,7 @@ namespace OsEngine.Robots.SqueezyBot
             if (position != null)
             {
                 sb.Append("#0000").Append(position.Number).Append(" ");
-                positionInfo = logService.getPositionInfo(position);
+                positionInfo = LogService.getPositionInfo(position);
             }
             sb.Append(text).Append(" ");
             sb.Append(positionInfo).Append(" ");
@@ -78,7 +77,7 @@ namespace OsEngine.Robots.SqueezyBot
             if (position != null)
             {
                 sb.Append("#0000").Append(position.Number).Append(" ");
-                positionInfo = logService.getPositionInfo(position);
+                positionInfo = LogService.getPositionInfo(position);
             }
             sb.Append(text).Append(" ");
             sb.Append(positionInfo).Append(" ");
