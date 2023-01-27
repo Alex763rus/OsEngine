@@ -13,6 +13,7 @@ using OsEngine.Language;
 using OsEngine.Market;
 using Chart = System.Windows.Forms.DataVisualization.Charting.Chart;
 using OsEngine.Layout;
+using OsEngine.Robots.Squeezy.Service.statistic;
 
 namespace OsEngine.OsTrader.Gui
 {
@@ -116,6 +117,7 @@ namespace OsEngine.OsTrader.Gui
             ButtonStrategParametr.Content = OsLocalization.Trader.Label45;
             ButtonRiskManager.Content = OsLocalization.Trader.Label46;
             ButtonStrategSettings.Content = OsLocalization.Trader.Label47;
+            ButtonStatisticShow.Content = OsLocalization.Trader.Label_1;
         }
 
         void RobotUi_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -299,6 +301,11 @@ namespace OsEngine.OsTrader.Gui
         private void ButtonStrategParametr_Click(object sender, RoutedEventArgs e)
         {
             _strategyKeeper.BotShowParametrsDialog();
+        }
+
+        private void ButtonStatisticShow_Click(object sender, RoutedEventArgs e)
+        {
+            StatisticForm.showStatistic();
         }
     }
 }

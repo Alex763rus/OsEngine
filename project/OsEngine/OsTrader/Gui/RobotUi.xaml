@@ -43,6 +43,7 @@
                         <Button Name="ButtonStrategParametr" Content="Parameters"  HorizontalAlignment="Left" Margin="66,256,0,0" VerticalAlignment="Top" Width="161" Click="ButtonStrategParametr_Click" />
                         <Button Name="ButtonRiskManager" Content="Risk manager" HorizontalAlignment="Left" Margin="65,310,0,0" VerticalAlignment="Top" Width="161" Click="ButtonRiskManager_Click" />
                         <CheckBox Name="CheckBoxPaintOnOff" Content="Interface drawing" HorizontalAlignment="Left" Margin="66,154,0,0" VerticalAlignment="Top"/>
+                        <Button x:Name="ButtonStatisticShow" Content="Статистика"  HorizontalAlignment="Left" Margin="78,367,0,0" VerticalAlignment="Top" Width="161" Click="ButtonStatisticShow_Click" />
                     </Grid>
                 </TabItem>
             </TabControl>

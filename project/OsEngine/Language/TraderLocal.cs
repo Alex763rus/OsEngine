@@ -13,6 +13,9 @@ namespace OsEngine.Language
 {
     public class TraderLocal
     {
+        public string Label_1 => OsLocalization.ConvertToLocString(
+            "Eng:Statistic_" +
+            "Ru:Статистика_");
         public string Label1 => OsLocalization.ConvertToLocString(
             "Eng:Launch OsTraderMaster. Inclusion of the program_" +
             "Ru:Запуск OsTraderMaster. Включение программы_");
