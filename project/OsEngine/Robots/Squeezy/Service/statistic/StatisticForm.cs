@@ -34,8 +34,6 @@ namespace OsEngine.Robots.Squeezy.Service.statistic
             
             AlertMessageSimpleUi ui = new AlertMessageSimpleUi(sb.ToString());
             ui.SizeToContent = SizeToContent.WidthAndHeight;
-            //ui.Width = 1000;
-            //ui.Height = 400;
             ui.Title = "Статистика";
             ui.Show();
             
