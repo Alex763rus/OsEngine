@@ -45,7 +45,6 @@ namespace OsEngine.Robots.Squeezy.Tester
             dealService = new DealService(tab, generalParameters, logService);
             countBarService = new CountBarService();
             paintService = new PaintService(tab);
-            volumeSumService = new VolumeSumService(generalParameters.getVolumeSum(), generalParameters.getCoeffMonkey(), logService);
             lockCurrentDirection = false;
             isStart = true;
         }
@@ -59,6 +58,7 @@ namespace OsEngine.Robots.Squeezy.Tester
             }
             if (isStart)
             {
+                volumeSumService = new VolumeSumService(generalParameters.getVolumeSum(), generalParameters.getCoeffMonkey(), logService);
                 movingAverageService.updateMaLen();
                 logBotSettings();
                 paintService.deleteAllChartElement();
@@ -307,7 +307,7 @@ namespace OsEngine.Robots.Squeezy.Tester
         {
             movingAverageService.updateMaLen();
             paintService.deleteAllChartElement();
-            volumeSumService.calculateAndSetVolumeSum(generalParameters.getVolumeSum(), generalParameters.getCoeffMonkey());
+            volumeSumService = new VolumeSumService(generalParameters.getVolumeSum(), generalParameters.getCoeffMonkey(), logService);
         }
     }
 }

@@ -20,7 +20,7 @@ namespace OsEngine.Robots.Squeezy.Service
             calculateAndSetVolumeSum(volumeSum, coeffMonkey);
         }
 
-        public void calculateAndSetVolumeSum(decimal volumeSum, int coeffMonkey)
+        private void calculateAndSetVolumeSum(decimal volumeSum, int coeffMonkey)
         {
             coeffForCalculateSum = new decimal[coeffMonkey];
             decimal coeffSum = 0.0m;
@@ -53,6 +53,7 @@ namespace OsEngine.Robots.Squeezy.Service
             {
                 sb.Append(i).Append(") ").Append(coeffForCalculateSum[i]).Append(" - ").Append(calculatedSum[i]).Append(", ");
             }
+            sb.Append("всего уровней: ").Append(coeffForCalculateSum.Length);
             logService.sendLogSystem(sb.ToString());
         }
         public decimal getVolumeSum(Side side)

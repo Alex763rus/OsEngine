@@ -129,10 +129,7 @@ namespace OsEngine.Robots.Squeezy.Trading
             tab.CandleFinishedEvent += candleFinishedEventLogic;
             tab.PositionClosingSuccesEvent += positionClosingSuccesEventLogic;
             tab.PositionOpeningSuccesEvent += positionOpeningSuccesEventLogic;
-            tab.NewTickEvent += newTickEventLogic;
             tab.Connector.BestBidAskChangeEvent += bestBidAskChangeEventLogic;
-            //tab.PositionSellAtStopActivateEvent += positionSellAtStopActivateEventlogic;
-            //tab.PositionBuyAtStopActivateEvent += positionBuyAtStopActivateEventLogic;
             tab.PositionOpeningFailEvent += positionOpeningFailEventLogic;
             ParametrsChangeByUser += parametrsChangeByUserLogic;
         }
@@ -175,11 +172,6 @@ namespace OsEngine.Robots.Squeezy.Trading
         private void candleFinishedEventLogic(List<Candle> candles)
         {
             eventServiceTrading.candleFinishedEventLogic(candles);
-        }
-
-        private void newTickEventLogic(Trade trade)
-        {
-            //eventServiceTrading.newTickEventLogic(trade);
         }
 
         private void bestBidAskChangeEventLogic(decimal bestBid, decimal bestAsk)
