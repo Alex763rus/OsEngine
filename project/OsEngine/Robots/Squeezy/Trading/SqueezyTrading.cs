@@ -21,7 +21,7 @@ namespace OsEngine.Robots.Squeezy.Trading
         private GeneralParametersTrading generalParametersTrading;
         private GroupParametersTradingService groupParametersTradingService;
         private BotTabSimple tab;
-
+        private LogService logService;
         public SqueezyTrading(string name, StartProgram startProgram) : base(name, startProgram)
         {
             TabCreate(BotTabType.Simple);
@@ -122,7 +122,7 @@ namespace OsEngine.Robots.Squeezy.Trading
             groupParametersTradingService.addGroupParameters(testTest);
 
             StatisticService statisticService = new StatisticService("C:\\1_LOGS\\" + BOT_NAME + "_" + NameStrategyUniq + "_statistic.txt");
-            LogService logService = new LogService(tab, "C:\\1_LOGS\\" + BOT_NAME + "_" + NameStrategyUniq + "_log.txt", generalParametersTrading);
+            logService = new LogService(tab, "C:\\1_LOGS\\" + BOT_NAME + "_" + NameStrategyUniq + "_log.txt", generalParametersTrading);
 
             eventServiceTrading = new EventServiceTrading(tab, generalParametersTrading, groupParametersTradingService, logService, statisticService);
 
@@ -141,16 +141,19 @@ namespace OsEngine.Robots.Squeezy.Trading
 
         private void positionOpeningFailEventLogic(Position position)
         {
+            logService.sendLogUser("TEH:positionOpeningFailEventLogic:" + NameStrategyUniq+ " - " + LogService.getPositionInfo(position));
             eventServiceTrading.positionOpeningFailEventLogic(position);
         }
 
         private void positionClosingSuccesEventLogic(Position position)
         {
+            logService.sendLogUser("TEH:positionClosingSuccesEventLogic:" + NameStrategyUniq + " - " + LogService.getPositionInfo(position));
             eventServiceTrading.positionClosingSuccesEventLogic(position);
         }
 
         private void positionOpeningSuccesEventLogic(Position position)
         {
+            logService.sendLogUser("TEH:positionOpeningSuccesEventLogic:" + NameStrategyUniq + " - " + LogService.getPositionInfo(position));
             eventServiceTrading.positionOpeningSuccesEventLogic(position);
         }
 

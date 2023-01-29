@@ -63,7 +63,7 @@ namespace OsEngine.Robots.SqueezyBot
             string positionInfo = "";
             if (position != null)
             {
-                sb.Append("#0000").Append(position.Number).Append(" ");
+                sb.Append(LogService.getPositionNumber(position)).Append(" ");
                 positionInfo = LogService.getPositionInfo(position);
             }
             sb.Append(text).Append(" ");
@@ -76,7 +76,7 @@ namespace OsEngine.Robots.SqueezyBot
             string positionInfo = "";
             if (position != null)
             {
-                sb.Append("#0000").Append(position.Number).Append(" ");
+                sb.Append(LogService.getPositionNumber(position)).Append(" ");
                 positionInfo = LogService.getPositionInfo(position);
             }
             sb.Append(text).Append(" ");

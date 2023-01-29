@@ -91,11 +91,11 @@ namespace OsEngine.Robots.Squeezy.Tester
             dealService.checkSlTpAndClose(candleLow1);
             dealService.checkSlTpAndClose(candleHigh1);
 
-            if (dealService.hasOpendeal(Side.Sell))
+            if (generalParameters.getStatisticEnabled() && dealService.hasOpendeal(Side.Sell))
             {
                 statisticService.recalculateStatistic(getGroupType(Side.Sell), dealService.getSellPosition());
             }
-            if(dealService.hasOpendeal(Side.Buy))
+            if(generalParameters.getStatisticEnabled() && dealService.hasOpendeal(Side.Buy))
             {
                 statisticService.recalculateStatistic(getGroupType(Side.Buy), dealService.getBuyPosition());
             }

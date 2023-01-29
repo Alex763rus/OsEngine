@@ -3,6 +3,7 @@ using OsEngine.Entity;
 using OsEngine.Language;
 using OsEngine.Robots.Squeezy.Service.statistic;
 using OsEngine.Robots.Squeezy.Tester;
+using OsEngine.Robots.SqueezyBot.Service;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -48,7 +49,7 @@ namespace OsEngine.Robots.Squeezy.Service
                     Position pos = statisticResults[i].getPositionMaxDrawdown();
                     if (pos != null)
                     {
-                        sb.Append(" [#0000").Append(pos.Number)
+                        sb.Append(" [").Append(LogService.getPositionNumber(position))
                         .Append(", ").Append(pos.Direction)
                         .Append(", ").Append(pos.State)
                         .Append(", tOpen:").Append(pos.TimeOpen)

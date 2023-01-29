@@ -105,8 +105,8 @@ namespace OsEngine.Robots.SqueezyBot.Service
 
         public IChartElement paintClosedPosition(Position position, TimeSpan timeFrame, bool isProfit)
         {
-            string label = "#" + position.Number; /* + " " + position.SignalTypeOpen + " \n" + position.Direction*/;
-            if(position.Direction == Side.Buy)
+            string label = LogService.getPositionNumber(position);
+            if (position.Direction == Side.Buy)
             {
                 label += "^";
             }
@@ -130,7 +130,7 @@ namespace OsEngine.Robots.SqueezyBot.Service
 
         public IChartElement paintClosedPosition(Position position, bool isProfit)
         {
-            string label = "#" + position.Number; //+ " " + position.SignalTypeOpen + " \n" + position.Direction;
+            string label = LogService.getPositionNumber(position);
             Color color;
             if (isProfit)
             {

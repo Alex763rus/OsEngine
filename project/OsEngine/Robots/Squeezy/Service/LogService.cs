@@ -8,6 +8,7 @@ using OsEngine.Entity;
 using Position = OsEngine.Entity.Position;
 using OsEngine.Robots.Squeezy.Tester;
 using OsEngine.OsTrader.Panels.Tab;
+using OsEngine.Market.Servers.OKX.Entity;
 
 namespace OsEngine.Robots.SqueezyBot.Service
 {
@@ -27,12 +28,20 @@ namespace OsEngine.Robots.SqueezyBot.Service
             this.tab = tab;
             this.filePath = filePath;
             this.generalParameters = generalParameters;
-
             logList = new ArrayList();
+            if (!generalParameters.getLogEnabled())
+            {
+                return;
+            }
             threadSaver = new Thread(new ThreadStart(checkAndSaveLog));
             threadSaver.IsBackground = true;
             threadSaver.SetApartmentState(ApartmentState.STA);
             threadSaver.Start();
+        }
+
+        public void sendLogUser(string message, int level = 0)
+        {
+            sendLogMessage(message, LogMessageType.User, level);
         }
 
         public void sendLogSystem(string message, int level = 0)
@@ -56,7 +65,7 @@ namespace OsEngine.Robots.SqueezyBot.Service
         public static string getPositionInfo(Position position)
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append(" [#0000").Append(position.Number)
+            sb.Append(" [").Append(getPositionNumber(position))
             .Append(", ").Append(position.Direction)
             .Append(", ").Append(position.State)
             .Append(", tOpen:").Append(position.TimeOpen)
@@ -71,6 +80,18 @@ namespace OsEngine.Robots.SqueezyBot.Service
             .Append(']');
             ;
             return sb.ToString();
+        }
+
+        public static string getPositionNumber(Position position)
+        {
+            if(position == null)
+            {
+                return "";
+            }
+            string positionNumber = position.Number.ToString();
+            char[] m = { '0', '0', '0', '0', '0', '0' };
+            StringBuilder positionNumberSb = new StringBuilder("#").Append(new string(m, 0, m.Length - positionNumber.Length)).Append(positionNumber);
+            return positionNumberSb.ToString();
         }
 
         private void sendLogMessage(string message, LogMessageType logMessageType, int level = 0)

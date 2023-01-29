@@ -99,11 +99,11 @@ namespace OsEngine.Robots.Squeezy.Trading
 
             DirectionType directionTypeTmp = getDirectionType();
 
-            if (dealService.hasOpendeal(Side.Sell))
+            if (generalParameters.getStatisticEnabled() && dealService.hasOpendeal(Side.Sell))
             {
                 statisticService.recalculateStatistic(getGroupType(Side.Sell), dealService.getSellPosition());
             }
-            if (dealService.hasOpendeal(Side.Buy))
+            if (generalParameters.getStatisticEnabled() && dealService.hasOpendeal(Side.Buy))
             {
                 statisticService.recalculateStatistic(getGroupType(Side.Buy), dealService.getBuyPosition());
             }
@@ -142,9 +142,9 @@ namespace OsEngine.Robots.Squeezy.Trading
             currentInfo.Append("******> Закрыт бар. Группа:").Append(directionTypeCurrent)
                 .Append(" Позиций:").Append(countPosition)
                 .Append(" Buy:").Append(dealSupportBuy.getProcessState())
-                .Append(" Position:#0000").Append(dealSupportBuy.getPositionNumber())
+                .Append(" Position:").Append(LogService.getPositionNumber(dealSupportBuy.getPosition())).Append(" ")
                 .Append(" Sell:").Append(dealSupportSell.getProcessState())
-                .Append(" Position:#0000").Append(dealSupportSell.getPositionNumber())
+                .Append(" Position:").Append(LogService.getPositionNumber(dealSupportSell.getPosition()))
                 ;
             sendLogSystemLocal(currentInfo.ToString());
         }
@@ -189,50 +189,52 @@ namespace OsEngine.Robots.Squeezy.Trading
                     dealService.closeAllOrderToPosition(positionAnother, "Новая лимитка");
                     resetSide(dealSupportAnother, dealSupport);
                 }
-                //Если нет активностей в противоположную сторону активности в противоположной стороне в той же группе
-                //if (processStateAnother == ProcessState.FREE)
-                //{
-                    GroupType groupTypeCurrent = getGroupType(side);
-                    GroupParametersTrading groupParameters = groupParametersService.getGroupParameters(groupTypeCurrent);
+                GroupType groupTypeCurrent = getGroupType(side);
+                GroupParametersTrading groupParameters = groupParametersService.getGroupParameters(groupTypeCurrent);
 
-                    decimal priceOpenLimit = 0 ;
-                    if(side == Side.Sell)
+                decimal priceOpenLimit = 0 ;
+                if(side == Side.Sell)
+                {
+                    priceOpenLimit = getValueAddPercent(lastCandle.Close, groupParameters.getTriggerCandleDiff());
+                } else if(side == Side.Buy)
+                {
+                    priceOpenLimit = getValueSubtractPercent(lastCandle.Close, groupParameters.getTriggerCandleDiff());
+                }
+                //Если уже пробили отслеживаемые величины, то открываемся по рынку
+                if (  (side == Side.Sell && price > priceOpenLimit)
+                    ||(side == Side.Buy && price < priceOpenLimit)
+                    )
+                {
+                    position = dealService.openDeal(side, groupParameters.getGroupType().ToString(), "Вход по рынку", volumeSumService.getVolumeSum(side));
+                    if (position != null)
                     {
-                        priceOpenLimit = getValueAddPercent(lastCandle.Close, groupParameters.getTriggerCandleDiff());
-                    } else if(side == Side.Buy)
-                    {
-                        priceOpenLimit = getValueSubtractPercent(lastCandle.Close, groupParameters.getTriggerCandleDiff());
+                        sendLogSystemLocal("-> OK_TRIGGER_START : выставили заявку по рынку:", position, dealSupport);
+                        dealSupport.dealSupportUpdate(groupParameters, ProcessState.OK_TRIGGER_START, position);
+                        dealSupport.addChartElement(paintService.paintLimitPosition(lastCandle, dealService.getTimeFrame(), tgStart, position.EntryPrice, LogService.getPositionNumber(position)));
                     }
-                    //Если уже пробили отслеживаемые величины, то открываемся по рынку
-                    if (  (side == Side.Sell && price > priceOpenLimit)
-                        ||(side == Side.Buy && price < priceOpenLimit)
-                        )
+                }
+                else
+                {
+                    position = dealService.openLimit(side, priceOpenLimit, groupTypeCurrent.ToString(), side + "AtLimit", volumeSumService.getVolumeSum(side));
+                    if (position != null)
                     {
-                        position = dealService.openDeal(side, groupParameters.getGroupType().ToString(), "Вход по рынку", volumeSumService.getVolumeSum(side));
-                        if (position != null)
-                        {
-                            sendLogSystemLocal("-> OK_TRIGGER_START : выставили заявку по рынку:", position, dealSupport);
-                            dealSupport.dealSupportUpdate(groupParameters, ProcessState.OK_TRIGGER_START, position);
-                            dealSupport.addChartElement(paintService.paintLimitPosition(lastCandle, dealService.getTimeFrame(), tgStart, position.EntryPrice, "#" + position.Number));
-                        }
+                        sendLogSystemLocal("-> OK_TRIGGER_START выставили заявку на открытие лимитки:", position, dealSupport);
+                        dealSupport.dealSupportUpdate(groupParameters, ProcessState.OK_TRIGGER_START, position);
+                        dealSupport.addChartElement(paintService.paintLimitPosition(lastCandle, dealService.getTimeFrame(), tgStart, priceOpenLimit, LogService.getPositionNumber(position)));
                     }
-                    else
-                    {
-                        position = dealService.openLimit(side, priceOpenLimit, groupTypeCurrent.ToString(), side + "AtLimit", volumeSumService.getVolumeSum(side));
-                        if (position != null)
-                        {
-                            sendLogSystemLocal("-> OK_TRIGGER_START выставили заявку на открытие лимитки:", position, dealSupport);
-                            dealSupport.dealSupportUpdate(groupParameters, ProcessState.OK_TRIGGER_START, position);
-                            dealSupport.addChartElement(paintService.paintLimitPosition(lastCandle, dealService.getTimeFrame(), tgStart, priceOpenLimit, "#" + position.Number));
-                        }
-                    }
-                //}
+                }
             }
             
         }
 
         public void positionOpeningSuccesEventLogic(Position position)
         {
+            if(position.Number != dealSupportSell.getPositionNumber() && position.Number != dealSupportBuy.getPositionNumber())
+            {
+                logService.sendLogError("Открылась позиция, по которой у нас нет информации, будем ее закрывать!:" + LogService.getPositionInfo(position));
+                dealService.closeAllOrderToPosition(position, "Ошибка. Неизвестная позиция");
+                return;
+            }
             decimal sl = position.EntryPrice;
             decimal tp = position.EntryPrice;
             if (position.Direction == Side.Buy)
@@ -288,9 +290,6 @@ namespace OsEngine.Robots.Squeezy.Trading
             {
                 sendLogSystemLocal("Успешно закрыта старая позиция:" + position.SignalTypeClose, position);
             }
-
-
-
         }
 
         public void positionOpeningFailEventLogic(Position position)
@@ -389,7 +388,7 @@ namespace OsEngine.Robots.Squeezy.Trading
                 if (dealSupport.getCounterBar() > dealSupport.getCountBarForClose())
                 {
                     dealService.closeAllDeals(dealSupport.getSide(), "Закрылись по барам");
-                    resetSide(dealSupport, dealSupportAnother);
+                    //resetSide(dealSupport, dealSupportAnother);
                 }
             }
         }
@@ -402,7 +401,7 @@ namespace OsEngine.Robots.Squeezy.Trading
             ProcessState processState = ProcessState.FREE;
             if (position != null)
             {
-                sb.Append("#0000").Append(position.Number).Append(" ");
+                sb.Append(LogService.getPositionNumber(position)).Append(" ");
                 positionInfo = LogService.getPositionInfo(position);
                 if (position.Direction == Side.Buy && dealSupportBuy.getPosition() != null && dealSupportBuy.getPosition().Number == position.Number)
                 {
