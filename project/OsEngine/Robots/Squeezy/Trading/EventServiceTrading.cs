@@ -23,7 +23,7 @@ using Side = OsEngine.Entity.Side;
 
 namespace OsEngine.Robots.Squeezy.Trading
 {
-    public class EventServiceTrading
+    public class EventServiceTrading:EventService
     {
 
         private GeneralParametersTrading generalParameters;
@@ -84,29 +84,22 @@ namespace OsEngine.Robots.Squeezy.Trading
                 paintService.deleteAllChartElement();
                 dealSupportBuy.reset();
                 dealSupportSell.reset();
-                priceForPaintGroup = getValueSubtractPercent(candles[candles.Count - 1].Low, generalParameters.getPaintGroup());
+                priceForPaintGroup = MathService.getValueSubtractPercent(candles[candles.Count - 1].Low, generalParameters.getPaintGroup());
                 timeStartGroup = candles[candles.Count - 1].TimeStart;
                 volumeSumService = new VolumeSumService(generalParameters.getVolumeSum(), generalParameters.getCoeffMonkey(), logService);
+                logService.sendLogSystem(LogService.SEPARATE_PARAMETR_LINE);
                 isStart = false;
             }
 
             lastCandle = candles[candles.Count - 1];
-            candleTriggerStartBid = getValueSubtractPercent(lastCandle.Close, generalParameters.getTriggerStartPercent());
-            candleTriggerStartAsc = getValueAddPercent(lastCandle.Close, generalParameters.getTriggerStartPercent());
+            candleTriggerStartBid = MathService.getValueSubtractPercent(lastCandle.Close, generalParameters.getTriggerStartPercent());
+            candleTriggerStartAsc = MathService.getValueAddPercent(lastCandle.Close, generalParameters.getTriggerStartPercent());
 
             barCounterProcess(dealSupportBuy, dealSupportSell);
             barCounterProcess(dealSupportSell, dealSupportBuy);
 
             DirectionType directionTypeTmp = getDirectionType();
-
-            if (generalParameters.getStatisticEnabled() && dealService.hasOpendeal(Side.Sell))
-            {
-                statisticService.recalculateStatistic(getGroupType(Side.Sell), dealService.getSellPosition());
-            }
-            if (generalParameters.getStatisticEnabled() && dealService.hasOpendeal(Side.Buy))
-            {
-                statisticService.recalculateStatistic(getGroupType(Side.Buy), dealService.getBuyPosition());
-            }
+            statisticService.recalcMaxDrawdown(getGroupType(Side.Buy), getGroupType(Side.Sell), dealService);
 
             if (directionTypeCurrent != directionTypeTmp)
             {
@@ -185,20 +178,22 @@ namespace OsEngine.Robots.Squeezy.Trading
                 sendLogSystemLocal(message, null, dealSupport);
                 if (processStateAnother == ProcessState.OK_TRIGGER_START)
                 {
-                    sendLogSystemLocal(side + " нашли неоткрытую зарегистрированную лимитку в противоположную сторону, будем ее закрывать" + LogService.getPositionInfo(positionAnother), null, dealSupport);
+                    message = side + " нашли неоткрытую зарегистрированную лимитку в противоположную сторону, будем ее закрывать" + LogService.getPositionInfo(positionAnother);
+                    sendLogSystemLocal(message, null, dealSupport, (int)processStateAnother);
                     dealService.closeAllOrderToPosition(positionAnother, "Новая лимитка");
                     resetSide(dealSupportAnother, dealSupport);
                 }
                 GroupType groupTypeCurrent = getGroupType(side);
+                statisticService.recalcSqueezyCounter(groupTypeCurrent, side, lastCandle.Close, price);
                 GroupParametersTrading groupParameters = groupParametersService.getGroupParameters(groupTypeCurrent);
 
                 decimal priceOpenLimit = 0 ;
                 if(side == Side.Sell)
                 {
-                    priceOpenLimit = getValueAddPercent(lastCandle.Close, groupParameters.getTriggerCandleDiff());
+                    priceOpenLimit = MathService.getValueAddPercent(lastCandle.Close, groupParameters.getTriggerCandleDiff());
                 } else if(side == Side.Buy)
                 {
-                    priceOpenLimit = getValueSubtractPercent(lastCandle.Close, groupParameters.getTriggerCandleDiff());
+                    priceOpenLimit = MathService.getValueSubtractPercent(lastCandle.Close, groupParameters.getTriggerCandleDiff());
                 }
                 //Если уже пробили отслеживаемые величины, то открываемся по рынку
                 if (  (side == Side.Sell && price > priceOpenLimit)
@@ -218,8 +213,9 @@ namespace OsEngine.Robots.Squeezy.Trading
                     position = dealService.openLimit(side, priceOpenLimit, groupTypeCurrent.ToString(), side + "AtLimit", volumeSumService.getVolumeSum(side));
                     if (position != null)
                     {
-                        sendLogSystemLocal("-> OK_TRIGGER_START выставили заявку на открытие лимитки:", position, dealSupport);
-                        dealSupport.dealSupportUpdate(groupParameters, ProcessState.OK_TRIGGER_START, position);
+                        ProcessState psOkTriggerStart = ProcessState.OK_TRIGGER_START;
+                        sendLogSystemLocal("-> " + psOkTriggerStart + " выставили заявку на открытие лимитки:", position, dealSupport, (int)psOkTriggerStart);
+                        dealSupport.dealSupportUpdate(groupParameters, psOkTriggerStart, position);
                         dealSupport.addChartElement(paintService.paintLimitPosition(lastCandle, dealService.getTimeFrame(), tgStart, priceOpenLimit, LogService.getPositionNumber(position)));
                     }
                 }
@@ -237,25 +233,25 @@ namespace OsEngine.Robots.Squeezy.Trading
             }
             decimal sl = position.EntryPrice;
             decimal tp = position.EntryPrice;
+            DealSupport dealSupport = null;
             if (position.Direction == Side.Buy)
             {
-                tp = getValueAddPercent(tp, dealSupportBuy.getGroupParametersTrading().getTakeProfit());
-                sl = getValueSubtractPercent(sl, dealSupportBuy.getGroupParametersTrading().getStopLoss());
-                dealSupportBuy.setProcessState(ProcessState.WAIT_TP_SL);
-                //dealSupportBuy.addChartElement(paintService.paintSlTp(lastCandle, dealService.getTimeFrame(), sl, tp, "#" + position.Number));
+                dealSupport = dealSupportBuy;
+                tp = MathService.getValueAddPercent(tp, dealSupport.getGroupParametersTrading().getTakeProfit());
+                sl = MathService.getValueSubtractPercent(sl, dealSupport.getGroupParametersTrading().getStopLoss());
             }
             else if (position.Direction == Side.Sell)
             {
-                tp = getValueSubtractPercent(tp, dealSupportSell.getGroupParametersTrading().getTakeProfit());
-                sl = getValueAddPercent(sl, dealSupportSell.getGroupParametersTrading().getStopLoss());
-                dealSupportSell.setProcessState(ProcessState.WAIT_TP_SL);
-                //dealSupportSell.addChartElement(paintService.paintSlTp(lastCandle, dealService.getTimeFrame(), sl, tp, "#" + position.Number));
+                dealSupport = dealSupportSell;
+                tp = MathService.getValueSubtractPercent(tp, dealSupport.getGroupParametersTrading().getTakeProfit());
+                sl = MathService.getValueAddPercent(sl, dealSupport.getGroupParametersTrading().getStopLoss());
             }
+            dealSupport.setProcessState(ProcessState.WAIT_TP_SL);
             position.ProfitOrderRedLine = tp;
             position.StopOrderRedLine = sl;
             dealService.setTpSl(position, tp, sl, 0);
-            sendLogSystemLocal("Успешно открыта позиция:" + position.Comment, position, dealSupportSell);
-            sendLogSystemLocal("Установлен TP =" + tp + ", SL =" + sl + " для позиции:", position, dealSupportSell);
+            sendLogSystemLocal("Успешно открыта позиция:" + position.Comment, position, dealSupport, (int)dealSupport.getProcessState());
+            sendLogSystemLocal("Установлен TP =" + tp + ", SL =" + sl + " для позиции:", position, dealSupport, (int)dealSupport.getProcessState());
         }
 
         public void positionClosingSuccesEventLogic(Position position)
@@ -276,39 +272,40 @@ namespace OsEngine.Robots.Squeezy.Trading
                 }
             }
             //Значит ждем эту позицию:
+            int finishState = -1;
             if (dealSupportBuy.getPosition() != null && position.Number == dealSupportBuy.getPosition().Number)
             {
-                sendLogSystemLocal("Успешно закрыта позиция:" + position.SignalTypeClose, position, dealSupportBuy);
+                sendLogSystemLocal("Подтверждение 1: Успешно закрыта позиция:" + position.SignalTypeClose, position, dealSupportBuy, finishState);
                 resetSide(dealSupportBuy, dealSupportSell);
             }
             else if (dealSupportSell.getPosition() != null && position.Number == dealSupportSell.getPosition().Number)
             {
-                sendLogSystemLocal("Успешно закрыта позиция:" + position.SignalTypeClose, position, dealSupportSell);
+                sendLogSystemLocal("Подтверждение 2: Успешно закрыта позиция:" + position.SignalTypeClose, position, dealSupportSell, finishState);
                 resetSide(dealSupportSell, dealSupportBuy);
             }
             else
             {
-                sendLogSystemLocal("Успешно закрыта старая позиция:" + position.SignalTypeClose, position);
+                sendLogSystemLocal("Подтверждение 3: Успешно закрыта старая позиция:" + position.SignalTypeClose, position, null, finishState);
             }
         }
 
         public void positionOpeningFailEventLogic(Position position)
         {
-            sendLogSystemLocal("Позиция переведена в статус Fail:" + lastBestAsc, position);
+            string comment = "Позиция переведена в статус Fail.";
             //Значит ждем эту позицию:
             if (dealSupportBuy.getPosition() != null && position.Number == dealSupportBuy.getPosition().Number)
             {
-                sendLogSystemLocal("Успешно удалилил Fail позицию:" + position.SignalTypeClose, position, dealSupportBuy);
+                sendLogSystemLocal(comment + "Успешно забыли Buy позицию, причина:" + position.SignalTypeClose, position, dealSupportBuy, -1);
                 resetSide(dealSupportBuy, dealSupportSell);
             }
             else if (dealSupportSell.getPosition() != null && position.Number == dealSupportSell.getPosition().Number)
             {
-                sendLogSystemLocal("Успешно удалилил Fail позицию:" + position.SignalTypeClose, position, dealSupportSell);
+                sendLogSystemLocal(comment + "Успешно забыли Sell позицию, причина:" + position.SignalTypeClose, position, dealSupportSell, -1);
                 resetSide(dealSupportSell, dealSupportBuy);
             }
             else
             {
-                sendLogSystemLocal("Успешно удалили старую Fail позицию:" + position.SignalTypeClose, position);
+                sendLogSystemLocal("Мы о ней уже не помним:" + position.SignalTypeClose, position, null, -1);
             }
         }
 
@@ -346,8 +343,8 @@ namespace OsEngine.Robots.Squeezy.Trading
             {
                 directionType = DirectionType.Test;
             }
-            else if ((movingAverageService.getMaLastValueSlow() < movingAverageService.getMaLastValueFast() && movingAverageService.getMaLastValueFast() < getValueAddPercent(movingAverageService.getMaLastValueSlow(), generalParameters.getMaStrength()))
-                    || (movingAverageService.getMaLastValueFast() < movingAverageService.getMaLastValueSlow() && movingAverageService.getMaLastValueSlow() < getValueAddPercent(movingAverageService.getMaLastValueFast(), generalParameters.getMaStrength())))
+            else if ((movingAverageService.getMaLastValueSlow() < movingAverageService.getMaLastValueFast() && movingAverageService.getMaLastValueFast() < MathService.getValueAddPercent(movingAverageService.getMaLastValueSlow(), generalParameters.getMaStrength()))
+                    || (movingAverageService.getMaLastValueFast() < movingAverageService.getMaLastValueSlow() && movingAverageService.getMaLastValueSlow() < MathService.getValueAddPercent(movingAverageService.getMaLastValueFast(), generalParameters.getMaStrength())))
             {
                 directionType = DirectionType.Flat;
             }
@@ -363,7 +360,7 @@ namespace OsEngine.Robots.Squeezy.Trading
         }
         private void resetSide(DealSupport dealSupport, DealSupport dealSupportAnother)
         {
-            sendLogSystemLocal("Обнуляем " + dealSupport.getSide() + " нашли позицию:", dealSupport.getPosition(), dealSupport, -1);
+            //sendLogSystemLocal("Обнуляем " + dealSupport.getSide() + " нашли позицию:", dealSupport.getPosition(), dealSupport, -1);
             if (dealSupport.getChartElementCount() <= 2)
             {
                 paintService.deleteChartElements(dealSupport.getChartElements());
@@ -429,15 +426,6 @@ namespace OsEngine.Robots.Squeezy.Trading
             logService.sendLogSystem(sb.ToString(), level);
         }
 
-        private decimal getValueAddPercent(decimal value, decimal percent)
-        {
-            return value + (value * percent / 100);
-        }
-        private decimal getValueSubtractPercent(decimal value, decimal percent)
-        {
-            return value - (value * percent / 100);
-        }
-
         private void logBotSettings()
         {
             logService.sendLogSystem("");
@@ -459,6 +447,7 @@ namespace OsEngine.Robots.Squeezy.Trading
             movingAverageService.updateMaLen();
             paintService.deleteAllChartElement();
             volumeSumService = new VolumeSumService(generalParameters.getVolumeSum(), generalParameters.getCoeffMonkey(), logService);
+            statisticService.setIsEnabled(generalParameters.getStatisticEnabled());
         }
 
     }
@@ -468,6 +457,7 @@ namespace OsEngine.Robots.Squeezy.Trading
         FREE                           //группа свободна, ожидаем достижения триггера старта
       , OK_TRIGGER_START               //сработал триггер старта, оформили заявку на открытие лимитки или по рынку. Ждем открытия
       , WAIT_TP_SL                     //пришло подтверждение, что лимитка заведена, открыта, выставили sl/tp ждем окончания сделки
+      , FINISH                         //пришло событие об успешном закрытии сделки
     }
 
 }

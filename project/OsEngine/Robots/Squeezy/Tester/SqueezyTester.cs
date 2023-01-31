@@ -126,7 +126,8 @@ namespace OsEngine.Robots.Squeezy.Tester
             groupParametersTesterService.addGroupParameters(flatSell);
             groupParametersTesterService.addGroupParameters(testTest);
 
-            StatisticService statisticService = new StatisticService("C:\\1_LOGS\\" + BOT_NAME + "_" + NameStrategyUniq + "_statistic.txt");
+            string statisticFileName = "C:\\1_LOGS\\" + BOT_NAME + "_" + NameStrategyUniq + "_statistic.txt";
+            StatisticService statisticService = new StatisticService(statisticFileName, generalParameters.getStatisticEnabled());
 
             LogService logService = new LogService(tab, "C:\\1_LOGS\\" + BOT_NAME + "_" + NameStrategyUniq + "_log.txt", generalParameters);
             eventServiceTester = new EventServiceTester(tab, generalParameters, groupParametersTesterService, logService, statisticService);

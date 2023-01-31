@@ -1,5 +1,6 @@
 ﻿using Kraken.WebSockets;
 using OkonkwoOandaV20.TradeLibrary.DataTypes.Position;
+using OkonkwoOandaV20.TradeLibrary.DataTypes.Pricing;
 using OsEngine.Entity;
 using OsEngine.Market.Servers.Bitfinex.BitfitnexEntity;
 using OsEngine.OsTrader.Panels.Tab;
@@ -15,7 +16,7 @@ using Side = OsEngine.Entity.Side;
 
 namespace OsEngine.Robots.Squeezy.Tester
 {
-    public class EventServiceTester
+    public class EventServiceTester:EventService
     {
         private GeneralParametersTester generalParameters;
         private GroupParametersTesterService groupParametersService;
@@ -62,9 +63,9 @@ namespace OsEngine.Robots.Squeezy.Tester
                 movingAverageService.updateMaLen();
                 logBotSettings();
                 paintService.deleteAllChartElement();
-                priceForPaintGroup = getValueAddPercent(candles[candles.Count - 1].Low, generalParameters.getPaintGroup());
+                priceForPaintGroup = MathService.getValueAddPercent(candles[candles.Count - 1].Low, generalParameters.getPaintGroup());
                 timeStartPaintGroup = candles[candles.Count - 1].TimeStart;
-                priceForPaintSqueezy = getValueAddPercent(candles[candles.Count - 1].Low, generalParameters.getPaintSqueezy());
+                priceForPaintSqueezy = MathService.getValueAddPercent(candles[candles.Count - 1].Low, generalParameters.getPaintSqueezy());
                 isStart = false;
             }
 
@@ -91,18 +92,13 @@ namespace OsEngine.Robots.Squeezy.Tester
             dealService.checkSlTpAndClose(candleLow1);
             dealService.checkSlTpAndClose(candleHigh1);
 
-            if (generalParameters.getStatisticEnabled() && dealService.hasOpendeal(Side.Sell))
-            {
-                statisticService.recalculateStatistic(getGroupType(Side.Sell), dealService.getSellPosition());
-            }
-            if(generalParameters.getStatisticEnabled() && dealService.hasOpendeal(Side.Buy))
-            {
-                statisticService.recalculateStatistic(getGroupType(Side.Buy), dealService.getBuyPosition());
-            }
+            GroupType groupTypeSell = getGroupType(Side.Sell);
+            GroupType groupTypeBuy = getGroupType(Side.Buy);
+            statisticService.recalcMaxDrawdown(groupTypeBuy, groupTypeSell, dealService);
 
             //Sell:
             GroupParametersTester groupParameters;
-            groupParameters = groupParametersService.getGroupParameters(getGroupType(Side.Sell));
+            groupParameters = groupParametersService.getGroupParameters(groupTypeSell);
             if (groupParameters.getGroupOn())
             {
                 if (dealService.hasOpendeal(Side.Sell))
@@ -112,7 +108,7 @@ namespace OsEngine.Robots.Squeezy.Tester
                     {
                         dealService.closeAllDeals(Side.Sell, "Закрылись по барам");
                     }
-                } else if (candleHigh1 > (candleClose2 + candleClose2 * (groupParameters.getTriggerCandleDiff() / 100)))
+                } else if (candleHigh1 > MathService.getValueAddPercent(candleClose2, groupParameters.getTriggerCandleDiff()))
                 {
                     if (lockCurrentDirection)
                     {
@@ -126,12 +122,13 @@ namespace OsEngine.Robots.Squeezy.Tester
                         dealService.openDeal(Side.Sell, groupParameters.getGroupType().ToString(), "Вход по рынку", volumeSumService.getVolumeSum(Side.Sell));
                         countBarService.setLimitBarSell(groupParameters.getCountBarForClose());
                         squeezyType = SqueezyType.Sell;
+                        statisticService.recalcSqueezyCounter(groupTypeSell, Side.Sell, candleClose2, candleHigh1);
                     }
                 }
             }
 
             //Buy:
-            groupParameters = groupParametersService.getGroupParameters(getGroupType(Side.Buy));
+            groupParameters = groupParametersService.getGroupParameters(groupTypeBuy);
             if (groupParameters.getGroupOn())
             {
                 if (dealService.hasOpendeal(Side.Buy))
@@ -142,7 +139,7 @@ namespace OsEngine.Robots.Squeezy.Tester
                         dealService.closeAllDeals(Side.Buy, "Закрылись по барам");
                     }
                 }
-                else if (candleLow1 < (candleClose2 - candleClose2 * (groupParameters.getTriggerCandleDiff() / 100)))
+                else if (candleLow1 < MathService.getValueSubtractPercent(candleClose2, groupParameters.getTriggerCandleDiff()))
                 {
                     if (lockCurrentDirection)
                     {
@@ -158,6 +155,7 @@ namespace OsEngine.Robots.Squeezy.Tester
                         dealService.openDeal(Side.Buy, groupParameters.getGroupType().ToString(), "Вход по рынку", volumeSumService.getVolumeSum(Side.Buy));
                         countBarService.setLimitBarBuy(groupParameters.getCountBarForClose());
                         squeezyType = SqueezyType.Buy;
+                        statisticService.recalcSqueezyCounter(groupTypeBuy, Side.Buy, candleClose2, candleLow1);
                     }
                 }
             }
@@ -263,8 +261,10 @@ namespace OsEngine.Robots.Squeezy.Tester
             {
                 directionType = DirectionType.Test;
             }
-            else if ((movingAverageService.getMaLastValueSlow() < movingAverageService.getMaLastValueFast() && movingAverageService.getMaLastValueFast() < getValueAddPercent(movingAverageService.getMaLastValueSlow(), generalParameters.getMaStrength()))
-                    || (movingAverageService.getMaLastValueFast() < movingAverageService.getMaLastValueSlow() && movingAverageService.getMaLastValueSlow() < getValueAddPercent(movingAverageService.getMaLastValueFast(), generalParameters.getMaStrength())))
+            else if ((     movingAverageService.getMaLastValueSlow() < movingAverageService.getMaLastValueFast() 
+                        && movingAverageService.getMaLastValueFast() < MathService.getValueAddPercent(movingAverageService.getMaLastValueSlow(), generalParameters.getMaStrength()))
+                    || (   movingAverageService.getMaLastValueFast() < movingAverageService.getMaLastValueSlow() 
+                        && movingAverageService.getMaLastValueSlow() < MathService.getValueAddPercent(movingAverageService.getMaLastValueFast(), generalParameters.getMaStrength())))
             {
                 directionType = DirectionType.Flat;
             }
@@ -277,14 +277,6 @@ namespace OsEngine.Robots.Squeezy.Tester
                 directionType = DirectionType.Down;
             }
             return directionType;
-        }
-        private decimal getValueAddPercent(decimal value, decimal percent)
-        {
-            return value + (value * percent / 100);
-        }
-        private decimal getValueSubtractPercent(decimal value, decimal percent)
-        {
-            return value - (value * percent / 100);
         }
 
         private void logBotSettings()
@@ -308,6 +300,7 @@ namespace OsEngine.Robots.Squeezy.Tester
             movingAverageService.updateMaLen();
             paintService.deleteAllChartElement();
             volumeSumService = new VolumeSumService(generalParameters.getVolumeSum(), generalParameters.getCoeffMonkey(), logService);
+            statisticService.setIsEnabled(generalParameters.getStatisticEnabled());
         }
     }
 }

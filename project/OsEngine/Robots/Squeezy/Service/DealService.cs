@@ -19,7 +19,7 @@ using Position = OsEngine.Entity.Position;
 
 namespace OsEngine.Robots.SqueezyBot
 {
-    internal class DealService
+    public class DealService
     {
 
         private BotTabSimple tab;
