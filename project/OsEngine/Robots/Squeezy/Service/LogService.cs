@@ -9,6 +9,7 @@ using Position = OsEngine.Entity.Position;
 using OsEngine.Robots.Squeezy.Tester;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Market.Servers.OKX.Entity;
+using OsEngine.Robots.Squeezy.Service;
 
 namespace OsEngine.Robots.SqueezyBot.Service
 {
@@ -19,17 +20,19 @@ namespace OsEngine.Robots.SqueezyBot.Service
 
         private BotTabSimple tab;
         private string filePath;
-        private GeneralParametersTester generalParameters;
+        private bool isEnabled;
+        private int countBufferLogLine;
         private ArrayList logList;
         private Thread threadSaver;
         
-        public LogService(BotTabSimple tab, string filePath, GeneralParametersTester generalParameters)
+        public LogService(string filePath, bool isEnabled, int countBufferLogLine, BotTabSimple tab)
         {
             this.tab = tab;
             this.filePath = filePath;
-            this.generalParameters = generalParameters;
+            this.isEnabled = isEnabled;
+            this.countBufferLogLine = countBufferLogLine;
             logList = new ArrayList();
-            if (!generalParameters.getLogEnabled())
+            if (!isEnabled)
             {
                 return;
             }
@@ -37,6 +40,12 @@ namespace OsEngine.Robots.SqueezyBot.Service
             threadSaver.IsBackground = true;
             threadSaver.SetApartmentState(ApartmentState.STA);
             threadSaver.Start();
+        }
+
+        public void setup(bool isEnabled, int countBufferLogLine)
+        {
+            this.isEnabled = isEnabled;
+            this.countBufferLogLine = countBufferLogLine;
         }
 
         public void sendLogUser(string message, int level = 0)
@@ -94,30 +103,33 @@ namespace OsEngine.Robots.SqueezyBot.Service
             return positionNumberSb.ToString();
         }
 
-        private void sendLogMessage(string message, LogMessageType logMessageType, int level = 0)
+        public void sendLogMessage(string message, LogMessageType logMessageType, int level = 0)
         {
-            if (!generalParameters.getLogEnabled())
+            if (!isEnabled)
             {
                 return;
             }
             StringBuilder logMessage = new StringBuilder();
-            logMessage.Append(DateTime.Now).Append(" ")
-                        .Append(tab.TimeServerCurrent).Append(" ")
-                        .Append(getIndent(level))
-                        .Append(logMessageType.ToString()).Append(":")
-                        .Append(message);
+            logMessage.Append(DateTime.Now).Append(" ");
+            if (tab != null)
+            {
+                logMessage.Append(tab.TimeServerCurrent).Append(" ");
+            }
+            logMessage.Append(getIndent(level))
+            .Append(logMessageType.ToString()).Append(":")
+            .Append(message);
 
             logList.Add(logMessage.ToString());
-            if (logList.Count == generalParameters.getCountBufferLogLine())
+            if (logList.Count == countBufferLogLine)
             {
                 saveLogInFile(filePath, logList);
                 logList.Clear();
             }
         }
 
-        private void saveLogInFile(string filePath, ArrayList logList)
+        public void saveLogInFile(string filePath, ArrayList logList)
         {
-            if(logList == null)
+            if (logList == null)
             {
                 return;
             }
@@ -131,9 +143,10 @@ namespace OsEngine.Robots.SqueezyBot.Service
                     }
                     writer.Close();
                 }
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
-
+                //skip
             }
         }
 

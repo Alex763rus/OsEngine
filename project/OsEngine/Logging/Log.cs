@@ -27,6 +27,7 @@ using OsEngine.OsOptimizer;
 using OsEngine.OsTrader;
 using OsEngine.OsTrader.Panels;
 using OsEngine.PrimeSettings;
+using OsEngine.Robots.SqueezyBot.Service;
 
 namespace OsEngine.Logging
 {
@@ -70,6 +71,8 @@ namespace OsEngine.Logging
                 _watcher.Start();
             }
         }
+
+        private LogService logService;
 
         /// <summary>
         /// work place of thread that save logs
@@ -122,7 +125,8 @@ namespace OsEngine.Logging
             _uniqName = uniqName;
             _startProgram = startProgram;
 
-            lock(_starterLocker)
+            logService = new LogService("C:\\1_LOGS\\Osa_log.txt", true, 50, null);
+            lock (_starterLocker)
             {
                 if (_watcher == null)
                 {
@@ -519,6 +523,7 @@ namespace OsEngine.Logging
         /// <param name="type">message type / тип сообщения</param>
         private void ProcessMessage(string message, LogMessageType type)
         {
+            logService.sendLogMessage(message, type);
             if (_isDelete)
             {
                 return;

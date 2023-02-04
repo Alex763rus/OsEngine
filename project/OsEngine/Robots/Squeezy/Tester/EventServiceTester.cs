@@ -301,6 +301,7 @@ namespace OsEngine.Robots.Squeezy.Tester
             paintService.deleteAllChartElement();
             volumeSumService = new VolumeSumService(generalParameters.getVolumeSum(), generalParameters.getCoeffMonkey(), logService);
             statisticService.setIsEnabled(generalParameters.getStatisticEnabled());
+            logService.setup(generalParameters.getLogEnabled(), generalParameters.getCountBufferLogLine());
         }
     }
 }

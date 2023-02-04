@@ -121,9 +121,9 @@ namespace OsEngine.Robots.Squeezy.Trading
             groupParametersTradingService.addGroupParameters(flatSell);
             groupParametersTradingService.addGroupParameters(testTest);
 
-            string statisticFileName = "C:\\1_LOGS\\" + BOT_NAME + "_" + NameStrategyUniq + "_statistic.txt";
-            StatisticService statisticService = new StatisticService(statisticFileName, generalParametersTrading.getStatisticEnabled());
-            logService = new LogService(tab, "C:\\1_LOGS\\" + BOT_NAME + "_" + NameStrategyUniq + "_log.txt", generalParametersTrading);
+            string statisticFileName = "C:\\1_LOGS\\" + BOT_NAME + "_" + NameStrategyUniq;
+            StatisticService statisticService = new StatisticService(statisticFileName + "_statistic.txt", generalParametersTrading.getStatisticEnabled());
+            logService = new LogService(statisticFileName + "_log.txt", generalParametersTrading.getLogEnabled(), generalParametersTrading.getCountBufferLogLine(), tab);
 
             eventServiceTrading = new EventServiceTrading(tab, generalParametersTrading, groupParametersTradingService, logService, statisticService);
 

@@ -114,23 +114,8 @@ namespace OsEngine.Robots.Squeezy.Service
                 sb.Append(", сквизы: ").Append(statisticResults[i].getCounterSqueezyList());
                 sb.Append("\r\n");
             }
-            saveMessageInFile(filePathStatistic, sb.ToString());
+            FileService.saveMessageInFile(filePathStatistic, sb.ToString(), false);
         }
-
-        private void saveMessageInFile(string filePath, string data)
-        {
-            try
-            {
-                using (StreamWriter writer = new StreamWriter(filePath))
-                {
-                    writer.WriteLine(data);
-                    writer.Close();
-                }
-            }
-            catch (Exception ex)
-            {
-
-            }
-        }
+       
     }
 }

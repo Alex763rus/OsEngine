@@ -448,6 +448,7 @@ namespace OsEngine.Robots.Squeezy.Trading
             paintService.deleteAllChartElement();
             volumeSumService = new VolumeSumService(generalParameters.getVolumeSum(), generalParameters.getCoeffMonkey(), logService);
             statisticService.setIsEnabled(generalParameters.getStatisticEnabled());
+            logService.setup(generalParameters.getLogEnabled(), generalParameters.getCountBufferLogLine());
         }
 
     }
