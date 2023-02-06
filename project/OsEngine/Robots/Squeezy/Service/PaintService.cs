@@ -22,7 +22,7 @@ using Position = OsEngine.Entity.Position;
 
 namespace OsEngine.Robots.SqueezyBot.Service
 {
-    internal class PaintService
+    public class PaintService
     {
         private int uniqNameIncrement;
         private BotTabSimple tab;
@@ -87,6 +87,14 @@ namespace OsEngine.Robots.SqueezyBot.Service
         {
             tab.DeleteAllChartElement();
         }
+        public void deleteChartElements(IChartElement chartElement)
+        {
+            if (chartElement == null)
+            {
+                return;
+            }
+            tab.DeleteChartElement(chartElement);
+        }
         public void deleteChartElements(IChartElement[] chartElements)
         {
             if(chartElements == null)
@@ -142,7 +150,7 @@ namespace OsEngine.Robots.SqueezyBot.Service
             }
             return paintLine(position.TimeOpen, position.EntryPrice, position.TimeClose, position.ClosePrice, label, color, 3);
         }
-        private IChartElement paintLine(DateTime timeStart, decimal valueYStart, DateTime timeEnd, decimal valueYEnd, string label, Color color, int width)
+        public IChartElement paintLine(DateTime timeStart, decimal valueYStart, DateTime timeEnd, decimal valueYEnd, string label, Color color, int width)
         {
             Line line = new Line(getUniqName(), "Prime");
 

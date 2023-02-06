@@ -5,6 +5,7 @@ using OsEngine.Entity;
 using OsEngine.Market.Servers.Bitfinex.BitfitnexEntity;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Robots.Squeezy.Service;
+using OsEngine.Robots.Squeezy.Service.ZigZag;
 using OsEngine.Robots.Squeezy.Trading;
 using OsEngine.Robots.SqueezyBot;
 using OsEngine.Robots.SqueezyBot.Service;
@@ -27,6 +28,7 @@ namespace OsEngine.Robots.Squeezy.Tester
         private PaintService paintService;
         private VolumeSumService volumeSumService;
         private StatisticService statisticService;
+        private ZigZagService zigZagService;
 
 
         private DirectionType directionTypeCurrent; //Направление текущего бара по МА. 
@@ -48,10 +50,12 @@ namespace OsEngine.Robots.Squeezy.Tester
             paintService = new PaintService(tab);
             lockCurrentDirection = false;
             isStart = true;
+            zigZagService = new ZigZagService(12, 1.0m, 3, paintService);
         }
 
         public void candleFinishedEventLogic(List<Candle> candles)
         {
+            zigZagService.calcNewCandle(candles[candles.Count - 1]);
             //Для тестовой среды: Если мало баров или нет медленной, ничего не делаем:
             if (candles.Count <= 2 || movingAverageService.getMaLastValueSlow() == 0)
             {
