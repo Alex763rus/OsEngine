@@ -369,6 +369,7 @@
     <Compile Include="Entity\AcceptDialogUi.xaml.cs">
       <DependentUpon>AcceptDialogUi.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Entity\AwaitObject.cs" />
     <Compile Include="Entity\AwaitUi.xaml.cs">
       <DependentUpon>AwaitUi.xaml</DependentUpon>
     </Compile>
@@ -378,7 +379,6 @@
       <DependentUpon>DateTimeSelectionDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="Entity\Extensions.cs" />
-    <Compile Include="Entity\GuiLockationMaster.cs" />
     <Compile Include="Entity\HorizontalVolume.cs" />
     <Compile Include="Entity\MarketDepthPainter.cs" />
     <Compile Include="Entity\ProxyHolder.cs" />
@@ -954,6 +954,7 @@
     <Compile Include="Robots\Screeners\SmaScreener.cs" />
     <Compile Include="Robots\TechSapmles\ElementsOnChartSampleBot.cs" />
     <Compile Include="Robots\TechSapmles\TinkoffGetRealCandlesSample.cs" />
+    <Compile Include="Robots\AutoTestBots\TradesInCandlesTestBot.cs" />
     <Compile Include="Robots\Trend\EnvelopTrend.cs" />
     <Compile Include="Robots\Trend\MomentumMacd.cs" />
     <Compile Include="Robots\MarketMaker\PairTraderSpreadSma.cs" />
