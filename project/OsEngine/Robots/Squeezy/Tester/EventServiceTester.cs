@@ -50,12 +50,12 @@ namespace OsEngine.Robots.Squeezy.Tester
             paintService = new PaintService(tab);
             lockCurrentDirection = false;
             isStart = true;
-            zigZagService = new ZigZagService(12, 1.0m, 3, paintService);
+            //zigZagService = new ZigZagService(12, 1.0m, 3, paintService);
         }
 
         public void candleFinishedEventLogic(List<Candle> candles)
         {
-            zigZagService.calcNewCandle(candles[candles.Count - 1]);
+            //zigZagService.calcNewCandle(candles[candles.Count - 1]);
             //Для тестовой среды: Если мало баров или нет медленной, ничего не делаем:
             if (candles.Count <= 2 || movingAverageService.getMaLastValueSlow() == 0)
             {

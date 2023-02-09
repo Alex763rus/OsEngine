@@ -39,19 +39,23 @@ namespace OsEngine.Robots.Squeezy.Service.ZigZag
 
         public void calcNewCandle(Candle candle)
         {
-            ++tmpBackstepCounter;
+            //++tmpBackstepCounter;
             if (lastExtremum == null)
             {
                 lastExtremum = candle;
                 return;
             }
+            paintService.deleteChartElements(tmpLine2);
+            tmpLine2 = null;
             if (tmpExtremum == null)
             {
                 findFirstExtremum(candle); 
                 return;
             }
+
             //если темповая точка вверх, и текущая свеча еще выше, пересохраняем темповую
             if (tmpTrendDirection == TrendDirection.UP && candle.High > tmpExtremum.High) {
+                ++tmpDepthCounter;
                 tmpExtremum = candle;
                 paintService.deleteChartElements(tmpLine1);
                 tmpLine1 = paintService.paintLine(lastExtremum.TimeStart, lastExtremum.Low, tmpExtremum.TimeStart, tmpExtremum.High, "", Color.Yellow, 3);
@@ -59,6 +63,7 @@ namespace OsEngine.Robots.Squeezy.Service.ZigZag
             //если темповая точка вниз, и текущая свеча еще ниже, пересохраняем темповую
             else if (tmpTrendDirection == TrendDirection.DOWN && candle.Low < tmpExtremum.Low)
             {
+                ++tmpDepthCounter;
                 tmpExtremum = candle;
                 paintService.deleteChartElements(tmpLine1);
                 tmpLine1 = paintService.paintLine(lastExtremum.TimeStart, lastExtremum.High, tmpExtremum.TimeStart, tmpExtremum.Low, "", Color.Yellow, 3);
@@ -67,33 +72,19 @@ namespace OsEngine.Robots.Squeezy.Service.ZigZag
             else if (tmpTrendDirection == TrendDirection.UP && candle.Low < MathService.getValueSubtractPercent(tmpExtremum.Low, deviation)) {
                 lastExtremum = tmpExtremum;
                 tmpExtremum = candle;
-                tmpLine1 = paintService.paintLine(lastExtremum.TimeStart, lastExtremum.High, tmpExtremum.TimeStart, tmpExtremum.Low, "", Color.LightPink, 3);
+                tmpLine1 = paintService.paintLine(lastExtremum.TimeStart, lastExtremum.High, tmpExtremum.TimeStart, tmpExtremum.Low, "", Color.Yellow, 3);
                 tmpTrendDirection = TrendDirection.DOWN;
-                if (tmpLine2 != null)
-                {
-                    paintService.deleteChartElements(tmpLine2);
-                    tmpLine2 = null;
-                }
             }
             //если темповая точка вниз, а текущая свеча выше на процент, то фиксируем основную и новую темповую
             else if (tmpTrendDirection == TrendDirection.DOWN && candle.Low > MathService.getValueSubtractPercent(tmpExtremum.High, deviation))
             {
                 lastExtremum = tmpExtremum;
                 tmpExtremum = candle;
-                tmpLine1 = paintService.paintLine(lastExtremum.TimeStart, lastExtremum.Low, tmpExtremum.TimeStart, tmpExtremum.High, "", Color.LightPink, 3);
+                tmpLine1 = paintService.paintLine(lastExtremum.TimeStart, lastExtremum.Low, tmpExtremum.TimeStart, tmpExtremum.High, "", Color.Yellow, 3);
                 tmpTrendDirection = TrendDirection.UP;
-                if (tmpLine2 != null)
-                {
-                    paintService.deleteChartElements(tmpLine2);
-                    tmpLine2 = null;
-                }
             }
             else 
             {
-                if (tmpLine2 != null)
-                {
-                    paintService.deleteChartElements(tmpLine2);
-                }
                 //если темповая точка вверх, а текущая вниз, но несильно, рисуем вторую темповую черту
                 if (tmpTrendDirection == TrendDirection.UP)
                 {
@@ -110,39 +101,34 @@ namespace OsEngine.Robots.Squeezy.Service.ZigZag
 
         private void findFirstExtremum(Candle candle)
         {
+            ++tmpDepthCounter;
             if (candle.High > MathService.getValueAddPercent(lastExtremum.High, deviation))
             {
                 tmpTrendDirection = TrendDirection.UP;
                 tmpExtremum = candle;
-                if (tmpLine1 != null)
-                {
-                    paintService.deleteChartElements(tmpLine1);
-                }
-                tmpLine1 = paintService.paintLine(lastExtremum.TimeStart, lastExtremum.Low, tmpExtremum.TimeStart, tmpExtremum.High, "", Color.Red, 3);
+                tmpLine2 = paintService.paintLine(lastExtremum.TimeStart, lastExtremum.Low, tmpExtremum.TimeStart, tmpExtremum.High, "", Color.Yellow, 3);
             }
             else if (candle.Low < MathService.getValueSubtractPercent(lastExtremum.Low, deviation))
             {
                 tmpTrendDirection = TrendDirection.DOWN;
                 tmpExtremum = candle;
-                if (tmpLine1 != null)
-                {
-                    paintService.deleteChartElements(tmpLine1);
-                }
-                tmpLine1 = paintService.paintLine(lastExtremum.TimeStart, lastExtremum.High, tmpExtremum.TimeStart, tmpExtremum.Low, "", Color.Red, 3);
+                tmpLine2 = paintService.paintLine(lastExtremum.TimeStart, lastExtremum.High, tmpExtremum.TimeStart, tmpExtremum.Low, "", Color.Yellow, 3);
             }
             else
             {
-                if (tmpLine1 != null)
+                if(depth > tmpDepthCounter)
                 {
-                    paintService.deleteChartElements(tmpLine1);
+                    return;
                 }
                 if (candle.High > lastExtremum.High)
                 {
-                    tmpLine1 = paintService.paintLine(lastExtremum.TimeStart, lastExtremum.Low, candle.TimeStart, candle.High, "", Color.Green, 3);
+                    tmpDepthCounter = 0;
+                    tmpLine2 = paintService.paintLine(lastExtremum.TimeStart, lastExtremum.Low, candle.TimeStart, candle.High, "", Color.Yellow, 3);
                 }
                 else if (candle.Low < lastExtremum.Low)
                 {
-                    tmpLine1 = paintService.paintLine(lastExtremum.TimeStart, lastExtremum.High, candle.TimeStart, candle.Low, "", Color.Green, 3);
+                    tmpDepthCounter = 0;
+                    tmpLine2 = paintService.paintLine(lastExtremum.TimeStart, lastExtremum.High, candle.TimeStart, candle.Low, "", Color.Yellow, 3);
                 }
             }
         }
