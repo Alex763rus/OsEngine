@@ -45,6 +45,7 @@ namespace OsEngine.Robots.Squeezy.Trading
                         , CreateParameter("Графика Линия сквиза:", true)
                         , CreateParameter("% отрисовки линии сквиза", 1.2m, 1.2m, 1.2m, 1.2m)
                         );
+            generalParametersTrading.setClearJournal(CreateParameter("Очистка журнала:", true));
             addSeparateParameter();
             addSeparateParameter();
 
@@ -143,19 +144,19 @@ namespace OsEngine.Robots.Squeezy.Trading
         private void positionOpeningFailEventLogic(Position position)
         {
             logService.sendLogUser("TEH:positionOpeningFailEventLogic:" + NameStrategyUniq+ " - " + LogService.getPositionInfo(position));
-            eventServiceTrading.positionOpeningFailEventLogic(position);
+            //eventServiceTrading.positionOpeningFailEventLogic(position);
         }
 
         private void positionClosingSuccesEventLogic(Position position)
         {
             logService.sendLogUser("TEH:positionClosingSuccesEventLogic:" + NameStrategyUniq + " - " + LogService.getPositionInfo(position));
-            eventServiceTrading.positionClosingSuccesEventLogic(position);
+            //eventServiceTrading.positionClosingSuccesEventLogic(position);
         }
 
         private void positionOpeningSuccesEventLogic(Position position)
         {
             logService.sendLogUser("TEH:positionOpeningSuccesEventLogic:" + NameStrategyUniq + " - " + LogService.getPositionInfo(position));
-            eventServiceTrading.positionOpeningSuccesEventLogic(position);
+            //eventServiceTrading.positionOpeningSuccesEventLogic(position);
         }
 
         private void addSeparateParameter(string tabControlName = null)

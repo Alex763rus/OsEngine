@@ -6,6 +6,7 @@ namespace OsEngine.Robots.Squeezy.Trading
     public class GeneralParametersTrading : GeneralParametersTester
     {
         private StrategyParameterDecimal triggerStartPercent;
+        private StrategyParameterBool clearJournal;
 
         public GeneralParametersTrading(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow, 
             StrategyParameterInt maLenFast, StrategyParameterDecimal volumePercent, StrategyParameterDecimal volumeSum, StrategyParameterInt coeffMonkey,
@@ -17,6 +18,15 @@ namespace OsEngine.Robots.Squeezy.Trading
             this.triggerStartPercent = triggerStartPercent;
         }
         
+        public void setClearJournal(StrategyParameterBool clearJournal)
+        {
+            this.clearJournal = clearJournal;
+        }
+
+        public bool getClearJournal()
+        {
+            return clearJournal.ValueBool;
+        }
         public decimal getTriggerStartPercent()
         {
             return triggerStartPercent.ValueDecimal;

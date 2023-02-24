@@ -58,7 +58,7 @@ namespace OsEngine.Robots.Squeezy.Trading
             this.groupParametersService = groupParametersService;
             this.logService = logService;
             this.statisticService = statisticService;
-
+  
             movingAverageService = new MovingAverageService(tab, generalParameters);
             dealService = new DealService(tab, generalParameters, logService);
 
@@ -77,6 +77,13 @@ namespace OsEngine.Robots.Squeezy.Trading
             if (candles.Count < 2 || movingAverageService.getMaLastValueSlow() == 0)
             {
                 return;
+            }
+
+            if(generalParameters.getClearJournal() && candles.Count%100 == 0 && !dealService.hasOpendeal(Side.Buy) && !dealService.hasOpendeal(Side.Sell)
+                && dealSupportBuy.getProcessState() == ProcessState.FREE && dealSupportSell.getProcessState() == ProcessState.FREE)
+            {
+                sendLogSystemLocal("Выполнена очистка журнала");
+                dealService.tabClear();
             }
             if (isStart)
             {
@@ -117,7 +124,7 @@ namespace OsEngine.Robots.Squeezy.Trading
                 sendLogSystemLocal("Заблокировали направление:" + directionTypeCurrent + " т.к. пришел новый бар с направлением:" + directionTypeTmp + " и есть незавершенные сделки");
             }
             directionTypeCurrent = directionTypeTmp;
-            printEndBarInfo();
+            //printEndBarInfo();
         }
 
         private void printEndBarInfo()
@@ -141,12 +148,39 @@ namespace OsEngine.Robots.Squeezy.Trading
                 ;
             sendLogSystemLocal(currentInfo.ToString());
         }
+
+        private void checkDealUpdate(DealSupport dealSupport)
+        {
+            if (!dealSupport.hasPosition())
+            {
+                return;
+            }
+            Position position= dealSupport.getPosition();
+            if(dealSupport.getProcessState() == ProcessState.OK_TRIGGER_START)
+            {
+                switch (position.State)
+                {
+                    case PositionStateType.Open: positionOpeningSuccesEventLogic(position); break;
+                    case PositionStateType.OpeningFail: positionOpeningFailEventLogic(position); break;
+                    case PositionStateType.Closing: positionClosingSuccesEventLogic(position); break;
+                }
+            } else if (dealSupport.getProcessState() == ProcessState.WAIT_TP_SL)
+            {
+                switch (position.State)
+                {
+                    case PositionStateType.ClosingFail: positionClosingSuccesEventLogic(position); break;
+                    case PositionStateType.Closing: positionClosingSuccesEventLogic(position); break;
+                }
+            }
+        }
         public void bestBidAskChangeEventLogic(decimal bestBid, decimal bestAsk)
         {
             if(lastCandle == null || movingAverageService.getMaLastValueSlow() == 0)
             {
                 return;
             }
+            checkDealUpdate(dealSupportBuy);
+            checkDealUpdate(dealSupportSell);
 
             lastBestBid = bestBid;
             lastBestAsc = bestAsk;
@@ -158,7 +192,7 @@ namespace OsEngine.Robots.Squeezy.Trading
             waitTriggerStartLogic(bestBid, dealSupportBuy, dealSupportSell, candleTriggerStartBid);
             waitTriggerStartLogic(bestAsk, dealSupportSell, dealSupportBuy, candleTriggerStartAsc);
         }
-        private void waitTriggerStartLogic(decimal price, DealSupport dealSupport, DealSupport dealSupportAnother, decimal tgStart)
+        public void waitTriggerStartLogic(decimal price, DealSupport dealSupport, DealSupport dealSupportAnother, decimal tgStart)
         {
             ProcessState processState = dealSupport.getProcessState();
             if (processState == ProcessState.WAIT_TP_SL || processState == ProcessState.OK_TRIGGER_START)

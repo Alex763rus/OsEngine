@@ -34,6 +34,10 @@ namespace OsEngine.Robots.SqueezyBot
 
         private const int COUNT_TRY_OPEN_DEAL = 10;
 
+        public void tabClear()
+        {
+            tab.Clear();
+        }
         public Position getBuyPosition()
         {
             List<Position> positions = tab.PositionOpenLong;

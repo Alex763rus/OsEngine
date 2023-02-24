@@ -100,6 +100,11 @@ namespace OsEngine.Robots.Squeezy.Trading
             this.groupParametersTrading = groupParametersTrading;
         }
 
+        public bool hasPosition()
+        {
+            return position != null;
+        }
+
         public Position getPosition()
         {
             return position;

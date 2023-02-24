@@ -72,7 +72,7 @@ namespace OsEngine.Logging
             }
         }
 
-        private LogService logService;
+        //private LogService logService;
 
         /// <summary>
         /// work place of thread that save logs
@@ -125,7 +125,7 @@ namespace OsEngine.Logging
             _uniqName = uniqName;
             _startProgram = startProgram;
 
-            logService = new LogService("C:\\1_LOGS\\Osa_log.txt", true, 50, null);
+            //logService = new LogService("C:\\1_LOGS\\Osa_log.txt", true, 50, null);
             lock (_starterLocker)
             {
                 if (_watcher == null)
@@ -523,7 +523,7 @@ namespace OsEngine.Logging
         /// <param name="type">message type / тип сообщения</param>
         private void ProcessMessage(string message, LogMessageType type)
         {
-            logService.sendLogMessage(message, type);
+            //logService.sendLogMessage(message, type);
             if (_isDelete)
             {
                 return;
