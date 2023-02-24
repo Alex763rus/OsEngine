@@ -124,7 +124,7 @@ namespace OsEngine.Robots.Squeezy.Trading
                 sendLogSystemLocal("Заблокировали направление:" + directionTypeCurrent + " т.к. пришел новый бар с направлением:" + directionTypeTmp + " и есть незавершенные сделки");
             }
             directionTypeCurrent = directionTypeTmp;
-            //printEndBarInfo();
+            printEndBarInfo();
         }
 
         private void printEndBarInfo()
@@ -192,7 +192,7 @@ namespace OsEngine.Robots.Squeezy.Trading
             waitTriggerStartLogic(bestBid, dealSupportBuy, dealSupportSell, candleTriggerStartBid);
             waitTriggerStartLogic(bestAsk, dealSupportSell, dealSupportBuy, candleTriggerStartAsc);
         }
-        public void waitTriggerStartLogic(decimal price, DealSupport dealSupport, DealSupport dealSupportAnother, decimal tgStart)
+        private void waitTriggerStartLogic(decimal price, DealSupport dealSupport, DealSupport dealSupportAnother, decimal tgStart)
         {
             ProcessState processState = dealSupport.getProcessState();
             if (processState == ProcessState.WAIT_TP_SL || processState == ProcessState.OK_TRIGGER_START)
