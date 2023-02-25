@@ -189,8 +189,14 @@ namespace OsEngine.Robots.Squeezy.Trading
             {
                 return;
             }
-            waitTriggerStartLogic(bestBid, dealSupportBuy, dealSupportSell, candleTriggerStartBid);
-            waitTriggerStartLogic(bestAsk, dealSupportSell, dealSupportBuy, candleTriggerStartAsc);
+            if (!dealService.hasOpendeal(Side.Buy))
+            {
+                waitTriggerStartLogic(bestBid, dealSupportBuy, dealSupportSell, candleTriggerStartBid);
+            }
+            if (!dealService.hasOpendeal(Side.Sell))
+            {
+                waitTriggerStartLogic(bestAsk, dealSupportSell, dealSupportBuy, candleTriggerStartAsc);
+            }   
         }
         private void waitTriggerStartLogic(decimal price, DealSupport dealSupport, DealSupport dealSupportAnother, decimal tgStart)
         {
@@ -218,6 +224,11 @@ namespace OsEngine.Robots.Squeezy.Trading
                     resetSide(dealSupportAnother, dealSupport);
                 }
                 GroupType groupTypeCurrent = getGroupType(side);
+
+                if(groupTypeCurrent == GroupType.TestTest && !generalParameters.getTestSettings())
+                {
+                    return;
+                }
                 statisticService.recalcSqueezyCounter(groupTypeCurrent, side, lastCandle.Close, price);
                 GroupParametersTrading groupParameters = groupParametersService.getGroupParameters(groupTypeCurrent);
 

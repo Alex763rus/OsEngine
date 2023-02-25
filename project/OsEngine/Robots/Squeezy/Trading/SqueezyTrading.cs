@@ -13,7 +13,7 @@ namespace OsEngine.Robots.Squeezy.Trading
     public class SqueezyTrading : BotPanel
     {
         public static string BOT_NAME = "SqueezyTradingBot";
-        public static string VERSION = "0.0.1";
+        public static string VERSION = "0.0.2";
         private const string TAB_SERVICE_CONTROL_NAME = "Service";
 
         public int separateCounter = 0;
