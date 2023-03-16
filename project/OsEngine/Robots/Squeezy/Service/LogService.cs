@@ -10,6 +10,7 @@ using OsEngine.Robots.Squeezy.Tester;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Market.Servers.OKX.Entity;
 using OsEngine.Robots.Squeezy.Service;
+using OkonkwoOandaV20.TradeLibrary.DataTypes.Position;
 
 namespace OsEngine.Robots.SqueezyBot.Service
 {
@@ -71,6 +72,20 @@ namespace OsEngine.Robots.SqueezyBot.Service
             ;
             return sb.ToString();
         }
+        public static string getPositionLimitInfo(PositionOpenerToStop positionLimit)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(" [").Append(positionLimit.Side)
+            .Append(", TimeCreate:").Append(positionLimit.TimeCreate)
+            .Append(", PriceOrder:").Append(positionLimit.PriceOrder)
+            .Append(", PriceRedLine:").Append(positionLimit.PriceRedLine)
+            .Append(", ActivateType:").Append(positionLimit.ActivateType)
+            .Append(", Volume:").Append(positionLimit.Volume)
+            .Append(", SignalType:").Append(positionLimit.SignalType)
+            .Append(']');
+            ;
+            return sb.ToString();
+        }
         public static string getPositionInfo(Position position)
         {
             StringBuilder sb = new StringBuilder();
@@ -80,6 +95,7 @@ namespace OsEngine.Robots.SqueezyBot.Service
             .Append(", tOpen:").Append(position.TimeOpen)
             .Append(", tClose:").Append(position.TimeClose)
             .Append(", vol:").Append(position.OpenVolume)
+            .Append(", EntryPrice:").Append(position.EntryPrice)
             .Append(", textOpen:").Append(position.SignalTypeOpen)
             .Append(", textClose:").Append(position.SignalTypeClose)
             .Append(", TP:").Append(position.ProfitOrderPrice)

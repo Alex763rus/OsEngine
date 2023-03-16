@@ -15,6 +15,7 @@ namespace OsEngine.Robots.Squeezy.Trading
         private GroupParametersTrading groupParametersTrading;
         private ProcessState processState;
         private Position position;
+        private PositionOpenerToStop positionLimit;
         private IChartElement[] chartElements;
         private int chartCounter;
         private int counterBar;
@@ -25,11 +26,12 @@ namespace OsEngine.Robots.Squeezy.Trading
             reset();
         }
 
-        public void dealSupportUpdate(GroupParametersTrading groupParametersTrading, ProcessState processState, Position position)
+        public void dealSupportUpdate(GroupParametersTrading groupParametersTrading, ProcessState processState, Position position, PositionOpenerToStop positionLimit)
         {
             this.groupParametersTrading = groupParametersTrading;
             this.processState = processState;
             this.position = position;
+            this.positionLimit = positionLimit;
             chartElements = new IChartElement[100];
             chartCounter = 0;
             counterBar = 0;
@@ -54,6 +56,7 @@ namespace OsEngine.Robots.Squeezy.Trading
             chartCounter = 0;
             counterBar = 0;
             position = null;
+            positionLimit = null;
         }
         public string getGroupType()
         {
@@ -100,11 +103,19 @@ namespace OsEngine.Robots.Squeezy.Trading
             this.groupParametersTrading = groupParametersTrading;
         }
 
+        public bool hasLimitPosition()
+        {
+            return positionLimit != null;
+        }
         public bool hasPosition()
         {
             return position != null;
         }
 
+        public PositionOpenerToStop getPositionLimit()
+        {
+            return positionLimit;
+        }
         public Position getPosition()
         {
             return position;
@@ -117,6 +128,10 @@ namespace OsEngine.Robots.Squeezy.Trading
                 return position.Number;
             }
             return 0;
+        }
+        public void setPositionLimit(PositionOpenerToStop positionLimit)
+        {
+            this.positionLimit = positionLimit;
         }
         public void setPosition(Position position)
         {

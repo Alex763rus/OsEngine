@@ -307,5 +307,13 @@ namespace OsEngine.Robots.Squeezy.Tester
             statisticService.setIsEnabled(generalParameters.getStatisticEnabled());
             logService.setup(generalParameters.getLogEnabled(), generalParameters.getCountBufferLogLine());
         }
+
+        public void bestBidAskChangeEventLogic(decimal bestBid, decimal bestAsk)
+        {
+        }
+
+        public void positionOpeningFailEventLogic(Position position)
+        {
+        }
     }
 }

@@ -7,6 +7,7 @@ namespace OsEngine.Robots.Squeezy.Trading
     {
         private StrategyParameterDecimal triggerStartPercent;
         private StrategyParameterBool clearJournal;
+        private StrategyParameterBool developMode;
 
         public GeneralParametersTrading(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow, 
             StrategyParameterInt maLenFast, StrategyParameterDecimal volumePercent, StrategyParameterDecimal volumeSum, StrategyParameterInt coeffMonkey,
@@ -18,6 +19,16 @@ namespace OsEngine.Robots.Squeezy.Trading
             this.triggerStartPercent = triggerStartPercent;
         }
         
+        public void setDevelopMode(StrategyParameterBool developMode)
+        {
+            this.developMode = developMode;
+        }
+
+        public bool getDevelopMode()
+        {
+            return developMode.ValueBool;
+        }
+
         public void setClearJournal(StrategyParameterBool clearJournal)
         {
             this.clearJournal = clearJournal;

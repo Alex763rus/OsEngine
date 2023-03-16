@@ -182,6 +182,24 @@ namespace OsEngine.Robots.SqueezyBot
             return position;
         }
 
+        public bool hasOpenLimit(Side direction)
+        {
+            return getOpenLimit(direction) != null;
+        }
+
+        public PositionOpenerToStop getOpenLimit(Side direction)
+        {
+            List<PositionOpenerToStop> openLimits = tab.PositionOpenerToStopsAll;
+            foreach (PositionOpenerToStop positionOpenerToStop in openLimits)
+            {
+                if (positionOpenerToStop.Side == direction)
+                {
+                    return positionOpenerToStop;
+                }
+            }
+            return null;
+        }
+
         public bool hasOpendeal(Side direction)
         {
             if(direction == Side.Sell)
@@ -195,6 +213,17 @@ namespace OsEngine.Robots.SqueezyBot
             return false;
         }
 
+        public void closeAllLimitPosition(Side direction)
+        {
+            if (direction == Side.Sell)
+            {
+                tab.SellAtStopCancel();
+            }
+            if (direction == Side.Buy)
+            {
+                tab.BuyAtStopCancel();
+            }
+        }
         public void closeAllOrderToPosition(Position position, string signalType)
         {
             sendLogSystemLocal("Хотим закрыть позицию по причине:" + signalType, position);
@@ -224,13 +253,18 @@ namespace OsEngine.Robots.SqueezyBot
             sendLogSystemLocal("Установлен TP =" + tp + ", SL =" + sl + " для позиции:", position);
         }
 
-        public Position openLimit(Side side, decimal priceLimit, string signalType, string comment, decimal volumeSum)
+        public void openLimit(Side side, decimal priceLimit, string signalType, string comment, decimal volumeSum)
         {
-            if(side == Side.Buy)
+            if (side == Side.Buy)
             {
-                return openBuyAtLimit(priceLimit, signalType, comment, volumeSum);
+                tab.BuyAtStop(volumeSum, priceLimit, priceLimit, StopActivateType.LowerOrEqyal, signalType);
+                sendLogSystemLocal("Заведена заявка на лимитку BuyAtStop, priceLimit = " + priceLimit + ", volumeSum = " + volumeSum + ", comment = " + comment);
             }
-            return openSellAtLimit(priceLimit, signalType, comment, volumeSum);
+            if(side == Side.Sell)
+            {
+                tab.SellAtStop(volumeSum, priceLimit, priceLimit, StopActivateType.HigherOrEqual, signalType);
+                sendLogSystemLocal("Заведена заявка на лимитку SellAtStop, priceLimit = " + priceLimit + ", volumeSum = " + volumeSum + ", comment = " + comment);
+            }
         }
         public Position openSellAtLimit(decimal priceLimit, string signalType, string comment, decimal volumeSum)
         {
@@ -240,20 +274,6 @@ namespace OsEngine.Robots.SqueezyBot
             {
                 sendLogSystemLocal("Заведена заявка на позицию SellAtLimit, priceLimit = " + priceLimit + ", volumeSum = " + volumeSum + ", comment = " + comment, position);
                 position.Comment = comment;
-            }
-            return position;
-        }
-        public Position openBuyAtLimit(decimal priceLimit, string signalType, string comment, decimal volumeSum)
-        {
-            Position position = tab.BuyAtLimit(volumeSum, priceLimit, signalType);
-            if (position != null)
-            {
-                sendLogSystemLocal("Заведена заявка на позицию BuyAtLimit, priceLimit = " + priceLimit + ", volumeSum = " + volumeSum + ", comment = " + comment, position);
-                position.Comment = comment;
-            }
-            else
-            {
-                sendLogSystemLocal("ОШИБКА при заведении заявки на позицию BuyAtLimit, priceLimit = " + priceLimit + ", volumeSum = " + volumeSum + ", comment = " + comment, position);
             }
             return position;
         }

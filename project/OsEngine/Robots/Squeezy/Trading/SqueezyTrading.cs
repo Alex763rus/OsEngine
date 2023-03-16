@@ -13,11 +13,14 @@ namespace OsEngine.Robots.Squeezy.Trading
     public class SqueezyTrading : BotPanel
     {
         public static string BOT_NAME = "SqueezyTradingBot";
-        public static string VERSION = "0.0.2";
+        public static string VERSION = "0.0.3";
         private const string TAB_SERVICE_CONTROL_NAME = "Service";
 
         public int separateCounter = 0;
+        private EventService eventService;
         private EventServiceTrading eventServiceTrading;
+        private EventServiceDevelop eventServiceDevelop;
+
         private GeneralParametersTrading generalParametersTrading;
         private GroupParametersTradingService groupParametersTradingService;
         private BotTabSimple tab;
@@ -46,6 +49,7 @@ namespace OsEngine.Robots.Squeezy.Trading
                         , CreateParameter("% отрисовки линии сквиза", 1.2m, 1.2m, 1.2m, 1.2m)
                         );
             generalParametersTrading.setClearJournal(CreateParameter("Очистка журнала:", true));
+            generalParametersTrading.setDevelopMode(CreateParameter("Режим разработчика:", false, TAB_SERVICE_CONTROL_NAME));
             addSeparateParameter();
             addSeparateParameter();
 
@@ -127,6 +131,9 @@ namespace OsEngine.Robots.Squeezy.Trading
             logService = new LogService(statisticFileName + "_log.txt", generalParametersTrading.getLogEnabled(), generalParametersTrading.getCountBufferLogLine(), tab);
 
             eventServiceTrading = new EventServiceTrading(tab, generalParametersTrading, groupParametersTradingService, logService, statisticService);
+            eventServiceDevelop = new EventServiceDevelop(tab, generalParametersTrading, groupParametersTradingService, logService, statisticService);
+            setEventService();
+
 
             tab.CandleFinishedEvent += candleFinishedEventLogic;
             tab.PositionClosingSuccesEvent += positionClosingSuccesEventLogic;
@@ -136,27 +143,22 @@ namespace OsEngine.Robots.Squeezy.Trading
             ParametrsChangeByUser += parametrsChangeByUserLogic;
         }
 
-        private void parametrsChangeByUserLogic()
-        {
-            eventServiceTrading.parametrsChangeByUserLogic();
-        }
-
         private void positionOpeningFailEventLogic(Position position)
         {
-            logService.sendLogUser("TEH:positionOpeningFailEventLogic:" + NameStrategyUniq+ " - " + LogService.getPositionInfo(position));
-            //eventServiceTrading.positionOpeningFailEventLogic(position);
+            logService.sendLogUser("подписка:positionOpeningFailEventLogic:" + NameStrategyUniq+ " - " + LogService.getPositionInfo(position));
+            eventService.positionOpeningFailEventLogic(position);
         }
 
         private void positionClosingSuccesEventLogic(Position position)
         {
-            logService.sendLogUser("TEH:positionClosingSuccesEventLogic:" + NameStrategyUniq + " - " + LogService.getPositionInfo(position));
-            //eventServiceTrading.positionClosingSuccesEventLogic(position);
+            logService.sendLogUser("подписка:positionClosingSuccesEventLogic:" + NameStrategyUniq + " - " + LogService.getPositionInfo(position));
+            //eventService.positionClosingSuccesEventLogic(position);
         }
 
         private void positionOpeningSuccesEventLogic(Position position)
         {
-            logService.sendLogUser("TEH:positionOpeningSuccesEventLogic:" + NameStrategyUniq + " - " + LogService.getPositionInfo(position));
-            //eventServiceTrading.positionOpeningSuccesEventLogic(position);
+            logService.sendLogUser("подписка:positionOpeningSuccesEventLogic:" + NameStrategyUniq + " - " + LogService.getPositionInfo(position));
+            eventService.positionOpeningSuccesEventLogic(position);
         }
 
         private void addSeparateParameter(string tabControlName = null)
@@ -176,12 +178,30 @@ namespace OsEngine.Robots.Squeezy.Trading
 
         private void candleFinishedEventLogic(List<Candle> candles)
         {
-            eventServiceTrading.candleFinishedEventLogic(candles);
+            eventService.candleFinishedEventLogic(candles);
         }
 
         private void bestBidAskChangeEventLogic(decimal bestBid, decimal bestAsk)
         {
-            eventServiceTrading.bestBidAskChangeEventLogic(bestBid, bestAsk);
+            eventService.bestBidAskChangeEventLogic(bestBid, bestAsk);
+        }
+
+        private void parametrsChangeByUserLogic()
+        {
+            setEventService();
+            eventService.parametrsChangeByUserLogic();
+        }
+
+        private void setEventService()
+        {
+            if (generalParametersTrading.getDevelopMode())
+            {
+                eventService = eventServiceDevelop;
+            }
+            else
+            {
+                eventService = eventServiceTrading;
+            }
         }
     }
 }
