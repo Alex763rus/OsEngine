@@ -34,6 +34,7 @@ namespace OsEngine.Robots.Squeezy.Trading
         private PaintService paintService;
         private LogService logService;
         private StatisticService statisticService;
+        private TgService tgService;
         private VolumeSumService volumeSumService;
 
         private Candle lastCandle;
@@ -52,12 +53,13 @@ namespace OsEngine.Robots.Squeezy.Trading
         private DateTime timeStartGroup;            //Время начала действия группы
         private bool isStart;                       //Признак начала работы
 
-        public EventServiceTrading(BotTabSimple tab, GeneralParametersTrading generalParameters, GroupParametersTradingService groupParametersService, LogService logService, StatisticService statisticService)
+        public EventServiceTrading(BotTabSimple tab, GeneralParametersTrading generalParameters, GroupParametersTradingService groupParametersService, LogService logService, StatisticService statisticService, TgService tgService)
         {
             this.generalParameters = generalParameters;
             this.groupParametersService = groupParametersService;
             this.logService = logService;
             this.statisticService = statisticService;
+            this.tgService = tgService;
   
             movingAverageService = new MovingAverageService(tab, generalParameters);
             dealService = new DealService(tab, generalParameters, logService);
@@ -193,6 +195,7 @@ namespace OsEngine.Robots.Squeezy.Trading
                 {
                     case PositionStateType.ClosingFail: positionClosingSuccesEventLogic(position); break;
                     case PositionStateType.Closing: positionClosingSuccesEventLogic(position); break;
+                    case PositionStateType.Done: positionClosingSuccesEventLogic(position); break;
                 }
             }
         }
@@ -287,6 +290,7 @@ namespace OsEngine.Robots.Squeezy.Trading
             dealService.setTpSl(position, tp, sl, 0);
             sendLogSystemLocal("Успешно открыта позиция:" + position.Comment, position, dealSupport, (int)dealSupport.getProcessState());
             sendLogSystemLocal("Установлен TP =" + tp + ", SL =" + sl + " для позиции:", position, dealSupport, (int)dealSupport.getProcessState());
+            tgService.sendMessage("Успешно открыта позиция: " + LogService.getPositionInfo(position));
         }
 
         private void positionOpening(Position position, DealSupport dealSupport)
@@ -326,11 +330,13 @@ namespace OsEngine.Robots.Squeezy.Trading
             if (dealSupportBuy.getPosition() != null && position.Number == dealSupportBuy.getPosition().Number)
             {
                 sendLogSystemLocal("Подтверждение 1: Успешно закрыта позиция:" + position.SignalTypeClose, position, dealSupportBuy, finishState);
+                tgService.sendMessage(" Успешно закрыта позиция: " + position.SignalTypeClose + " "+ LogService.getPositionInfo(position));
                 resetSide(dealSupportBuy, dealSupportSell);
             }
             else if (dealSupportSell.getPosition() != null && position.Number == dealSupportSell.getPosition().Number)
             {
                 sendLogSystemLocal("Подтверждение 2: Успешно закрыта позиция:" + position.SignalTypeClose, position, dealSupportSell, finishState);
+                tgService.sendMessage(" Успешно закрыта позиция: " + position.SignalTypeClose + " " + LogService.getPositionInfo(position));
                 resetSide(dealSupportSell, dealSupportBuy);
             }
             else
@@ -346,11 +352,13 @@ namespace OsEngine.Robots.Squeezy.Trading
             if (dealSupportBuy.getPosition() != null && position.Number == dealSupportBuy.getPosition().Number)
             {
                 sendLogSystemLocal(comment + "Успешно забыли Buy позицию, причина:" + position.SignalTypeClose, position, dealSupportBuy, -1);
+                tgService.sendMessage(comment + "Успешно забыли Buy позицию, причина:" + position.SignalTypeClose + LogService.getPositionInfo(position));
                 resetSide(dealSupportBuy, dealSupportSell);
             }
             else if (dealSupportSell.getPosition() != null && position.Number == dealSupportSell.getPosition().Number)
             {
                 sendLogSystemLocal(comment + "Успешно забыли Sell позицию, причина:" + position.SignalTypeClose, position, dealSupportSell, -1);
+                tgService.sendMessage(comment + "Успешно забыли Sell позицию, причина:" + position.SignalTypeClose + LogService.getPositionInfo(position));
                 resetSide(dealSupportSell, dealSupportBuy);
             }
             else
@@ -366,6 +374,7 @@ namespace OsEngine.Robots.Squeezy.Trading
             volumeSumService = new VolumeSumService(generalParameters.getVolumeSum(), generalParameters.getCoeffMonkey(), logService);
             statisticService.setIsEnabled(generalParameters.getStatisticEnabled());
             logService.setup(generalParameters.getLogEnabled(), generalParameters.getCountBufferLogLine());
+            tgService.setIsEnabled(generalParameters.getTgAlertEnabled());
         }
         private GroupType getGroupType(Side side)
         {

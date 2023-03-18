@@ -50,6 +50,8 @@ namespace OsEngine.Robots.Squeezy.Trading
                         );
             generalParametersTrading.setClearJournal(CreateParameter("Очистка журнала:", true));
             generalParametersTrading.setDevelopMode(CreateParameter("Режим разработчика:", false, TAB_SERVICE_CONTROL_NAME));
+            generalParametersTrading.setTgAlertEnabled(CreateParameter("Телеграмм оповещения :", false, TAB_SERVICE_CONTROL_NAME));
+            generalParametersTrading.setStand(CreateParameter("Контур :", "ИФТ", TAB_SERVICE_CONTROL_NAME));
             addSeparateParameter();
             addSeparateParameter();
 
@@ -126,11 +128,12 @@ namespace OsEngine.Robots.Squeezy.Trading
             groupParametersTradingService.addGroupParameters(flatSell);
             groupParametersTradingService.addGroupParameters(testTest);
 
-            string statisticFileName = "C:\\1_LOGS\\" + BOT_NAME + "_" + NameStrategyUniq;
-            StatisticService statisticService = new StatisticService(statisticFileName + "_statistic.txt", generalParametersTrading.getStatisticEnabled());
-            logService = new LogService(statisticFileName + "_log.txt", generalParametersTrading.getLogEnabled(), generalParametersTrading.getCountBufferLogLine(), tab);
+            string logPath = "C:\\1_LOGS\\" + BOT_NAME + "_" + NameStrategyUniq;
+            StatisticService statisticService = new StatisticService(logPath + "_statistic.txt", generalParametersTrading.getStatisticEnabled());
+            logService = new LogService(logPath + "_log.txt", generalParametersTrading.getLogEnabled(), generalParametersTrading.getCountBufferLogLine(), tab);
+            TgService tgService = new TgService(generalParametersTrading.getStand(), generalParametersTrading.getTgAlertEnabled(), NameStrategyUniq, "C:\\2_TG_BOT\\1_MESSAGES");
 
-            eventServiceTrading = new EventServiceTrading(tab, generalParametersTrading, groupParametersTradingService, logService, statisticService);
+            eventServiceTrading = new EventServiceTrading(tab, generalParametersTrading, groupParametersTradingService, logService, statisticService, tgService);
             eventServiceDevelop = new EventServiceDevelop(tab, generalParametersTrading, groupParametersTradingService, logService, statisticService);
             setEventService();
 
