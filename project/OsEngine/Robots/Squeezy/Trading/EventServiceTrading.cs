@@ -81,8 +81,6 @@ namespace OsEngine.Robots.Squeezy.Trading
             lockCurrentDirection = false;
             isStart = true;
 
-            string message = "Разблокировали отрытие новых сделок, т.к. закрылась сделка направлении:" + " и нет сделок в обратном направлении";
-            tgService.sendBlokingState(null, "unlock", message);
         }
 
         public void candleFinishedEventLogic(List<Candle> candles)
