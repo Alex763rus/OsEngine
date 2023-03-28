@@ -1,4 +1,8 @@
-﻿using Kraken.WebSockets;
+﻿using Com.Lmax.Api;
+using Jayrock.Services;
+using Kraken.WebSockets;
+using OkonkwoOandaV20.Framework;
+using OkonkwoOandaV20.TradeLibrary.DataTypes.Communications.Requests;
 using OkonkwoOandaV20.TradeLibrary.DataTypes.Position;
 using OkonkwoOandaV20.TradeLibrary.DataTypes.Pricing;
 using OsEngine.Entity;
@@ -12,12 +16,17 @@ using OsEngine.Robots.SqueezyBot;
 using OsEngine.Robots.SqueezyBot.Service;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
+using System.Windows.Forms;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
 using Position = OsEngine.Entity.Position;
 using Side = OsEngine.Entity.Side;
 
@@ -290,7 +299,7 @@ namespace OsEngine.Robots.Squeezy.Trading
             dealService.setTpSl(position, tp, sl, 0);
             sendLogSystemLocal("Успешно открыта позиция:" + position.Comment, position, dealSupport, (int)dealSupport.getProcessState());
             sendLogSystemLocal("Установлен TP =" + tp + ", SL =" + sl + " для позиции:", position, dealSupport, (int)dealSupport.getProcessState());
-            tgService.sendMessage("Успешно открыта позиция: " + LogService.getPositionInfo(position));
+            tgService.sendPositionOpen(dealSupport);
         }
 
         private void positionOpening(Position position, DealSupport dealSupport)
@@ -299,17 +308,24 @@ namespace OsEngine.Robots.Squeezy.Trading
             {
                 return;
             }
-            if (dealSupport.hasPosition() && position.Number != dealSupport.getPositionNumber())
+            if (dealSupport.hasPosition())
             {
-                sendLogSystemLocal("ОШИБКА: открылась " + LogService.getPositionNumber(position) + " позиция, а мы ведем другую позицию:", dealSupport.getPosition());
+                if(position.Number != dealSupport.getPositionNumber())
+                {
+                    sendLogSystemLocal("ОШИБКА: открылась " + LogService.getPositionNumber(position) + " позиция, а мы ведем другую позицию:", dealSupport.getPosition());
+                    return;
+                }
+                position.SignalTypeOpen = "Вход по рынку";
             }
             else
             {
-                dealSupport.setPosition(position);
+                position.SignalTypeOpen = position.Direction + "AtLimit";
             }
+            dealSupport.setPosition(position);
         }
         public void positionClosingSuccesEventLogic(Position position)
         {
+            tgService.sendUnsorted("TODO УБРАТЬ! Успешно забыли Sell позицию, причина:" + position.SignalTypeClose + LogService.getPositionInfo(position));
             bool isProfit = position.ProfitPortfolioPunkt > 0;
             volumeSumService.updateLevel(position.Direction, isProfit);
             paintService.paintClosedPosition(position, dealService.getTimeFrame(), isProfit);
@@ -329,14 +345,16 @@ namespace OsEngine.Robots.Squeezy.Trading
             int finishState = -1;
             if (dealSupportBuy.getPosition() != null && position.Number == dealSupportBuy.getPosition().Number)
             {
+                dealSupportBuy.setPosition(position);
                 sendLogSystemLocal("Подтверждение 1: Успешно закрыта позиция:" + position.SignalTypeClose, position, dealSupportBuy, finishState);
-                tgService.sendMessage(" Успешно закрыта позиция: " + position.SignalTypeClose + " "+ LogService.getPositionInfo(position));
+                tgService.sendPositionClose(dealSupportBuy, "Подтверждение 1: Успешно закрыта позиция", dealService.getDeposit());
                 resetSide(dealSupportBuy, dealSupportSell);
             }
             else if (dealSupportSell.getPosition() != null && position.Number == dealSupportSell.getPosition().Number)
             {
+                dealSupportSell.setPosition(position);
                 sendLogSystemLocal("Подтверждение 2: Успешно закрыта позиция:" + position.SignalTypeClose, position, dealSupportSell, finishState);
-                tgService.sendMessage(" Успешно закрыта позиция: " + position.SignalTypeClose + " " + LogService.getPositionInfo(position));
+                tgService.sendPositionClose(dealSupportSell, "Подтверждение 1: Успешно закрыта позиция", dealService.getDeposit());
                 resetSide(dealSupportSell, dealSupportBuy);
             }
             else
@@ -352,13 +370,13 @@ namespace OsEngine.Robots.Squeezy.Trading
             if (dealSupportBuy.getPosition() != null && position.Number == dealSupportBuy.getPosition().Number)
             {
                 sendLogSystemLocal(comment + "Успешно забыли Buy позицию, причина:" + position.SignalTypeClose, position, dealSupportBuy, -1);
-                tgService.sendMessage(comment + "Успешно забыли Buy позицию, причина:" + position.SignalTypeClose + LogService.getPositionInfo(position));
+                tgService.sendUnsorted(comment + "Успешно забыли Buy позицию, причина:" + position.SignalTypeClose + LogService.getPositionInfo(position));
                 resetSide(dealSupportBuy, dealSupportSell);
             }
             else if (dealSupportSell.getPosition() != null && position.Number == dealSupportSell.getPosition().Number)
             {
                 sendLogSystemLocal(comment + "Успешно забыли Sell позицию, причина:" + position.SignalTypeClose, position, dealSupportSell, -1);
-                tgService.sendMessage(comment + "Успешно забыли Sell позицию, причина:" + position.SignalTypeClose + LogService.getPositionInfo(position));
+                tgService.sendUnsorted(comment + "Успешно забыли Sell позицию, причина:" + position.SignalTypeClose + LogService.getPositionInfo(position));
                 resetSide(dealSupportSell, dealSupportBuy);
             }
             else

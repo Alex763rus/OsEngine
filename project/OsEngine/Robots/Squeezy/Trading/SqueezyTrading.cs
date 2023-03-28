@@ -29,7 +29,7 @@ namespace OsEngine.Robots.Squeezy.Trading
         {
             TabCreate(BotTabType.Simple);
             tab = TabsSimple[0];
-
+            
             generalParametersTrading = new GeneralParametersTrading(
                           CreateParameter("MovingAverage длина slow", 130, 0, 130, 5)
                         , CreateParameter("ОТКЛЮЧЕН %MovingAverage высота коридора slow ", 0.4m, 0.4m, 0.4m, 0.4m)
@@ -131,7 +131,8 @@ namespace OsEngine.Robots.Squeezy.Trading
             string logPath = "C:\\1_LOGS\\" + BOT_NAME + "_" + NameStrategyUniq;
             StatisticService statisticService = new StatisticService(logPath + "_statistic.txt", generalParametersTrading.getStatisticEnabled());
             logService = new LogService(logPath + "_log.txt", generalParametersTrading.getLogEnabled(), generalParametersTrading.getCountBufferLogLine(), tab);
-            TgService tgService = new TgService(generalParametersTrading.getStand(), generalParametersTrading.getTgAlertEnabled(), NameStrategyUniq, "C:\\2_TG_BOT\\1_MESSAGES");
+            TgService tgService = new TgService(generalParametersTrading.getTgAlertEnabled(), generalParametersTrading.getStand(), NameStrategyUniq);
+            tgService.sendSqueezyStart(VERSION);
 
             eventServiceTrading = new EventServiceTrading(tab, generalParametersTrading, groupParametersTradingService, logService, statisticService, tgService);
             eventServiceDevelop = new EventServiceDevelop(tab, generalParametersTrading, groupParametersTradingService, logService, statisticService);

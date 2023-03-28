@@ -148,7 +148,10 @@ namespace OsEngine.Robots.SqueezyBot
             }
             return openSellDeal(signalType, comment, volumeSum);
         }
-
+        public decimal getDeposit()
+        {
+            return tab.Portfolio.ValueCurrent;
+        }
         public Position openBuyDeal(string signalType, string comment, decimal volumeSum = 0)
         {
             decimal volume;
