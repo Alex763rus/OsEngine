@@ -6,17 +6,21 @@ using System.Threading.Tasks;
 
 namespace OsEngine.Robots.Squeezy.Service.tg
 {
-    public class Unsorted
+    public class SqueezyBloking
     {
         public string stand;
         public string currency;
-        public string message;
+        public string number;
+        public string state;
+        public string comment;
 
-        public Unsorted(string stand, string currency, string message)
+        public SqueezyBloking(string stand, string currency, string number, string state, string comment)
         {
             this.stand = stand;
             this.currency = currency;
-            this.message = message;
+            this.number = number;
+            this.state = state;
+            this.comment = comment;
         }
     }
 }

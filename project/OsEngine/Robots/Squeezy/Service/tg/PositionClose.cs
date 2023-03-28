@@ -8,11 +8,11 @@ namespace OsEngine.Robots.Squeezy.Service.tg
 {
     public class PositionClose : PositionOpen
     {
-        public String dateClose;
-        public String profit;
-        public String comment;
-        public String deposit;
-        public String signalTypeClose;
+        public string dateClose;
+        public string profit;
+        public string comment;
+        public string deposit;
+        public string signalTypeClose;
 
         public PositionClose(string stand, string currency, string number, string dateStart, string side, string volume, string groupType, string signalTypeOpen
             , string dateClose, string profit, string comment, string deposit, string signalTypeClose)

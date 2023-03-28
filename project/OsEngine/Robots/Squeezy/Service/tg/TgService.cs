@@ -49,6 +49,15 @@ namespace OsEngine.Robots.Squeezy.Trading
             SqueezyStart squeezyStart = new SqueezyStart(version);
             SendTestPostRequest("http://localhost:8080/squeezy/start", SimpleJson.SerializeObject(squeezyStart));
         }
+        public void sendBlokingState(Position position, string state, string comment)
+        {
+            if (!isEnabled)
+            {
+                return;
+            }
+            SqueezyBloking squeezyBloking = new SqueezyBloking(stand, botName, LogService.getPositionNumber(position), state, comment);
+            SendTestPostRequest("http://localhost:8080/squeezy/blocking", SimpleJson.SerializeObject(squeezyBloking));
+        }
         public void sendPositionOpen(DealSupport dealSupport)
         {
             if (!isEnabled)

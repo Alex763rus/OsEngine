@@ -8,14 +8,14 @@ namespace OsEngine.Robots.Squeezy.Service.tg
 {
     public class PositionOpen
     {
-        public String stand;
-        public String currency;
-        public String number;
-        public String dateStart;
-        public String side;
+        public string stand;
+        public string currency;
+        public string number;
+        public string dateStart;
+        public string side;
         public string volume;
-        public String groupType;
-        public String signalTypeOpen;
+        public string groupType;
+        public string signalTypeOpen;
 
         public PositionOpen(string stand, string currency, string number, string dateStart, string side, string volume, string groupType, string signalTypeOpen)
         {

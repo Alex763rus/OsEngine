@@ -80,6 +80,9 @@ namespace OsEngine.Robots.Squeezy.Trading
             directionTypeCurrent = DirectionType.None;
             lockCurrentDirection = false;
             isStart = true;
+
+            string message = "Разблокировали отрытие новых сделок, т.к. закрылась сделка направлении:" + " и нет сделок в обратном направлении";
+            tgService.sendBlokingState(null, "unlock", message);
         }
 
         public void candleFinishedEventLogic(List<Candle> candles)
@@ -129,12 +132,22 @@ namespace OsEngine.Robots.Squeezy.Trading
                 timeStartGroup = candles[candles.Count - 1].TimeStart;
             }
 
-            if (!lockCurrentDirection && directionTypeCurrent != directionTypeTmp
-                && (   dealSupportSell.getProcessState() == ProcessState.WAIT_TP_SL 
-                    || dealSupportBuy.getProcessState()  == ProcessState.WAIT_TP_SL))
+            if (!lockCurrentDirection && directionTypeCurrent != directionTypeTmp)
             {
-                lockCurrentDirection = true;
-                sendLogSystemLocal("Заблокировали направление:" + directionTypeCurrent + " т.к. пришел новый бар с направлением:" + directionTypeTmp + " и есть незавершенные сделки");
+                if (dealSupportSell.getProcessState() == ProcessState.WAIT_TP_SL)
+                {
+                    lockCurrentDirection = true;
+                    string message = "Заблокировали направление: " + directionTypeCurrent + " т.к.пришел новый бар с направлением: " + directionTypeTmp + " и есть незавершенные сделки";
+                    sendLogSystemLocal(message);
+                    tgService.sendBlokingState(dealSupportSell.getPosition(), "lock", message);
+                }
+                else if(dealSupportBuy.getProcessState() == ProcessState.WAIT_TP_SL)
+                {
+                    lockCurrentDirection = true;
+                    string message = "Заблокировали направление:" + directionTypeCurrent + " т.к. пришел новый бар с направлением:" + directionTypeTmp + " и есть незавершенные сделки";
+                    sendLogSystemLocal(message);
+                    tgService.sendBlokingState(dealSupportSell.getPosition(), "lock", message);
+                }
             }
             directionTypeCurrent = directionTypeTmp;
             printEndBarInfo();
@@ -325,7 +338,6 @@ namespace OsEngine.Robots.Squeezy.Trading
         }
         public void positionClosingSuccesEventLogic(Position position)
         {
-            tgService.sendUnsorted("TODO УБРАТЬ! Успешно забыли Sell позицию, причина:" + position.SignalTypeClose + LogService.getPositionInfo(position));
             bool isProfit = position.ProfitPortfolioPunkt > 0;
             volumeSumService.updateLevel(position.Direction, isProfit);
             paintService.paintClosedPosition(position, dealService.getTimeFrame(), isProfit);
@@ -454,7 +466,9 @@ namespace OsEngine.Robots.Squeezy.Trading
             {
                 //Если нет открытых сделок в противоположную сторону, можно разблокировать открытие новых сделок в рамках тренда
                 lockCurrentDirection = false;
-                sendLogSystemLocal("Разблокировали отрытие новых сделок, т.к. закрылась сделка направлении:" + dealSupport.getSide() + " и нет сделок в обратном направлении");
+                string message = "Разблокировали отрытие новых сделок, т.к. закрылась сделка направлении:" + dealSupport.getSide() + " и нет сделок в обратном направлении";
+                sendLogSystemLocal(message);
+                tgService.sendBlokingState(null, "unlock", message);
             }
             dealSupport.reset();
         }
