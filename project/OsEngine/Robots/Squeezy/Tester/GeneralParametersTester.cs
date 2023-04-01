@@ -24,7 +24,12 @@ namespace OsEngine.Robots.Squeezy.Tester
         private StrategyParameterDecimal paintGroup;
         private StrategyParameterBool paintSqueezyEnabled;
         private StrategyParameterDecimal paintSqueezy;
-        
+
+        private StrategyParameterBool onlyRuler;            //режим работы как рулетка
+        private StrategyParameterInt rulerBarCount;         //количество анализируемых баров в режиме рулетка
+        private StrategyParameterDecimal rulerStepSqueezy;  //шаг сквиза формирования эксельного файла статистики
+        private StrategyParameterDecimal rulerStepProfit;   //шаг профита формирования эксельного файла статистики
+        private StrategyParameterDecimal rulerStepLoss;     //шаг лосса формирования эксельного файла статистики
         public GeneralParametersTester(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow, StrategyParameterInt maLenFast, 
             StrategyParameterDecimal volumePercent, StrategyParameterDecimal volumeSum, StrategyParameterInt coeffMonkey, StrategyParameterInt countBufferLogLine, StrategyParameterBool testSettings,
             StrategyParameterBool logEnabled, StrategyParameterBool statisticEnabled, StrategyParameterDecimal maStrength, StrategyParameterBool paintGroupEnabled, StrategyParameterDecimal paintGroup, 
@@ -47,6 +52,47 @@ namespace OsEngine.Robots.Squeezy.Tester
             this.paintSqueezy = paintSqueezy;
         }
 
+        public decimal getRulerStepSqueezy()
+        {
+            return rulerStepSqueezy.ValueDecimal;
+        }
+        public decimal getRulerStepProfit()
+        {
+            return rulerStepProfit.ValueDecimal;
+        }
+        public decimal getRulerStepLoss()
+        {
+            return rulerStepLoss.ValueDecimal;
+        }
+
+        public void setRulerStepSqueezy(StrategyParameterDecimal rulerStepSqueezy)
+        {
+            this.rulerStepSqueezy = rulerStepSqueezy;
+        }
+        public void setRulerStepProfit(StrategyParameterDecimal rulerStepProfit)
+        {
+            this.rulerStepProfit = rulerStepProfit;
+        }
+        public void setRulerStepLoss(StrategyParameterDecimal rulerStepLoss)
+        {
+            this.rulerStepLoss = rulerStepLoss;
+        }
+        public int getRulerBarCount()
+        {
+            return rulerBarCount.ValueInt;
+        }
+        public void setRulerBarCount(StrategyParameterInt rulerBarCount)
+        {
+            this.rulerBarCount = rulerBarCount;
+        }
+        public bool getOnlyRuler()
+        {
+            return onlyRuler.ValueBool;
+        }
+        public void setOnlyRuler(StrategyParameterBool onlyRuler)
+        {
+            this.onlyRuler = onlyRuler;
+        }
         public int getCoeffMonkey()
         {
             return coeffMonkey.ValueInt;

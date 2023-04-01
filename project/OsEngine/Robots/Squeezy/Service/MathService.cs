@@ -17,5 +17,22 @@ namespace OsEngine.Robots.Squeezy.Service
         {
             return value - (value * percent / 100);
         }
+
+        public static decimal round(decimal value, decimal step)
+        {
+            decimal poluStep = step / 2;
+            decimal roundValue = 0;
+            int countStep = (int)(value / step);
+            if (value > (countStep* step + poluStep))
+            {
+                roundValue = (countStep + 1) * step;
+            }
+            else
+            {
+                roundValue = countStep * step;
+            }
+            return roundValue;
+        }
     }
+
 }

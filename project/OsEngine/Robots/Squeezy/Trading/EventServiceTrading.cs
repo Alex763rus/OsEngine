@@ -120,7 +120,7 @@ namespace OsEngine.Robots.Squeezy.Trading
             barCounterProcess(dealSupportSell, dealSupportBuy);
 
             DirectionType directionTypeTmp = getDirectionType();
-            statisticService.recalcMaxDrawdown(getGroupType(Side.Buy), getGroupType(Side.Sell), dealService);
+            statisticService.candleFinishedEventLogic(getGroupType(Side.Buy), getGroupType(Side.Sell), dealService, lastCandle);
 
             if (directionTypeCurrent != directionTypeTmp)
             {
@@ -250,8 +250,8 @@ namespace OsEngine.Robots.Squeezy.Trading
                 {
                     return;
                 }
-                statisticService.recalcSqueezyCounter(groupTypeCurrent, side, lastCandle.Close, price);
                 GroupParametersTrading groupParameters = groupParametersService.getGroupParameters(groupTypeCurrent);
+                statisticService.newSqueezyLogic(groupTypeCurrent, side, lastCandle.Close, price, groupParameters);
 
                 decimal priceOpenLimit = 0 ;
                 if(side == Side.Sell)

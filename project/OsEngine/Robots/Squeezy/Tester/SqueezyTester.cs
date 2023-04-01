@@ -20,6 +20,7 @@ namespace OsEngine.Robots.Squeezy.Tester
         public static string BOT_NAME = "SqueezyTesterBot";
         private const string VERSION = "0.0.1";
         private const string TAB_SERVICE_CONTROL_NAME = "Service";
+        private const string TAB_SERVICE_RULER_NAME = "Ruler";
         public static string SEPARATE_PARAMETR_LINE = "=====================================================";
 
         public static int separateCounter = 0;    
@@ -50,6 +51,12 @@ namespace OsEngine.Robots.Squeezy.Tester
                         , CreateParameter("Графика Линия сквиза:", true)
                         , CreateParameter("% отрисовки линии сквиза", 1.2m, 1.2m, 1.2m, 1.2m)
                         );
+            generalParameters.setOnlyRuler(CreateParameter("ТОЛЬКО РУЛЕТКА", false, TAB_SERVICE_RULER_NAME));
+            generalParameters.setRulerBarCount(CreateParameter("Рулетка, бары", 10, 10, 10, 10, TAB_SERVICE_RULER_NAME));
+            generalParameters.setRulerStepSqueezy(CreateParameter("Рулетка, шаг сквиза", 1m, 1m, 1m, 1m, TAB_SERVICE_RULER_NAME));
+            generalParameters.setRulerStepProfit(CreateParameter("Рулетка, шаг профита", 1m, 1m, 1m, 1m, TAB_SERVICE_RULER_NAME));
+            generalParameters.setRulerStepLoss(CreateParameter("Рулетка, шаг лосса", 1m, 1m, 1m, 1m, TAB_SERVICE_RULER_NAME));
+
             addSeparateParameter();
             addSeparateParameter();
 
@@ -127,7 +134,8 @@ namespace OsEngine.Robots.Squeezy.Tester
             groupParametersTesterService.addGroupParameters(testTest);
 
             string statisticFileName = "C:\\1_LOGS\\" + BOT_NAME + "_" + NameStrategyUniq;
-            StatisticService statisticService = new StatisticService(statisticFileName + "_statistic.txt", generalParameters.getStatisticEnabled());
+            string statisticProfitPath = "C:\\1_LOGS\\stat\\statisticProfit.txt"; //+ BOT_NAME + "_" + NameStrategyUniq + ".txt";
+            StatisticService statisticService = new StatisticService(statisticFileName + "_statistic.txt", statisticProfitPath, generalParameters.getStatisticEnabled(), generalParameters.getRulerStepSqueezy());
 
             LogService logService = new LogService(statisticFileName + "_log.txt", generalParameters.getLogEnabled(), generalParameters.getCountBufferLogLine(), tab);
             eventServiceTester = new EventServiceTester(tab, generalParameters, groupParametersTesterService, logService, statisticService);

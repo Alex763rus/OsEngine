@@ -1,7 +1,10 @@
 ﻿using OsEngine.Alerts;
 using OsEngine.Entity;
 using OsEngine.Language;
+using OsEngine.Market.Servers.Bitfinex.BitfitnexEntity;
 using OsEngine.Robots.Squeezy.Service.statistic;
+using OsEngine.Robots.Squeezy.Service.statistic.drawdown;
+using OsEngine.Robots.Squeezy.Service.statistic.statistic2;
 using OsEngine.Robots.Squeezy.Tester;
 using OsEngine.Robots.SqueezyBot;
 using OsEngine.Robots.SqueezyBot.Service;
@@ -21,101 +24,62 @@ namespace OsEngine.Robots.Squeezy.Service
     public class StatisticService
     {
         private bool isEnabled;
-        private string filePathStatistic;
-        public StatisticResult[] statisticResults;
+
+        private StDrawdownService stDrawdownService;
+        private StSlTpService stSlTpService;
         
-        public StatisticService(string filePathStatistic, bool isEnabled)
+        private string statisticProfitPath;
+
+        public StatisticService(string filePathStatistic, string statisticProfitPath, bool isEnabled, decimal step)
         {
-            this.filePathStatistic = filePathStatistic;
             this.isEnabled = isEnabled;
-            statisticResults = new StatisticResult[Enum.GetValues(typeof(GroupType)).Length];
-            for(int i = 0; i < statisticResults.Length; ++i)
-            {
-                statisticResults[i] = new StatisticResult();
-            }
-            
+            this.statisticProfitPath = statisticProfitPath;
+            stDrawdownService = new StDrawdownService(filePathStatistic);
+            stSlTpService = new StSlTpService(statisticProfitPath, step);
         }
 
+        public string getStatisticProfitPath()
+        {
+            return statisticProfitPath;
+        }
+        public void newSqueezyLogic(GroupType groupType, Side side, decimal lastCandleClose, decimal price, GroupParametersTester groupParameters)
+        {
+            if (!isEnabled)
+            {
+                return;
+            }
+            stDrawdownService.newSqueezyLogic(groupType, side, lastCandleClose, price);
+        }
+        public void rulerSqueezyLogic(GroupType groupType, Side side, decimal lastCandleClose, decimal price, GeneralParametersTester generalParameters)
+        {
+            stSlTpService.newSqueezyLogic(groupType, side, lastCandleClose, price, generalParameters.getRulerBarCount());
+        }
+        public void rulerCandleFinishedEventLogic(Candle lastCandle, decimal stepProfit, decimal stepLoss)
+        {
+            stSlTpService.candleFinishedEventLogic(lastCandle, stepProfit, stepLoss);
+        }
+
+        public void rulerNewTestLogic(string instrument, decimal stepSqueezy, decimal stepProfit, decimal stepLoss)
+        {
+            StringBuilder sb = new StringBuilder(instrument);
+            sb.Append(";").Append(stepSqueezy)
+                .Append(";").Append(stepProfit)
+                .Append(";").Append(stepLoss);
+            stSlTpService.startTestInit(sb.ToString());
+        }
+
+        public void candleFinishedEventLogic(GroupType groupTypeBuy, GroupType groupTypeSell, DealService dealService, Candle lastCandle)
+        {
+            if (!isEnabled)
+            {
+                return;
+            }
+            stDrawdownService.candleFinishedEventLogic(groupTypeBuy, groupTypeSell, dealService);
+        }
+ 
         public void setIsEnabled(bool isEnabled)
         {
             this.isEnabled = isEnabled;
         }
-        public void recalcSqueezyCounter(GroupType groupType, Side side, decimal lastCandleClose, decimal price)
-        {
-            if (!isEnabled)
-            {
-                return;
-            }
-            decimal percent = 0;
-            if (side == Side.Sell)
-            {
-                percent = 100.0m - lastCandleClose / price * 100.0m;
-            }
-            else if (side == Side.Buy)
-            {
-                percent = 100.0m - price / lastCandleClose * 100.0m;
-            }
-
-            percent = Math.Round(percent, 0, MidpointRounding.AwayFromZero);
-            SqueezCounter squeezCounter = new SqueezCounter(percent);
-            statisticResults[(int)groupType].countSqueezy(squeezCounter);
-            saveStatistic();
-        }
-        public void recalcMaxDrawdown(GroupType groupTypeBuy, GroupType groupTypeSell, DealService dealService)
-        {
-            if (!isEnabled)
-            {
-                return;
-            }
-            if (dealService.hasOpendeal(Side.Sell))
-            {
-                Position sellPosition = dealService.getSellPosition();
-                if (sellPosition != null && sellPosition.ProfitPortfolioPunkt < statisticResults[(int)groupTypeSell].getMaxDrawdown())
-                {
-                    statisticResults[(int)groupTypeSell].setMaxDrawdown(sellPosition.ProfitPortfolioPunkt);
-                    statisticResults[(int)groupTypeSell].setPositionMaxDrawdown(sellPosition);
-                    saveStatistic();
-                }
-            }
-            else if (dealService.hasOpendeal(Side.Buy))
-            {
-                Position buyPosition = dealService.getBuyPosition();
-                if (buyPosition != null && buyPosition.ProfitPortfolioPunkt < statisticResults[(int)groupTypeBuy].getMaxDrawdown()) {
-                    statisticResults[(int)groupTypeBuy].setMaxDrawdown(buyPosition.ProfitPortfolioPunkt);
-                    statisticResults[(int)groupTypeBuy].setPositionMaxDrawdown(buyPosition);
-                    saveStatistic();
-                }
-            }
-           
-        }
-
-        private void saveStatistic()
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("Запуск: ").Append(DateTime.Now).Append("\r\n");
-            for (int i = 0; i < statisticResults.Length; ++i)
-            {
-                sb.Append(Enum.GetName(typeof(GroupType), i)).Append(": ");
-                Position pos = statisticResults[i].getPositionMaxDrawdown();
-                if (pos != null)
-                {
-                    sb.Append(" [").Append(LogService.getPositionNumber(pos))
-                    .Append(", ").Append(pos.Direction)
-                    .Append(", ").Append(pos.State)
-                    .Append(", tOpen:").Append(pos.TimeOpen)
-                    .Append(", tClose:").Append(pos.TimeClose)
-                    .Append(']');
-                }
-                else
-                {
-                    sb.Append("[no positions]");
-                }
-                sb.Append(", макс. просадка:").Append(statisticResults[i].getMaxDrawdown());
-                sb.Append(", сквизы: ").Append(statisticResults[i].getCounterSqueezyList());
-                sb.Append("\r\n");
-            }
-            FileService.saveMessageInFile(filePathStatistic, sb.ToString(), false);
-        }
-       
     }
 }

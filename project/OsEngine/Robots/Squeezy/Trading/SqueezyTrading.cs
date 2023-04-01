@@ -129,7 +129,8 @@ namespace OsEngine.Robots.Squeezy.Trading
             groupParametersTradingService.addGroupParameters(testTest);
 
             string logPath = "C:\\1_LOGS\\" + BOT_NAME + "_" + NameStrategyUniq;
-            StatisticService statisticService = new StatisticService(logPath + "_statistic.txt", generalParametersTrading.getStatisticEnabled());
+            string statisticProfitPath = "C:\\1_LOGS\\stat\\" + BOT_NAME + "_" + NameStrategyUniq;
+            StatisticService statisticService = new StatisticService(logPath + "_statistic.txt", statisticProfitPath, generalParametersTrading.getStatisticEnabled(), 0);
             logService = new LogService(logPath + "_log.txt", generalParametersTrading.getLogEnabled(), generalParametersTrading.getCountBufferLogLine(), tab);
             TgService tgService = new TgService(generalParametersTrading.getTgAlertEnabled(), generalParametersTrading.getStand(), NameStrategyUniq);
             tgService.sendSqueezyStart(VERSION);
