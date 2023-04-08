@@ -29,6 +29,7 @@ namespace OsEngine.Market.Connectors
             try
             {
                 InitializeComponent();
+                OsEngine.Layout.StickyBorders.Listen(this);
                 OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
 
                 ButtonRightInSearchResults.Visibility = Visibility.Hidden;
@@ -484,6 +485,12 @@ namespace OsEngine.Market.Connectors
             }
 
             ComboBoxTimeFrame.Items.Clear();
+
+            if (securities == null ||
+                securities.Count == 0)
+            {
+                return;
+            }
 
             for (int i = 0; i < securities.Count; i++)
             {

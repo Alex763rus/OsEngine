@@ -17,6 +17,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         public BotTabIndexUi(BotTabIndex spread)
         {
             InitializeComponent();
+            OsEngine.Layout.StickyBorders.Listen(this);
             OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
             CreateTable();
             _spread = spread;
@@ -139,7 +140,7 @@ namespace OsEngine.OsTrader.Panels.Tab
             IndexOrSourcesChanged = true;
         }
 
-        private void ButtonDeleteSecurity_Click(object sender, RoutedEventArgs e)
+        private void RepeatButtonDeleteSecurity_Click(object sender, RoutedEventArgs e)
         {
             if (_sourcesGrid.CurrentCell == null)
             {

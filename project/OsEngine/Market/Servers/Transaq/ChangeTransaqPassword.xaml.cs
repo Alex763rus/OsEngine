@@ -14,9 +14,21 @@ namespace OsEngine.Market.Servers.Transaq
         public ChangeTransaqPassword(string message, TransaqServerRealization server)
         {
             InitializeComponent();
+            OsEngine.Layout.StickyBorders.Listen(this);
             OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
             _server = server;
             TextInfo.Text = message;
+
+            this.Activate();
+            this.Focus();
+        }
+
+        public ChangeTransaqPassword(TransaqServerRealization server)
+        {
+            InitializeComponent();
+            OsEngine.Layout.StickyBorders.Listen(this);
+            OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
+            _server = server;
 
             this.Activate();
             this.Focus();
@@ -30,8 +42,7 @@ namespace OsEngine.Market.Servers.Transaq
             }
             else
             {
-                _server.ChangePassword(OldPassword.Text, NewPassword.Text);
-                Close();
+                _server.ChangePassword(OldPassword.Text, NewPassword.Text, this);
             }            
         }
     }

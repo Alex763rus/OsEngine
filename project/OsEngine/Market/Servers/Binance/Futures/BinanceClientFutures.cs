@@ -337,7 +337,6 @@ namespace OsEngine.Market.Servers.Binance.Futures
 
         #endregion
 
-
         /// <summary>
         /// get realtime Mark Price and Funding Rate
         /// получать среднюю цену инструмента (на всех биржах) и ставку фандирования в реальном времени
@@ -531,33 +530,32 @@ namespace OsEngine.Market.Servers.Binance.Futures
                         if (i != 0)
                         {
                             string upd = res2[i].Substring(2);
-                            var param = upd.Split(new char[] { ',' });
+                            upd = upd.Replace("\"", "");
+                            string[] param = upd.Split(',');
 
                             newCandle = new Candle();
                             newCandle.TimeStart = new DateTime(1970, 1, 1).AddMilliseconds(Convert.ToDouble(param[0]));
-                            newCandle.Low = Convert.ToDecimal(param[3].Replace(",", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator).Trim(new char[] { '"', '"' }), CultureInfo.InvariantCulture);
-                            newCandle.High = Convert.ToDecimal(param[2].Replace(",", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator).Trim(new char[] { '"', '"' }), CultureInfo.InvariantCulture);
-                            newCandle.Open = Convert.ToDecimal(param[1].Replace(",", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator).Trim(new char[] { '"', '"' }), CultureInfo.InvariantCulture);
-                            newCandle.Close = Convert.ToDecimal(param[4].Replace(",", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator).Trim(new char[] { '"', '"' }), CultureInfo.InvariantCulture);
-                            newCandle.Volume = Convert.ToDecimal(param[5].Replace(",", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator).Trim(new char[] { '"', '"' }), CultureInfo.InvariantCulture);
-
+                            newCandle.Low = param[3].ToDecimal();
+                            newCandle.High = param[2].ToDecimal();
+                            newCandle.Open = param[1].ToDecimal();
+                            newCandle.Close = param[4].ToDecimal();
+                            newCandle.Volume = param[5].ToDecimal();
                             _candles.Add(newCandle);
                         }
                         else
                         {
-                            var param = res2[i].Split(new char[] { ',' });
+                            string[] param = res2[i].Replace("\"", "").Split(',');
 
                             newCandle = new Candle();
                             newCandle.TimeStart = new DateTime(1970, 1, 1).AddMilliseconds(Convert.ToDouble(param[0]));
-                            newCandle.Low = Convert.ToDecimal(param[3].Replace(",", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator).Trim(new char[] { '"', '"' }), CultureInfo.InvariantCulture);
-                            newCandle.High = Convert.ToDecimal(param[2].Replace(",", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator).Trim(new char[] { '"', '"' }), CultureInfo.InvariantCulture);
-                            newCandle.Open = Convert.ToDecimal(param[1].Replace(",", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator).Trim(new char[] { '"', '"' }), CultureInfo.InvariantCulture);
-                            newCandle.Close = Convert.ToDecimal(param[4].Replace(",", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator).Trim(new char[] { '"', '"' }), CultureInfo.InvariantCulture);
-                            newCandle.Volume = Convert.ToDecimal(param[5].Replace(",", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator).Trim(new char[] { '"', '"' }), CultureInfo.InvariantCulture);
+                            newCandle.Low = param[3].ToDecimal();
+                            newCandle.High = param[2].ToDecimal();
+                            newCandle.Open = param[1].ToDecimal();
+                            newCandle.Close = param[4].ToDecimal();
+                            newCandle.Volume = param[5].ToDecimal();
 
                             _candles.Add(newCandle);
                         }
-
                     }
 
                     return _candles;
@@ -877,6 +875,11 @@ namespace OsEngine.Market.Servers.Binance.Futures
         /// <returns></returns>
         private List<Candle> BuildCandles(List<Candle> oldCandles, int needTf, int oldTf)
         {
+            if(oldCandles == null)
+            {
+                return null;
+            }
+
             List<Candle> newCandles = new List<Candle>();
 
             int index = oldCandles.FindIndex(can => can.TimeStart.Minute % needTf == 0);
@@ -1055,10 +1058,10 @@ namespace OsEngine.Market.Servers.Binance.Futures
         private string GetNonce()
         {
             var resTime = CreateQuery(Method.GET, "/" + type_str_selector + "/v1/time", null, false);
-            var result = JsonConvert.DeserializeAnonymousType(resTime, new BinanceTime());
 
-            if (result != null)
+            if (!string.IsNullOrEmpty(resTime))
             {
+                var result = JsonConvert.DeserializeAnonymousType(resTime, new BinanceTime());
                 return (result.serverTime + 500).ToString();
             }
             else
@@ -1385,7 +1388,7 @@ namespace OsEngine.Market.Servers.Binance.Futures
                     newOrder.TypeOrder = oldOpenOrders[i].TypeOrder;
                     newOrder.TimeCallBack = new DateTime(1970, 1, 1).AddMilliseconds(Convert.ToDouble(myOrder.updateTime));
                     newOrder.TimeCancel = newOrder.TimeCallBack;
-                    newOrder.ServerType = ServerType.Binance;
+                    newOrder.ServerType = ServerType.BinanceFutures;
                     newOrder.PortfolioNumber = oldOpenOrders[i].PortfolioNumber;
 
 
@@ -1408,7 +1411,7 @@ namespace OsEngine.Market.Servers.Binance.Futures
                     newOrder.TypeOrder = oldOpenOrders[i].TypeOrder;
                     newOrder.TimeCallBack = new DateTime(1970, 1, 1).AddMilliseconds(Convert.ToDouble(myOrder.updateTime));
                     newOrder.TimeCancel = newOrder.TimeCallBack;
-                    newOrder.ServerType = ServerType.Binance;
+                    newOrder.ServerType = ServerType.BinanceFutures;
                     newOrder.PortfolioNumber = oldOpenOrders[i].PortfolioNumber;
 
                     if (MyOrderEvent != null)
@@ -1473,7 +1476,7 @@ namespace OsEngine.Market.Servers.Binance.Futures
             newOrder.TypeOrder = oldOrder.TypeOrder;
             newOrder.TimeCallBack = oldOrder.TimeCallBack;
             newOrder.TimeCancel = newOrder.TimeCallBack;
-            newOrder.ServerType = ServerType.Binance;
+            newOrder.ServerType = ServerType.BinanceFutures;
             newOrder.PortfolioNumber = oldOrder.PortfolioNumber;
 
             if (orderOnBoard.status == "NEW" ||
@@ -1700,7 +1703,7 @@ namespace OsEngine.Market.Servers.Binance.Futures
                                     newOrder.State = OrderStateType.Activ;
                                     newOrder.Volume = order.q.ToDecimal();
                                     newOrder.Price = order.p.ToDecimal();
-                                    newOrder.ServerType = ServerType.Binance;
+                                    newOrder.ServerType = ServerType.BinanceFutures;
                                     newOrder.PortfolioNumber = newOrder.SecurityNameCode;
 
                                     if (MyOrderEvent != null)
@@ -1720,7 +1723,7 @@ namespace OsEngine.Market.Servers.Binance.Futures
                                     newOrder.State = OrderStateType.Cancel;
                                     newOrder.Volume = order.q.ToDecimal();
                                     newOrder.Price = order.p.ToDecimal();
-                                    newOrder.ServerType = ServerType.Binance;
+                                    newOrder.ServerType = ServerType.BinanceFutures;
                                     newOrder.PortfolioNumber = newOrder.SecurityNameCode;
 
                                     if (MyOrderEvent != null)
@@ -1739,7 +1742,7 @@ namespace OsEngine.Market.Servers.Binance.Futures
                                     newOrder.State = OrderStateType.Fail;
                                     newOrder.Volume = order.q.ToDecimal();
                                     newOrder.Price = order.p.ToDecimal();
-                                    newOrder.ServerType = ServerType.Binance;
+                                    newOrder.ServerType = ServerType.BinanceFutures;
                                     newOrder.PortfolioNumber = newOrder.SecurityNameCode;
 
                                     if (MyOrderEvent != null)
@@ -1776,7 +1779,7 @@ namespace OsEngine.Market.Servers.Binance.Futures
                                     newOrder.State = OrderStateType.Cancel;
                                     newOrder.Volume = order.q.ToDecimal();
                                     newOrder.Price = order.p.ToDecimal();
-                                    newOrder.ServerType = ServerType.Binance;
+                                    newOrder.ServerType = ServerType.BinanceFutures;
                                     newOrder.PortfolioNumber = newOrder.SecurityNameCode;
 
                                     if (MyOrderEvent != null)

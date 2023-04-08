@@ -25,6 +25,7 @@ namespace OsEngine.Market.Servers
         public AServerParameterUi(AServer server)
         {
             InitializeComponent();
+            OsEngine.Layout.StickyBorders.Listen(this);
             OsEngine.Layout.StartupLocation.Start_MouseInCentre(this);
             _server = server;
 
@@ -83,6 +84,12 @@ namespace OsEngine.Market.Servers
                     LabelStatus.Dispatcher.Invoke(new Action<string>(Server_ConnectStatusChangeEvent), s);
                     return;
                 }
+
+                if(_server == null)
+                {
+                    return;
+                }
+
                 LabelStatus.Content = _server.ServerStatus;
             }
             catch

@@ -321,6 +321,10 @@ namespace OsEngine.OsTrader.Panels.Tab
         {
             if (!ServerMaster.HasActiveServers())
             {
+                if (ServerType != ServerType.None)  //AVP чтоб срабатывала функция автозапуска сервера
+                {
+                    ServerMaster.SetNeedServer(ServerType); //AVP
+                }
                 return;
             }
 
@@ -346,7 +350,7 @@ namespace OsEngine.OsTrader.Panels.Tab
 
                         Tabs.Add(newTab);
                         SubscribleOnTab(newTab);
-                        UpdateTabSettings(Tabs[Tabs.Count - 1]);
+                        //UpdateTabSettings(Tabs[Tabs.Count - 1]);
                         PaintNewRow();
 
                         if (NewTabCreateEvent != null)
@@ -680,10 +684,10 @@ namespace OsEngine.OsTrader.Panels.Tab
 
             // 2 обновляем во вкладках данные
 
-            for (int i = 0; i < Tabs.Count; i++)
-            {
-                UpdateTabSettings(Tabs[i]);
-            }
+            //for (int i = 0; i < Tabs.Count; i++)
+            //{
+            //    UpdateTabSettings(Tabs[i]);
+            //}
 
             // 3 создаём не достающие вкладки
             IsLoadTabs = true;
@@ -1284,7 +1288,7 @@ namespace OsEngine.OsTrader.Panels.Tab
 
                     List<IIndicator> indic = Tabs[0].Indicators;
 
-                    for (int i = 0; i < indic.Count; i++)
+                    for (int i = 0; indic != null && i < indic.Count; i++)
                     {
                         if(indic[i].GetType().BaseType.Name != "Aindicator")
                         {

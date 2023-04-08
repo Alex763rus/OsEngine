@@ -44,7 +44,6 @@ namespace OsEngine.Charts.CandleChart
 
             if(_startProgram != StartProgram.IsOsOptimizer)
             {
-                UpDateChartPainter();
                 Load();
             }
            
@@ -61,13 +60,43 @@ namespace OsEngine.Charts.CandleChart
                 ChartCandle.ClickToIndexEvent -= _chartCandle_ClickToIndexEvent;
                 ChartCandle.SizeAxisXChangeEvent -= ChartCandle_SizeAxisXChangeEvent;
             }
-
             ChartCandle = new WinFormsChartPainter(_name, _startProgram);
-
             ChartCandle.ChartClickEvent += ChartCandle_ChartClickEvent;
             ChartCandle.LogMessageEvent += NewLogMessage;
             ChartCandle.ClickToIndexEvent += _chartCandle_ClickToIndexEvent;
             ChartCandle.SizeAxisXChangeEvent += ChartCandle_SizeAxisXChangeEvent;
+            SetNewTimeFrameToChart(_timeFrameBuilder);  //AVP добавил, чтоб ChartCandle знал, с каким он таймфреймом. (Это важно для скринера, с отложенным созданием Чарта)  
+
+            if (_indicators != null)
+            {
+                for(int i = 0;i < _indicators.Count;i++)
+                {
+                    LoadIndicatorOnChart(_indicators[i]);
+                }
+            }
+
+           
+        }
+
+        /// <summary>
+        /// Установить TimeFrame на чарт    
+        /// Set TimeFrame to Chart
+        /// </summary>
+        /// <param name="timeFrameBuilder"></param>
+        private void SetNewTimeFrameToChart(TimeFrameBuilder timeFrameBuilder)      //AVP
+        {
+            if (timeFrameBuilder == null || ChartCandle == null)
+            {
+                return;
+            }
+            if (timeFrameBuilder.CandleCreateMethodType != CandleCreateMethodType.Simple)
+            {
+                ChartCandle.SetNewTimeFrame(TimeSpan.FromSeconds(1), timeFrameBuilder.TimeFrame);
+            }
+            else
+            {
+                ChartCandle.SetNewTimeFrame(timeFrameBuilder.TimeFrameTimeSpan, timeFrameBuilder.TimeFrame);
+            }
         }
 
         /// <summary>
@@ -555,6 +584,12 @@ namespace OsEngine.Charts.CandleChart
                     }
                 }
 
+                if(ChartCandle == null)
+                {
+                    UpDateChartPainter();
+                }
+
+
                 if (ChartCandle.AreaIsCreate("TradeArea") == true)
                 {
                     if (menuRedact == null)
@@ -835,7 +870,7 @@ namespace OsEngine.Charts.CandleChart
         {
             get { return _indicators; }
         }
-        private List<IIndicator> _indicators;
+        private List<IIndicator> _indicators = new List<IIndicator>();
 
         /// <summary>
         /// to create a new indicator. If there is already one with this name, the existing one returned
@@ -1379,7 +1414,11 @@ namespace OsEngine.Charts.CandleChart
                 return;
             }
             _myPosition = position;
-            ChartCandle.ProcessPositions(position);
+
+            if(ChartCandle != null)
+            {
+                ChartCandle.ProcessPositions(position);
+            }
         }
 
         // management управление
@@ -1394,7 +1433,7 @@ namespace OsEngine.Charts.CandleChart
             {
                 if(ChartCandle == null)
                 {
-                    return;
+                    UpDateChartPainter();
                 }
                 ChartCandle.StartPaintPrimeChart(gridChart, host, rectangle);
                 ChartCandle.ProcessCandles(_myCandles);
@@ -1434,7 +1473,12 @@ namespace OsEngine.Charts.CandleChart
         {
             if (ChartCandle != null)
             {
-                ChartCandle.StopPaint();
+                IChartPainter painter = ChartCandle;
+
+                ChartCandle = null;
+
+                painter.StopPaint();
+                painter.Delete();
             }
            
             if (_grid != null)
@@ -1586,10 +1630,11 @@ namespace OsEngine.Charts.CandleChart
         /// <param name="serverType">server type/тип сервера</param>
         public void SetNewSecurity(string security, TimeFrameBuilder timeFrameBuilder, string portfolioName, ServerType serverType)
         {
-            if (ChartCandle == null)
+            if (_startProgram == StartProgram.IsOsOptimizer)
             {
                 return;
             }
+
             if (_securityOnThisChart == security &&
                 _timeFrameSecurity == timeFrameBuilder.TimeFrame &&
                 serverType == _serverType &&
@@ -1601,14 +1646,15 @@ namespace OsEngine.Charts.CandleChart
             if (ChartCandle != null)
             {
                 ChartCandle.ClearDataPointsAndSizeValue();
-                if (timeFrameBuilder.CandleCreateMethodType != CandleCreateMethodType.Simple)
+                SetNewTimeFrameToChart(timeFrameBuilder);   //AVP  рефакторинг, чтоб нижний код два раза не повторялся.
+                /*if (timeFrameBuilder.CandleCreateMethodType != CandleCreateMethodType.Simple) // AVP этот код перенес в SetNewTimeFrameToChart
                 {
                     ChartCandle.SetNewTimeFrame(TimeSpan.FromSeconds(1), timeFrameBuilder.TimeFrame);
                 }
                 else
                 {
                     ChartCandle.SetNewTimeFrame(timeFrameBuilder.TimeFrameTimeSpan, timeFrameBuilder.TimeFrame);
-                }
+                }*/
             }
 
             string lastSecurity = _securityOnThisChart;

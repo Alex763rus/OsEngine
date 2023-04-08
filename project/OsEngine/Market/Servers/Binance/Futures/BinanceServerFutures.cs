@@ -457,13 +457,23 @@ namespace OsEngine.Market.Servers.Binance.Futures
                         return;
                     }
 
-                    var needDepth = _depths.Find(depth =>
-                        depth.SecurityNameCode == myDepth.stream.Split('@')[0].ToUpper());
+                    string secName = myDepth.stream.Split('@')[0].ToUpper();
+
+                    MarketDepth needDepth = null;
+
+                    for (int i = 0; i < _depths.Count; i++)
+                    {
+                        if (_depths[i].SecurityNameCode == secName)
+                        {
+                            needDepth = _depths[i];
+                            break;
+                        }
+                    }
 
                     if (needDepth == null)
                     {
                         needDepth = new MarketDepth();
-                        needDepth.SecurityNameCode = myDepth.stream.Split('@')[0].ToUpper();
+                        needDepth.SecurityNameCode = secName;
                         _depths.Add(needDepth);
                     }
 
@@ -785,6 +795,7 @@ namespace OsEngine.Market.Servers.Binance.Futures
                     sec.filters[1].minQty != null)
                 {
                     decimal minQty = sec.filters[1].minQty.ToDecimal();
+                    security.MinTradeAmount = minQty;
                     string qtyInStr = minQty.ToStringWithNoEndZero().Replace(",", ".");
                     if (qtyInStr.Replace(",", ".").Split('.').Length > 1)
                     {

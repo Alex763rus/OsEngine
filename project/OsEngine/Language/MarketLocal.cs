@@ -805,6 +805,10 @@ namespace OsEngine.Language
             "Eng:Remove Candles From Memory_" +
             "Ru:Удалять свечи из памяти_");
 
+        public string ServerParam10 => OsLocalization.ConvertToLocString(
+           "Eng:Use Full Market Depth_" +
+           "Ru:Использовать полный стакан_");
+
         public string UseStock => OsLocalization.ConvertToLocString(
             "Eng:Stock_" +
             "Ru:Акции_");
@@ -828,5 +832,9 @@ namespace OsEngine.Language
         public string UseSecInfoUpdates => OsLocalization.ConvertToLocString(
             "Eng:Use sec info updates_" +
             "Ru:Включить обновления инструментов_");
+
+        public string ButtonNameChangePassword => OsLocalization.ConvertToLocString(
+            "Eng:Change password_" +
+            "Ru:Изменить пароль_");
     }
 }

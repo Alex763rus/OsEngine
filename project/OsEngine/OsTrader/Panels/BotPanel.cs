@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms.Integration;
@@ -82,7 +83,36 @@ namespace OsEngine.OsTrader.Panels
 
             ParamGuiSettings = new ParamGuiSettings();
             ParamGuiSettings.LogMessageEvent += SendNewLogMessage;
+
+            OsTraderMaster.CriticalErrorEvent += OsTraderMaster_CriticalErrorEvent;
         }
+
+        /// <summary>
+        /// critical error and system restart event /
+        /// событие критической ошибки и перезапуск системы
+        /// </summary>
+        private void OsTraderMaster_CriticalErrorEvent()
+        {
+            new Thread(()=>
+            {
+                Thread.Sleep(20000);
+                try
+                {
+                    if (CriticalErrorEvent != null)
+                    {
+                        CriticalErrorEvent(CriticalErrorHandler.ErrorMessage);
+                    }
+                    
+                }
+                catch (Exception error)
+                {
+                    SendNewLogMessage(error.Message, LogMessageType.Error);
+                }
+            }).Start();
+            
+        }
+
+        protected event Action<string> CriticalErrorEvent;
 
         /// <summary>
         /// unique robot name / 
@@ -721,6 +751,35 @@ position => position.State != PositionStateType.OpeningFail
             }
         }
 
+        /// <summary>
+        /// the number of all positions at the tabs of the robot / 
+        /// количество всех позиций у вкладок робота
+        /// </summary>
+        public int AllPositionsCount
+        {
+            get
+            {
+                List<Journal.Journal> journals = GetJournals();
+
+                if (journals == null || journals.Count == 0)
+                {
+                    return 0;
+                }
+
+                List<Position> pos = new List<Position>();
+
+                for (int i = 0; i < journals.Count; i++)
+                {
+                    if (journals[i].AllPosition == null || journals[i].AllPosition.Count == 0)
+                    {
+                        continue;
+                    }
+                    pos.AddRange(journals[i].AllPosition);
+                }
+                return pos.Count;
+            }
+        }
+
         // working with strategy parameters / работа с параметрами стратегии
 
         /// <summary>
@@ -904,6 +963,22 @@ position => position.State != PositionStateType.OpeningFail
             }
 
             return (StrategyParameterButton)LoadParameterValues(newParameter);
+        }
+
+        /// <summary>
+        /// create button type parameter / 
+        /// создать параметр типа CheckBox
+        /// </summary>
+        public StrategyParameterCheckBox CreateParameterCheckBox(string checkBoxLabel, bool isChecked, string tabControlName = null)
+        {
+            StrategyParameterCheckBox newParameter = new StrategyParameterCheckBox(checkBoxLabel, isChecked, tabControlName);
+
+            if (_parameters.Find(p => p.Name == checkBoxLabel) != null)
+            {
+                throw new Exception(OsLocalization.Trader.Label52);
+            }
+
+            return (StrategyParameterCheckBox)LoadParameterValues(newParameter);
         }
 
         public StrategyParameterLabel CreateParameterLabel(string name, string label, string value, int rowHeight,  int textHeight, System.Drawing.Color color, string tabControlName = null)
@@ -1774,6 +1849,7 @@ position => position.State != PositionStateType.OpeningFail
                 for (int i = 0; _tabSimple != null && i < _tabSimple.Count; i++)
                 {
                     _tabSimple[i].Connector.EmulatorIsOn = value;
+                    _tabSimple[i].Connector.Save();
                 }
 
                 for (int i = 0; _tabsScreener != null && i < _tabsScreener.Count; i++)
@@ -1791,6 +1867,7 @@ position => position.State != PositionStateType.OpeningFail
                         try
                         {
                             bot.Tabs[i2].Connector.EmulatorIsOn = value;
+                            bot.Tabs[i2].Connector.Save();
                         }
                         catch
                         {

@@ -167,6 +167,9 @@
     <Compile Include="Alerts\AlertToPriceCreateUi.xaml.cs">
       <DependentUpon>AlertToPriceCreateUi.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Charts\CandleChart\CandleChartUi.xaml.cs">
+      <DependentUpon>CandleChartUi.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Charts\CandleChart\Elements\IChartElement.cs" />
     <Compile Include="Charts\CandleChart\Elements\Line.cs" />
     <Compile Include="Charts\CandleChart\Elements\PointElement.cs" />
@@ -422,8 +425,9 @@
     <Compile Include="Language\OsLocalization.cs" />
     <Compile Include="Language\PrimeSettingsMasterUiLocal.cs" />
     <Compile Include="Language\TraderLocal.cs" />
-    <Compile Include="Layout\MouseCoordinates.cs" />
+    <Compile Include="Layout\DesktopCoordinates.cs" />
     <Compile Include="Layout\StartupLocation.cs" />
+    <Compile Include="Layout\StickyBorders.cs" />
     <Compile Include="Logging\LogErrorUi.xaml.cs">
       <DependentUpon>LogErrorUi.xaml</DependentUpon>
     </Compile>
@@ -483,10 +487,12 @@
     <Compile Include="Market\Servers\Bitfinex\BitfitnexEntity\JsonConverter.cs" />
     <Compile Include="Market\Servers\Bitfinex\BitfitnexEntity\NewOrderPayload.cs" />
     <Compile Include="Market\Servers\Bitfinex\BitfitnexEntity\SubscriptionInformation.cs" />
+    <Compile Include="Market\Servers\BitMaxFutures\BitMaxFuturesServer.cs" />
     <Compile Include="Market\Servers\BitMax\BitMaxEntity.cs" />
     <Compile Include="Market\Servers\BitMax\BitMaxMarketDepthCreator.cs" />
     <Compile Include="Market\Servers\BitMax\BitMaxProClient.cs" />
     <Compile Include="Market\Servers\BitMax\BitMaxProServer.cs" />
+    <Compile Include="Market\Servers\BitMax\BitMaxServerPermission.cs" />
     <Compile Include="Market\Servers\BitMex\BitMexClient.cs" />
     <Compile Include="Market\Servers\BitMex\BitMexEntity\BitMexMyOrders.cs" />
     <Compile Include="Market\Servers\BitMex\BitMexEntity\BitMexOrder.cs" />
@@ -509,6 +515,7 @@
     <Compile Include="Market\Servers\Bybit\EntityCreators\BybitPortfolioCreator.cs" />
     <Compile Include="Market\Servers\Bybit\EntityCreators\BybitSecurityCreator.cs" />
     <Compile Include="Market\Servers\Bybit\EntityCreators\BybitTradesCreator.cs" />
+    <Compile Include="Market\Servers\Bybit\EntityCreators\PositionModeResponse.cs" />
     <Compile Include="Market\Servers\Bybit\Utilities\BybitSigner.cs" />
     <Compile Include="Market\Servers\Bybit\Utilities\BybitWsRequestBuilder.cs" />
     <Compile Include="Market\Servers\Bybit\Utilities\Signer.cs" />
@@ -804,6 +811,11 @@
     <Compile Include="OsConverter\OsCandleConverterUi.xaml.cs">
       <DependentUpon>OsCandleConverterUi.xaml</DependentUpon>
     </Compile>
+    <Compile Include="OsData\OsDataMaster.cs" />
+    <Compile Include="OsData\OsDataSetPainter.cs" />
+    <Compile Include="OsData\OsDataUi.xaml.cs">
+      <DependentUpon>OsDataUi.xaml</DependentUpon>
+    </Compile>
     <Compile Include="OsMiner\OsMinerMaster.cs" />
     <Compile Include="OsMiner\OsMinerSet.cs" />
     <Compile Include="OsMiner\OsMinerSetUi.xaml.cs">
@@ -876,13 +888,10 @@
     <Compile Include="OsData\NewSecurityUi.xaml.cs">
       <DependentUpon>NewSecurityUi.xaml</DependentUpon>
     </Compile>
-    <Compile Include="OsData\OsDataMaster.cs" />
+    <Compile Include="OsData\OsDataMasterPainter.cs" />
     <Compile Include="OsData\OsDataSet.cs" />
     <Compile Include="OsData\OsDataSetUi.xaml.cs">
       <DependentUpon>OsDataSetUi.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="OsData\OsDataUi.xaml.cs">
-      <DependentUpon>OsDataUi.xaml</DependentUpon>
     </Compile>
     <Compile Include="OsTrader\Gui\BotTabsPainter.cs" />
     <Compile Include="OsTrader\Gui\RobotUiLight.xaml.cs">
@@ -900,6 +909,7 @@
     <Compile Include="OsTrader\Panels\Tab\BotTabScreenerUi.xaml.cs">
       <DependentUpon>BotTabScreenerUi.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Robots\AutoTestBots\CandlesComparisonTestBot.cs" />
     <Compile Include="Robots\BotFactory.cs" />
     <Compile Include="Robots\CounterTrend\ClusterCountertrend.cs" />
     <Compile Include="Robots\OnScriptIndicators\GridSample.cs" />
@@ -1069,6 +1079,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Alerts\AlertToPriceCreateUi.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Charts\CandleChart\CandleChartUi.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -1404,6 +1418,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="OsData\OsDataUi.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="OsMiner\OsMinerSetUi.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -1433,10 +1451,6 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="OsData\OsDataSetUi.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="OsData\OsDataUi.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

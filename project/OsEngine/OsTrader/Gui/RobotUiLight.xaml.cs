@@ -20,6 +20,7 @@ namespace OsEngine.OsTrader.Gui
         public RobotUiLight()
         {
             InitializeComponent();
+            OsEngine.Layout.StickyBorders.Listen(this);
             ServerMaster.SetHostTable(HostPositionOnBoard, HostOrdersOnBoard);
             ServerMaster.GetServers();
 
@@ -40,6 +41,8 @@ namespace OsEngine.OsTrader.Gui
             this.Focus();
 
             GlobalGUILayout.Listen(this, "botStationLightUi");
+
+            IsRobotUiLightStart = true;
         }
 
         ServerMasterPainter _painterServer;
@@ -74,5 +77,6 @@ namespace OsEngine.OsTrader.Gui
 
         private OsTraderMaster _strategyKeeper;
 
+        public static bool IsRobotUiLightStart = false;
     }
 }
