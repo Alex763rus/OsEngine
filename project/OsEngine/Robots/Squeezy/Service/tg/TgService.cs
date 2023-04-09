@@ -20,7 +20,6 @@ namespace OsEngine.Robots.Squeezy.Trading
     public class TgService
     {
         private bool isEnabled;
-        private int messageId;
         private string stand;
         private string botName;
  
@@ -28,9 +27,17 @@ namespace OsEngine.Robots.Squeezy.Trading
             this.isEnabled = isEnabled;
             this.stand = stand;
             this.botName = botName;
-            messageId = 0;
         }
 
+        public void sendStatistic(string fileName)
+        {
+            if (!isEnabled)
+            {
+                return;
+            }
+            StatisticSlTpFinish statisticSlTpFinish = new StatisticSlTpFinish(fileName);
+            SendTestPostRequest("http://localhost:8080/statistic/sltpfinish", SimpleJson.SerializeObject(statisticSlTpFinish));
+        }
         public void sendUnsorted(string message)
         {
             if (!isEnabled)

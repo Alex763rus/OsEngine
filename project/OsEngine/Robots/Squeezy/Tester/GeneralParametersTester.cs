@@ -16,7 +16,6 @@ namespace OsEngine.Robots.Squeezy.Tester
         private StrategyParameterDecimal volumeSum;
         private StrategyParameterInt coeffMonkey;
         private StrategyParameterInt countBufferLogLine;
-        private StrategyParameterBool testSettings;
         private StrategyParameterBool logEnabled;
         private StrategyParameterBool statisticEnabled;
         private StrategyParameterDecimal maStrength;
@@ -30,10 +29,14 @@ namespace OsEngine.Robots.Squeezy.Tester
         private StrategyParameterDecimal rulerStepSqueezy;  //шаг сквиза формирования эксельного файла статистики
         private StrategyParameterDecimal rulerStepProfit;   //шаг профита формирования эксельного файла статистики
         private StrategyParameterDecimal rulerStepLoss;     //шаг лосса формирования эксельного файла статистики
-        public GeneralParametersTester(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow, StrategyParameterInt maLenFast, 
-            StrategyParameterDecimal volumePercent, StrategyParameterDecimal volumeSum, StrategyParameterInt coeffMonkey, StrategyParameterInt countBufferLogLine, StrategyParameterBool testSettings,
-            StrategyParameterBool logEnabled, StrategyParameterBool statisticEnabled, StrategyParameterDecimal maStrength, StrategyParameterBool paintGroupEnabled, StrategyParameterDecimal paintGroup, 
-            StrategyParameterBool paintSqueezyEnabled, StrategyParameterDecimal paintSqueezy)
+
+        private StrategyParameterBool tgAlertEnabled;
+        private StrategyParameterString stand;
+
+        public GeneralParametersTester(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow, StrategyParameterInt maLenFast
+            , StrategyParameterDecimal volumePercent, StrategyParameterDecimal volumeSum, StrategyParameterInt coeffMonkey, StrategyParameterInt countBufferLogLine
+            , StrategyParameterBool logEnabled, StrategyParameterBool statisticEnabled, StrategyParameterDecimal maStrength, StrategyParameterBool paintGroupEnabled, StrategyParameterDecimal paintGroup
+            , StrategyParameterBool paintSqueezyEnabled, StrategyParameterDecimal paintSqueezy)
         {
             this.maLenSlow = maLenSlow;
             this.maCorridorHighSlow = maCorridorHighSlow;
@@ -42,7 +45,6 @@ namespace OsEngine.Robots.Squeezy.Tester
             this.volumeSum = volumeSum;
             this.coeffMonkey = coeffMonkey;
             this.countBufferLogLine = countBufferLogLine;
-            this.testSettings = testSettings;
             this.logEnabled = logEnabled;
             this.statisticEnabled = statisticEnabled;
             this.maStrength = maStrength;
@@ -51,7 +53,24 @@ namespace OsEngine.Robots.Squeezy.Tester
             this.paintSqueezyEnabled = paintSqueezyEnabled;
             this.paintSqueezy = paintSqueezy;
         }
+        public void setStand(StrategyParameterString stand)
+        {
+            this.stand = stand;
+        }
 
+        public string getStand()
+        {
+            return stand.ValueString;
+        }
+        public void setTgAlertEnabled(StrategyParameterBool tgAlertEnabled)
+        {
+            this.tgAlertEnabled = tgAlertEnabled;
+        }
+
+        public bool getTgAlertEnabled()
+        {
+            return tgAlertEnabled.ValueBool;
+        }
         public decimal getRulerStepSqueezy()
         {
             return rulerStepSqueezy.ValueDecimal;
@@ -113,10 +132,6 @@ namespace OsEngine.Robots.Squeezy.Tester
         {
             return paintGroupEnabled.ValueBool;
         }
-        public bool getTestSettings()
-        {
-            return testSettings.ValueBool;
-        }
 
         public bool getLogEnabled()
         {
@@ -169,7 +184,6 @@ namespace OsEngine.Robots.Squeezy.Tester
             str.Append(", volumeSum = ").Append(getVolumeSum());
             str.Append(", coeffMonkey = ").Append(getCoeffMonkey());
             str.Append(", countBufferLogLine = ").Append(getCountBufferLogLine());
-            str.Append(", testSettings = ").Append(getTestSettings());
             str.Append(", logEnabled = ").Append(getLogEnabled());
             str.Append(", maStrength = ").Append(getMaStrength());
             str.Append(", PaintGroupEnabled = ").Append(getPaintGroupEnabled());

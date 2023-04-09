@@ -1,17 +1,21 @@
 ﻿
 using OsEngine.Entity;
 using OsEngine.Logging;
+using OsEngine.Market;
+using OsEngine.Market.Servers.Tester;
 using OsEngine.OsTrader.Panels;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Robots.Squeezy;
 using OsEngine.Robots.Squeezy.Service;
 using OsEngine.Robots.Squeezy.Service.statistic;
+using OsEngine.Robots.Squeezy.Service.statistic.drawdown;
 using OsEngine.Robots.Squeezy.Tester;
 using OsEngine.Robots.Squeezy.Trading;
 using OsEngine.Robots.SqueezyBot.Service;
 using System;
 using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Forms.DataVisualization.Charting;
 
 namespace OsEngine.Robots.Squeezy.Tester
 {
@@ -42,7 +46,6 @@ namespace OsEngine.Robots.Squeezy.Tester
                         , CreateParameter("Сумма для открытия", 10.0m, 5.0m, 50.0m, 5.0m)
                         , CreateParameter("Коэфф мартышки:", 1, 5, 5, 1)
                         , CreateParameter("Количество строк лога в буфере", 1, 1, 1, 1, TAB_SERVICE_CONTROL_NAME)
-                        , CreateParameter("Тестовые параметры", false, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("Логгирование", false, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("Статистика", false, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("%MA ширина канала", 1m, 1m, 1m, 1m)
@@ -57,6 +60,8 @@ namespace OsEngine.Robots.Squeezy.Tester
             generalParameters.setRulerStepProfit(CreateParameter("Рулетка, шаг профита", 1m, 1m, 1m, 1m, TAB_SERVICE_RULER_NAME));
             generalParameters.setRulerStepLoss(CreateParameter("Рулетка, шаг лосса", 1m, 1m, 1m, 1m, TAB_SERVICE_RULER_NAME));
 
+            generalParameters.setTgAlertEnabled(CreateParameter("Телеграмм оповещения :", false, TAB_SERVICE_CONTROL_NAME));
+            generalParameters.setStand(CreateParameter("Контур :", "ИФТ", TAB_SERVICE_CONTROL_NAME));
             addSeparateParameter();
             addSeparateParameter();
 
@@ -113,17 +118,7 @@ namespace OsEngine.Robots.Squeezy.Tester
                         , CreateParameter("%StopLoss FlatSell", 3m, 0.0m, 1.0m, 10.0m)
                         , CreateParameter("Количество баров до выхода FlatSell", 2, 0, 30, 1)
                         );
-            //==Панель с техническими параметрами: ======================================================================================================================
-            addSeparateParameter(TAB_SERVICE_CONTROL_NAME);
-            GroupParametersTester testTest = new GroupParametersTester(
-                          GroupType.TestTest
-                        , CreateParameter("Включить TestTest торговлю", true, TAB_SERVICE_CONTROL_NAME)
-                        , CreateParameter("%Триггер отложенного ордера TestTest", 1.5m, 0.0m, 0.5m, 5.0m, TAB_SERVICE_CONTROL_NAME)
-                        , CreateParameter("%TakeProfit TestTest", 1.5m, 0.0m, 0.5m, 5.0m, TAB_SERVICE_CONTROL_NAME)
-                        , CreateParameter("%StopLoss TestTest", 3m, 0.0m, 1.0m, 10.0m, TAB_SERVICE_CONTROL_NAME)
-                        , CreateParameter("Количество баров до выхода TestTest", 2, 0, 30, 1, TAB_SERVICE_CONTROL_NAME)
-                        );
-            //===========================================================================================================================================================
+           
             groupParametersTesterService = new GroupParametersTesterService();
             groupParametersTesterService.addGroupParameters(upBuy);
             groupParametersTesterService.addGroupParameters(upSell);
@@ -131,22 +126,39 @@ namespace OsEngine.Robots.Squeezy.Tester
             groupParametersTesterService.addGroupParameters(dnSell);
             groupParametersTesterService.addGroupParameters(flatBuy);
             groupParametersTesterService.addGroupParameters(flatSell);
-            groupParametersTesterService.addGroupParameters(testTest);
+            
+            string uniqPart = BOT_NAME + "_" + NameStrategyUniq + ".txt";
+            string logFileName = "C:\\1_LOGS\\log_" + uniqPart;
+            string stDrawdownFilePath = "C:\\1_LOGS\\stDrawdown\\statistic_" + uniqPart;
+            string stSlTpFilePath = "C:\\1_LOGS\\stSlTp\\statistic_" + uniqPart;
 
-            string statisticFileName = "C:\\1_LOGS\\" + BOT_NAME + "_" + NameStrategyUniq;
-            string statisticProfitPath = "C:\\1_LOGS\\stat\\statisticProfit.txt"; //+ BOT_NAME + "_" + NameStrategyUniq + ".txt";
-            StatisticService statisticService = new StatisticService(statisticFileName + "_statistic.txt", statisticProfitPath, generalParameters.getStatisticEnabled(), generalParameters.getRulerStepSqueezy());
-
-            LogService logService = new LogService(statisticFileName + "_log.txt", generalParameters.getLogEnabled(), generalParameters.getCountBufferLogLine(), tab);
-            eventServiceTester = new EventServiceTester(tab, generalParameters, groupParametersTesterService, logService, statisticService);
+            LogService logService = new LogService(logFileName, generalParameters.getLogEnabled(), generalParameters.getCountBufferLogLine(), tab);
+            TgService tgService = new TgService(generalParameters.getTgAlertEnabled(), generalParameters.getStand(), NameStrategyUniq);
+            StDrawdownService stDrawdownService = new StDrawdownService(generalParameters.getStatisticEnabled(), stDrawdownFilePath);
+            StSlTpService stSlTpService = new StSlTpService(generalParameters.getOnlyRuler(), stSlTpFilePath, generalParameters.getRulerStepSqueezy());
+            eventServiceTester = new EventServiceTester(tab, generalParameters, groupParametersTesterService, logService, stDrawdownService, stSlTpService,  tgService);
 
             tab.CandleFinishedEvent += candleFinishedEventLogic;
             tab.PositionClosingSuccesEvent += positionClosingSuccesEventLogic;
             tab.PositionOpeningSuccesEvent += positionOpeningSuccesEventLogic;
             ParametrsChangeByUser += parametrsChangeByUserLogic;
+
+            if (startProgram == StartProgram.IsTester || startProgram == StartProgram.IsOsOptimizer)
+            {
+                TesterServer testerServer = (TesterServer)ServerMaster.GetServers()[0];
+                testerServer.TestingStartEvent += testingStartEventLogic;
+                testerServer.TestingEndEvent += testingEndEventLogic;
+            }
         }
 
-
+        private void testingEndEventLogic()
+        {
+            eventServiceTester.testingEndEventLogic();
+        }
+        private void testingStartEventLogic()
+        {
+            eventServiceTester.testingStartEventLogic();
+        }
         private void parametrsChangeByUserLogic()
         {
             eventServiceTester.parametrsChangeByUserLogic();

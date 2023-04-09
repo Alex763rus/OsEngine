@@ -48,7 +48,7 @@ namespace OsEngine.Robots.Squeezy.Trading
         private BotTabSimple tab;
         private int counter = 0;
 
-        public EventServiceDevelop(BotTabSimple tab, GeneralParametersTrading generalParameters, GroupParametersTradingService groupParametersService, LogService logService, StatisticService statisticService)
+        public EventServiceDevelop(BotTabSimple tab, GeneralParametersTrading generalParameters, GroupParametersTradingService groupParametersService, LogService logService)
         {
             this.generalParameters = generalParameters;
             this.groupParametersService = groupParametersService;

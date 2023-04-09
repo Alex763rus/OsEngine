@@ -18,7 +18,7 @@ namespace OsEngine.Robots.Squeezy.Service.statistic
         public static void showStatistic()
         {
             StringBuilder sb = new StringBuilder();
-            DirectoryInfo directoryInfo = new DirectoryInfo("C:\\1_LOGS");
+            DirectoryInfo directoryInfo = new DirectoryInfo("C:\\1_LOGS\\stDrawdown");
             FileInfo [] fileinfo = directoryInfo.GetFiles();
             foreach (FileInfo file in fileinfo)
             {

@@ -2,6 +2,7 @@
 using OsEngine.OsTrader.Panels;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Robots.Squeezy.Service;
+using OsEngine.Robots.Squeezy.Service.statistic.drawdown;
 using OsEngine.Robots.Squeezy.Tester;
 using OsEngine.Robots.SqueezyBot.Service;
 using System;
@@ -39,7 +40,6 @@ namespace OsEngine.Robots.Squeezy.Trading
                         , CreateParameter("Коэфф мартышки:", 1, 1, 1, 1)
                         , CreateParameter("%Триггер старта", 0.5m, 0.5m, 0.5m, 0.5m)
                         , CreateParameter("Количество строк лога в буфере", 1, 0, 1, 1, TAB_SERVICE_CONTROL_NAME)
-                        , CreateParameter("Тестовые параметры", false, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("Логгирование", true, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("Статистика", false, TAB_SERVICE_CONTROL_NAME)
                         , CreateParameter("%MA ширина канала", 4m, 4m, 4m, 4m)
@@ -128,17 +128,17 @@ namespace OsEngine.Robots.Squeezy.Trading
             groupParametersTradingService.addGroupParameters(flatSell);
             groupParametersTradingService.addGroupParameters(testTest);
 
-            string logPath = "C:\\1_LOGS\\" + BOT_NAME + "_" + NameStrategyUniq;
-            string statisticProfitPath = "C:\\1_LOGS\\stat\\" + BOT_NAME + "_" + NameStrategyUniq;
-            StatisticService statisticService = new StatisticService(logPath + "_statistic.txt", statisticProfitPath, generalParametersTrading.getStatisticEnabled(), 0);
-            logService = new LogService(logPath + "_log.txt", generalParametersTrading.getLogEnabled(), generalParametersTrading.getCountBufferLogLine(), tab);
+            string uniqPart = BOT_NAME + "_" + NameStrategyUniq + ".txt";
+            string logFileName = "C:\\1_LOGS\\log_" + uniqPart;
+            string stDrawdownFilePath = "C:\\1_LOGS\\stDrawdown\\statistic_" + uniqPart;
+            StDrawdownService stDrawdownService = new StDrawdownService(generalParametersTrading.getStatisticEnabled(), stDrawdownFilePath + "_11.txt");
+            logService = new LogService(logFileName, generalParametersTrading.getLogEnabled(), generalParametersTrading.getCountBufferLogLine(), tab);
             TgService tgService = new TgService(generalParametersTrading.getTgAlertEnabled(), generalParametersTrading.getStand(), NameStrategyUniq);
             tgService.sendSqueezyStart(VERSION);
 
-            eventServiceTrading = new EventServiceTrading(tab, generalParametersTrading, groupParametersTradingService, logService, statisticService, tgService);
-            eventServiceDevelop = new EventServiceDevelop(tab, generalParametersTrading, groupParametersTradingService, logService, statisticService);
+            eventServiceTrading = new EventServiceTrading(tab, generalParametersTrading, groupParametersTradingService, logService, stDrawdownService, tgService);
+            eventServiceDevelop = new EventServiceDevelop(tab, generalParametersTrading, groupParametersTradingService, logService);
             setEventService();
-
 
             tab.CandleFinishedEvent += candleFinishedEventLogic;
             tab.PositionClosingSuccesEvent += positionClosingSuccesEventLogic;

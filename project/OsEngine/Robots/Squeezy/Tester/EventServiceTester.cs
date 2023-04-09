@@ -5,13 +5,16 @@ using OsEngine.Entity;
 using OsEngine.Market.Servers.Bitfinex.BitfitnexEntity;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Robots.Squeezy.Service;
+using OsEngine.Robots.Squeezy.Service.statistic.drawdown;
 using OsEngine.Robots.Squeezy.Service.ZigZag;
 using OsEngine.Robots.Squeezy.Trading;
 using OsEngine.Robots.SqueezyBot;
 using OsEngine.Robots.SqueezyBot.Service;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
+using System.Windows.Controls;
 using Position = OsEngine.Entity.Position;
 using Side = OsEngine.Entity.Side;
 
@@ -28,8 +31,10 @@ namespace OsEngine.Robots.Squeezy.Tester
         private LogService logService;
         private PaintService paintService;
         private VolumeSumService volumeSumService;
-        private StatisticService statisticService;
-        private ZigZagService zigZagService;
+        private TgService tgService;
+        //statistic:
+        private StDrawdownService stDrawdownService;
+        private StSlTpService stSlTpService;
 
 
         private DirectionType directionTypeCurrent; //Направление текущего бара по МА. 
@@ -38,26 +43,30 @@ namespace OsEngine.Robots.Squeezy.Tester
         private decimal priceForPaintSqueezy;       //Цена чтобы рисовать сквизы. Заполняется единажды
         DateTime timeStartPaintGroup;               //Время начала тренда
         private bool isStart;                       //Признак начала работы
-        public EventServiceTester(BotTabSimple tab, GeneralParametersTester generalParameters, GroupParametersTesterService groupParametersService,  LogService logService, StatisticService statisticService)
+        public EventServiceTester(BotTabSimple tab, GeneralParametersTester generalParameters, GroupParametersTesterService groupParametersService,  LogService logService, StDrawdownService stDrawdownService, StSlTpService stSlTpService, TgService tgService)
         {
             this.tab = tab;
             this.generalParameters = generalParameters;
             this.groupParametersService = groupParametersService;
             this.logService = logService;
-            this.statisticService = statisticService;
+            this.stDrawdownService = stDrawdownService;
+            this.stSlTpService = stSlTpService;
+            this.tgService = tgService;
+            init();
+        }
 
+        private void init()
+        {
+            isStart = true;
             movingAverageService = new MovingAverageService(tab, generalParameters);
             dealService = new DealService(tab, generalParameters, logService);
             countBarService = new CountBarService();
             paintService = new PaintService(tab);
             lockCurrentDirection = false;
-            isStart = true;
-            //zigZagService = new ZigZagService(12, 1.0m, 3, paintService);
+            stSlTpService.deleteStatisticFile();
         }
-
         public void candleFinishedEventLogic(List<Candle> candles)
         {
-            //zigZagService.calcNewCandle(candles[candles.Count - 1]);
             //Для тестовой среды: Если мало баров или нет медленной, ничего не делаем:
             if (candles.Count <= 2 || movingAverageService.getMaLastValueSlow() == 0)
             {
@@ -67,12 +76,12 @@ namespace OsEngine.Robots.Squeezy.Tester
             {
                 volumeSumService = new VolumeSumService(generalParameters.getVolumeSum(), generalParameters.getCoeffMonkey(), logService);
                 movingAverageService.updateMaLen();
-                logBotSettings();
                 paintService.deleteAllChartElement();
                 priceForPaintGroup = MathService.getValueAddPercent(candles[candles.Count - 1].Low, generalParameters.getPaintGroup());
                 timeStartPaintGroup = candles[candles.Count - 1].TimeStart;
                 priceForPaintSqueezy = MathService.getValueAddPercent(candles[candles.Count - 1].Low, generalParameters.getPaintSqueezy());
-                statisticService.rulerNewTestLogic(tab.TabName, generalParameters.getRulerStepSqueezy(), generalParameters.getRulerStepProfit(), generalParameters.getRulerStepLoss());
+                stSlTpService.startTestInit(tab.TabName, generalParameters.getRulerStepSqueezy(), generalParameters.getRulerStepProfit(), generalParameters.getRulerStepLoss());
+                logBotSettings();
                 isStart = false;
             }
             decimal candleLow1 = candles[candles.Count - 1].Low;
@@ -82,19 +91,18 @@ namespace OsEngine.Robots.Squeezy.Tester
             GroupType groupTypeBuy;
             if (generalParameters.getOnlyRuler())
             {
-                
                 directionTypeCurrent = getDirectionType();
                 groupTypeSell = getGroupType(Side.Sell);
                 groupTypeBuy = getGroupType(Side.Buy);
 
-                statisticService.rulerCandleFinishedEventLogic(candles[candles.Count - 1], generalParameters.getRulerStepProfit(), generalParameters.getRulerStepLoss());
+                stSlTpService.candleFinishedEventLogic(candles[candles.Count - 1], generalParameters.getRulerStepProfit(), generalParameters.getRulerStepLoss());
                 if (candleHigh1 > MathService.getValueAddPercent(candleClose2, 1.0m))
                 {
-                    statisticService.rulerSqueezyLogic(groupTypeSell, Side.Sell, candleClose2, candleHigh1, generalParameters);
+                    stSlTpService.newSqueezyLogic(groupTypeSell, Side.Sell, candleClose2, candleHigh1, generalParameters.getRulerBarCount());
                 }
                 if (candleLow1 < MathService.getValueSubtractPercent(candleClose2, 1.0m))
                 {
-                    statisticService.rulerSqueezyLogic(groupTypeBuy, Side.Buy, candleClose2, candleLow1, generalParameters);
+                    stSlTpService.newSqueezyLogic(groupTypeBuy, Side.Buy, candleClose2, candleLow1, generalParameters.getRulerBarCount());
                 }
                 return;
             }
@@ -119,7 +127,7 @@ namespace OsEngine.Robots.Squeezy.Tester
 
             groupTypeSell = getGroupType(Side.Sell);
             groupTypeBuy = getGroupType(Side.Buy);
-            statisticService.candleFinishedEventLogic(groupTypeBuy, groupTypeSell, dealService, candles[candles.Count - 1]);
+            stDrawdownService.candleFinishedEventLogic(groupTypeBuy, groupTypeSell, dealService);
 
             //Sell:
             GroupParametersTester groupParameters;
@@ -147,7 +155,7 @@ namespace OsEngine.Robots.Squeezy.Tester
                         dealService.openDeal(Side.Sell, groupParameters.getGroupType().ToString(), "Вход по рынку", volumeSumService.getVolumeSum(Side.Sell));
                         countBarService.setLimitBarSell(groupParameters.getCountBarForClose());
                         squeezyType = SqueezyType.Sell;
-                        statisticService.newSqueezyLogic(groupTypeSell, Side.Sell, candleClose2, candleHigh1, groupParameters);
+                        stDrawdownService.newSqueezyLogic(groupTypeSell, Side.Sell, candleClose2, candleHigh1);
                     }
                 }
             }
@@ -180,7 +188,7 @@ namespace OsEngine.Robots.Squeezy.Tester
                         dealService.openDeal(Side.Buy, groupParameters.getGroupType().ToString(), "Вход по рынку", volumeSumService.getVolumeSum(Side.Buy));
                         countBarService.setLimitBarBuy(groupParameters.getCountBarForClose());
                         squeezyType = SqueezyType.Buy;
-                        statisticService.newSqueezyLogic(groupTypeBuy, Side.Buy, candleClose2, candleLow1, groupParameters);
+                        stDrawdownService.newSqueezyLogic(groupTypeBuy, Side.Buy, candleClose2, candleLow1);
                     }
                 }
             }
@@ -282,7 +290,7 @@ namespace OsEngine.Robots.Squeezy.Tester
         private DirectionType getDirectionType()
         {
             DirectionType directionType;
-            if (generalParameters.getTestSettings() || movingAverageService.getMaLastValueSlow() == 0)
+            if (movingAverageService.getMaLastValueSlow() == 0)
             {
                 directionType = DirectionType.Test;
             }
@@ -325,8 +333,10 @@ namespace OsEngine.Robots.Squeezy.Tester
             movingAverageService.updateMaLen();
             paintService.deleteAllChartElement();
             volumeSumService = new VolumeSumService(generalParameters.getVolumeSum(), generalParameters.getCoeffMonkey(), logService);
-            statisticService.setIsEnabled(generalParameters.getStatisticEnabled());
+            stDrawdownService.setIsEnabled(generalParameters.getStatisticEnabled());
+            stSlTpService.setIsEnabled(generalParameters.getStatisticEnabled());
             logService.setup(generalParameters.getLogEnabled(), generalParameters.getCountBufferLogLine());
+            tgService.setIsEnabled(generalParameters.getTgAlertEnabled());
         }
 
         public void bestBidAskChangeEventLogic(decimal bestBid, decimal bestAsk)
@@ -335,6 +345,19 @@ namespace OsEngine.Robots.Squeezy.Tester
 
         public void positionOpeningFailEventLogic(Position position)
         {
+        }
+
+        public void testingEndEventLogic()
+        {
+            if (stSlTpService.getIsEnabled())
+            {
+                tgService.sendStatistic(stSlTpService.getFilePathStatistic());
+            }
+        }
+
+        public void testingStartEventLogic()
+        {
+            init();
         }
     }
 }

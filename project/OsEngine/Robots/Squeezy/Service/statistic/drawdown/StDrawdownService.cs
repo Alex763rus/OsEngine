@@ -13,11 +13,13 @@ namespace OsEngine.Robots.Squeezy.Service.statistic.drawdown
 {
     public class StDrawdownService
     {
+        private bool isEnabled;
         private string filePathStatistic;
         public StatisticResult[] statisticResults;
 
-        public StDrawdownService(string filePathStatistic)
+        public StDrawdownService(bool isEnabled, string filePathStatistic)
         {
+            this.isEnabled = isEnabled;
             this.filePathStatistic = filePathStatistic;
             statisticResults = new StatisticResult[Enum.GetValues(typeof(GroupType)).Length];
             for (int i = 0; i < statisticResults.Length; ++i)
@@ -26,8 +28,17 @@ namespace OsEngine.Robots.Squeezy.Service.statistic.drawdown
             }
         }
 
+        public void setIsEnabled(bool isEnabled)
+        {
+            this.isEnabled = isEnabled;
+        }
+
         public void newSqueezyLogic(GroupType groupType, Side side, decimal lastCandleClose, decimal price)
         {
+            if (!isEnabled)
+            {
+                return;
+            }
             decimal percent = 0;
             if (side == Side.Sell)
             {
@@ -45,6 +56,10 @@ namespace OsEngine.Robots.Squeezy.Service.statistic.drawdown
         }
         public void candleFinishedEventLogic(GroupType groupTypeBuy, GroupType groupTypeSell, DealService dealService)
         {
+            if (!isEnabled)
+            {
+                return;
+            }
             if (dealService.hasOpendeal(Side.Sell))
             {
                 Position sellPosition = dealService.getSellPosition();

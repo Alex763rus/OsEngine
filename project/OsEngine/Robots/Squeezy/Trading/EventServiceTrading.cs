@@ -10,6 +10,7 @@ using OsEngine.Market.Servers.Bitfinex.BitfitnexEntity;
 using OsEngine.Market.Servers.GateIo.Futures.Response;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Robots.Squeezy.Service;
+using OsEngine.Robots.Squeezy.Service.statistic.drawdown;
 using OsEngine.Robots.Squeezy.Tester;
 using OsEngine.Robots.Squeezy.Trading;
 using OsEngine.Robots.SqueezyBot;
@@ -42,9 +43,10 @@ namespace OsEngine.Robots.Squeezy.Trading
         private DealService dealService;
         private PaintService paintService;
         private LogService logService;
-        private StatisticService statisticService;
         private TgService tgService;
         private VolumeSumService volumeSumService;
+        //Статистика:
+        private StDrawdownService stDrawdownService;
 
         private Candle lastCandle;
         private decimal candleTriggerStartBid; //триггер того что есть сквиз. Изменяется с завершением бара
@@ -62,12 +64,12 @@ namespace OsEngine.Robots.Squeezy.Trading
         private DateTime timeStartGroup;            //Время начала действия группы
         private bool isStart;                       //Признак начала работы
 
-        public EventServiceTrading(BotTabSimple tab, GeneralParametersTrading generalParameters, GroupParametersTradingService groupParametersService, LogService logService, StatisticService statisticService, TgService tgService)
+        public EventServiceTrading(BotTabSimple tab, GeneralParametersTrading generalParameters, GroupParametersTradingService groupParametersService, LogService logService, StDrawdownService stDrawdownService, TgService tgService)
         {
             this.generalParameters = generalParameters;
             this.groupParametersService = groupParametersService;
             this.logService = logService;
-            this.statisticService = statisticService;
+            this.stDrawdownService = stDrawdownService;
             this.tgService = tgService;
   
             movingAverageService = new MovingAverageService(tab, generalParameters);
@@ -120,7 +122,7 @@ namespace OsEngine.Robots.Squeezy.Trading
             barCounterProcess(dealSupportSell, dealSupportBuy);
 
             DirectionType directionTypeTmp = getDirectionType();
-            statisticService.candleFinishedEventLogic(getGroupType(Side.Buy), getGroupType(Side.Sell), dealService, lastCandle);
+            stDrawdownService.candleFinishedEventLogic(getGroupType(Side.Buy), getGroupType(Side.Sell), dealService);
 
             if (directionTypeCurrent != directionTypeTmp)
             {
@@ -246,12 +248,12 @@ namespace OsEngine.Robots.Squeezy.Trading
                 }
                 GroupType groupTypeCurrent = getGroupType(side);
 
-                if(groupTypeCurrent == GroupType.TestTest && !generalParameters.getTestSettings())
+                if(groupTypeCurrent == GroupType.TestTest)
                 {
                     return;
                 }
                 GroupParametersTrading groupParameters = groupParametersService.getGroupParameters(groupTypeCurrent);
-                statisticService.newSqueezyLogic(groupTypeCurrent, side, lastCandle.Close, price, groupParameters);
+                stDrawdownService.newSqueezyLogic(groupTypeCurrent, side, lastCandle.Close, price);
 
                 decimal priceOpenLimit = 0 ;
                 if(side == Side.Sell)
@@ -400,7 +402,7 @@ namespace OsEngine.Robots.Squeezy.Trading
             movingAverageService.updateMaLen();
             paintService.deleteAllChartElement();
             volumeSumService = new VolumeSumService(generalParameters.getVolumeSum(), generalParameters.getCoeffMonkey(), logService);
-            statisticService.setIsEnabled(generalParameters.getStatisticEnabled());
+            stDrawdownService.setIsEnabled(generalParameters.getStatisticEnabled());
             logService.setup(generalParameters.getLogEnabled(), generalParameters.getCountBufferLogLine());
             tgService.setIsEnabled(generalParameters.getTgAlertEnabled());
         }
@@ -434,7 +436,7 @@ namespace OsEngine.Robots.Squeezy.Trading
         private DirectionType getDirectionType()
         {
             DirectionType directionType;
-            if (generalParameters.getTestSettings() || movingAverageService.getMaLastValueSlow() == 0)
+            if (movingAverageService.getMaLastValueSlow() == 0)
             {
                 directionType = DirectionType.Test;
             }

@@ -28,6 +28,17 @@ namespace OsEngine.Robots.Squeezy.Service
                 //skip
             }
         }
+        public static void deleteFile(string filePath)
+        {
+            try
+            {
+                File.Delete(filePath);
+            }
+            catch (Exception ex)
+            {
+                //skip
+            }
+        }
 
     }
 }
