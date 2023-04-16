@@ -20,6 +20,7 @@ using OsEngine.Language;
 using OsEngine.Logging;
 using OsEngine.Market;
 using OsEngine.PrimeSettings;
+using System.Threading;
 
 namespace OsEngine.Charts.CandleChart
 {
@@ -45,9 +46,8 @@ namespace OsEngine.Charts.CandleChart
             if(_startProgram != StartProgram.IsOsOptimizer)
             {
                 Load();
+                _canSave = true;
             }
-           
-            _canSave = true;
         }
 
         private void UpDateChartPainter()
@@ -441,11 +441,7 @@ namespace OsEngine.Charts.CandleChart
                     {
                         _indicators[i].NeadToReloadEvent -= indicator_NeadToReloadEvent;
                         _indicators[i].Clear();
-
-                        if (_startProgram != StartProgram.IsOsOptimizer)
-                        {
-                            _indicators[i].Delete();
-                        }
+                        _indicators[i].Delete();
                     }
 
                     _indicators.Clear();
@@ -1240,26 +1236,35 @@ namespace OsEngine.Charts.CandleChart
         /// draw alerts
         /// порисовать алерты
         /// </summary>
-        public void PaintAlerts(List<IIAlert> alertArray)
+        public void PaintAlerts(List<IIAlert> alertArray, bool needToWait)
         {
             try
             {
                 _alertArray = alertArray;
 
-                EraseAlertFromChart(alertArray);
-
-                if (alertArray == null || _myCandles == null)
+                if (_alertArray == null || _myCandles == null)
                 {
                     return;
                 }
 
-                for (int i = 0; i < alertArray.Count; i++)
+                for (int i = 0; i < _alertArray.Count; i++)
                 {
-                    if (alertArray[i].TypeAlert == AlertType.ChartAlert)
+                    if (_alertArray[i].TypeAlert == AlertType.ChartAlert)
                     {
                         if(ChartCandle != null)
                         {
-                            ChartCandle.PaintAlert((AlertToChart)alertArray[i]);
+                            AlertToChart alertCur = (AlertToChart)_alertArray[i];
+
+                            if(alertCur.Lines == null)
+                            {
+                                continue;
+                            }
+
+                            if (ChartCandle.HaveAlertOnChart(alertCur) == false)
+                            {
+                                ChartCandle.RemoveAlert(alertCur);
+                                ChartCandle.ProcessAlert(alertCur, needToWait);
+                            }
                         }
                     }
                 }
@@ -1273,17 +1278,19 @@ namespace OsEngine.Charts.CandleChart
             }
         }
 
-        /// <summary>
-        /// to clear chart of Alert
-        /// очистить чарт от Алертов
-        /// </summary>
-        private void EraseAlertFromChart(List<IIAlert> alertArray)
+        public void DeleteAlert(IIAlert alert)
         {
-            if(ChartCandle != null)
+            if(ChartCandle == null)
             {
-                ChartCandle.ClearAlerts(alertArray);
+                return;
+            }
+
+            if(alert.TypeAlert== AlertType.ChartAlert)
+            {
+                ChartCandle.RemoveAlert((AlertToChart)alert);
             }
         }
+
 
         // candle drawing прорисовка свечей
 
@@ -1341,6 +1348,16 @@ namespace OsEngine.Charts.CandleChart
 
                 _lastCount = candles.Count;
                 _lastPrice = candles[candles.Count - 1].Close;
+
+                bool isFirstTime = false;
+
+                if(_myCandles == null 
+                    || _myCandles.Count - candles.Count < -5
+                    || _myCandles.Count - candles.Count >  5)
+                {
+                    isFirstTime = true;
+                }
+
                 _myCandles = candles;
 
                 if (ChartCandle != null)
@@ -1366,14 +1383,13 @@ namespace OsEngine.Charts.CandleChart
                     }
                     if (canReload && _alertArray != null && _alertArray.Count != 0)
                     {
-                        ChartCandle.ClearAlerts(_alertArray);
-
-                        for (int i = 0; _alertArray != null && i < _alertArray.Count; i++)
+                        if(isFirstTime)
                         {
-                            if (_alertArray[i].TypeAlert == AlertType.ChartAlert)
-                            {
-                                ChartCandle.PaintAlert((AlertToChart)_alertArray[i]);
-                            }
+                            PaintAlerts(_alertArray, true);
+                        }
+                        else
+                        {
+                            PaintAlerts(_alertArray, false);
                         }
                     }
                 }
@@ -1448,16 +1464,8 @@ namespace OsEngine.Charts.CandleChart
                 {
                     ChartCandle.ProcessElem(_chartElements[i]);
                 }
-
-                ChartCandle.ClearAlerts(_alertArray);
-
-                for (int i = 0; _alertArray != null && i < _alertArray.Count; i++)
-                {
-                    if (_alertArray[i].TypeAlert == AlertType.ChartAlert)
-                    {
-                        ChartCandle.PaintAlert((AlertToChart)_alertArray[i]);
-                    }
-                }
+               
+                PaintAlerts(_alertArray, true);
             }
             catch (Exception error)
             {
@@ -1508,6 +1516,11 @@ namespace OsEngine.Charts.CandleChart
             for (int i = 0; _indicators != null && i < _indicators.Count; i++)
             {
                 _indicators[i].Clear();
+            }
+
+            if(_alertArray != null)
+            {
+                _alertArray = null;
             }
         }
 
