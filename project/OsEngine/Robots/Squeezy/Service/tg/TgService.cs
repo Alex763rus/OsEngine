@@ -29,6 +29,16 @@ namespace OsEngine.Robots.Squeezy.Trading
             this.botName = botName;
         }
 
+        public void sendPing()
+        {
+            if (!isEnabled)
+            {
+                return;
+            }
+            Ping ping = new Ping(stand, botName);
+            SendTestPostRequest("http://localhost:8080/squeezy/ping", SimpleJson.SerializeObject(ping));
+        }
+
         public void sendStatistic(string fileName)
         {
             if (!isEnabled)

@@ -8,7 +8,7 @@ namespace OsEngine.Robots.Squeezy.Trading
         private StrategyParameterDecimal triggerStartPercent;
         private StrategyParameterBool clearJournal;
         private StrategyParameterBool developMode;
-
+        private StrategyParameterBool tgPingEnabled;        //пингование тг робота
         public GeneralParametersTrading(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow
             , StrategyParameterInt maLenFast, StrategyParameterDecimal volumePercent, StrategyParameterDecimal volumeSum
             , StrategyParameterInt coeffMonkey, StrategyParameterDecimal triggerStartPercent, StrategyParameterInt countBufferLogLine
@@ -18,6 +18,16 @@ namespace OsEngine.Robots.Squeezy.Trading
         : base(maLenSlow, maCorridorHighSlow, maLenFast, volumePercent, volumeSum, coeffMonkey, countBufferLogLine, logEnabled, statisticEnabled, maStrength, paintGroupEnabled, paintGroup, paintSqueezyEnabled, paintSqueezy)
         {
             this.triggerStartPercent = triggerStartPercent;
+        }
+
+        public void setTgPingEnabled(StrategyParameterBool tgPingEnabled)
+        {
+            this.tgPingEnabled = tgPingEnabled;
+        }
+
+        public bool getTgPingEnabled()
+        {
+            return tgPingEnabled.ValueBool;
         }
 
         public void setDevelopMode(StrategyParameterBool developMode)

@@ -51,6 +51,7 @@ namespace OsEngine.Robots.Squeezy.Trading
             generalParametersTrading.setClearJournal(CreateParameter("Очистка журнала:", true));
             generalParametersTrading.setDevelopMode(CreateParameter("Режим разработчика:", false, TAB_SERVICE_CONTROL_NAME));
             generalParametersTrading.setTgAlertEnabled(CreateParameter("Телеграмм оповещения :", false, TAB_SERVICE_CONTROL_NAME));
+            generalParametersTrading.setTgPingEnabled(CreateParameter("Пинг ТГ Бот :", false, TAB_SERVICE_CONTROL_NAME));
             generalParametersTrading.setStand(CreateParameter("Контур :", "ИФТ", TAB_SERVICE_CONTROL_NAME));
             addSeparateParameter();
             addSeparateParameter();
