@@ -249,6 +249,12 @@ namespace OsEngine.Robots.SqueezyBot
             }
         }
 
+        public void closeAllDeals(string signalCloseType)
+        {
+            closeAllDeals(Side.Buy, signalCloseType);
+            closeAllDeals(Side.Sell, signalCloseType);
+        }
+
         public void setSlTp(Position position, decimal sl, decimal tp)
         {
             position.StopOrderPrice = sl;

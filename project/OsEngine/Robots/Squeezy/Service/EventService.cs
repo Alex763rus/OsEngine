@@ -18,5 +18,7 @@ namespace OsEngine.Robots.Squeezy.Trading
         public void positionClosingSuccesEventLogic(Position position);
         public void positionOpeningFailEventLogic(Position position);
 
+        public void testingEndEventLogic();
+        public void testingStartEventLogic();
     }
 }

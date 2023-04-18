@@ -172,5 +172,15 @@ namespace OsEngine.Robots.Squeezy.Trading
         {
             //throw new NotImplementedException();
         }
+
+        public void testingEndEventLogic()
+        {
+            //throw new NotImplementedException();
+        }
+
+        public void testingStartEventLogic()
+        {
+            //throw new NotImplementedException();
+        }
     }
 }

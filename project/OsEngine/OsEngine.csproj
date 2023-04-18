@@ -965,6 +965,11 @@
     <Compile Include="Robots\Squeezy\Trading\GroupParametersTrading.cs" />
     <Compile Include="Robots\Squeezy\Trading\GroupParametersTradingService.cs" />
     <Compile Include="Robots\Squeezy\Trading\SqueezyTrading.cs" />
+    <Compile Include="Robots\Squeezy\Trend\EventServiceTrend.cs" />
+    <Compile Include="Robots\Squeezy\Trend\GeneralParametersTrend.cs" />
+    <Compile Include="Robots\Squeezy\Trend\GroupParametersTrendService.cs" />
+    <Compile Include="Robots\Squeezy\Trend\GroupParametersTrend.cs" />
+    <Compile Include="Robots\Squeezy\Trend\SqueezyTrend.cs" />
     <Compile Include="Robots\TechSapmles\BlockIndicatorsSample.cs" />
     <Compile Include="Robots\TechSapmles\CustomParamsUseBotSample.cs" />
     <Compile Include="Robots\OnScriptIndicators\FundBalanceDivergenceBot.cs" />

@@ -33,7 +33,7 @@ using Side = OsEngine.Entity.Side;
 
 namespace OsEngine.Robots.Squeezy.Trading
 {
-    public class EventServiceTrading:EventService
+    public class EventServiceTrading : EventService
     {
 
         private GeneralParametersTrading generalParameters;
@@ -556,6 +556,16 @@ namespace OsEngine.Robots.Squeezy.Trading
                 .Append(" Position:").Append(LogService.getPositionNumber(dealSupportSell.getPosition()))
                 ;
             sendLogSystemLocal(currentInfo.ToString());
+        }
+
+        public void testingEndEventLogic()
+        {
+            //throw new NotImplementedException();
+        }
+
+        public void testingStartEventLogic()
+        {
+            //throw new NotImplementedException();
         }
     }
 

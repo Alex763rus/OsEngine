@@ -25,6 +25,7 @@ using OsEngine.Robots.OnScriptIndicators;
 using OsEngine.Robots.Screeners;
 using OsEngine.Robots.Squeezy.Trading;
 using OsEngine.Robots.Squeezy.Tester;
+using OsEngine.Robots.Squeezy.Trend;
 
 namespace OsEngine.Robots
 {
@@ -41,6 +42,7 @@ namespace OsEngine.Robots
             List<string> result = new List<string>();
             result.Add(SqueezyTester.BOT_NAME);
             result.Add(SqueezyTrading.BOT_NAME);
+            result.Add(SqueezyTrend.BOT_NAME);
             result.Add("SmaScreener");
             result.Add("Fisher");
             result.Add("Engine");
@@ -124,7 +126,10 @@ namespace OsEngine.Robots
             {
                 bot = new SqueezyTrading(name, startProgram);
             }
-
+            if (nameClass == SqueezyTrend.BOT_NAME)
+            {
+                bot = new SqueezyTrend(name, startProgram);
+            }
             if (isScript && bot == null)
             {
                 bot = CreateScriptStrategyByName(nameClass, name, startProgram);
