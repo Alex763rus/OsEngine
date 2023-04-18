@@ -108,20 +108,10 @@ namespace OsEngine.Robots.SqueezyBot
 
         public Position openSellDeal(string signalType, string comment, decimal volumeSum = 0)
         {
-            decimal volume;
-            if (volumeSum == 0)
-            {
-                volume = Math.Round(generalParametersTester.getVolumePercent() / 100.0m * tab.Portfolio.ValueCurrent, 0);
-            }
-            else
-            {
-                volume = volumeSum;
-            }
-             
             Position position = null;
             for (int i = 0; i < COUNT_TRY_OPEN_DEAL; ++i)
             {
-                position = tab.SellAtMarket(volume, signalType);
+                position = tab.SellAtMarket(volumeSum, signalType);
                 if (position != null)
                 {
                     position.Comment = comment;
@@ -130,12 +120,12 @@ namespace OsEngine.Robots.SqueezyBot
                 }
                 else
                 {
-                    sendLogErrorLocal("Не удалось открыть SellAtMarket позицию " + " volume:" + volume + ", signalType:" + signalType + " попытка:" + i);
+                    sendLogErrorLocal("Не удалось открыть SellAtMarket позицию " + " volume:" + volumeSum + ", signalType:" + signalType + " попытка:" + i);
                 }
             }
             if (position == null)
             {
-                sendLogErrorLocal("Не смогли открыть SellAtMarket позицию volume:" + volume + ", signalType:" + signalType + " за " + COUNT_TRY_OPEN_DEAL + " попыток");
+                sendLogErrorLocal("Не смогли открыть SellAtMarket позицию volume:" + volumeSum + ", signalType:" + signalType + " за " + COUNT_TRY_OPEN_DEAL + " попыток");
             }
             return position;
         }
@@ -154,19 +144,10 @@ namespace OsEngine.Robots.SqueezyBot
         }
         public Position openBuyDeal(string signalType, string comment, decimal volumeSum = 0)
         {
-            decimal volume;
-            if (volumeSum == 0)
-            {
-                volume = Math.Round(generalParametersTester.getVolumePercent() / 100.0m * tab.Portfolio.ValueCurrent, 0);
-            }
-            else
-            {
-                volume = volumeSum;
-            }
             Position position = null;
             for (int i = 0; i < COUNT_TRY_OPEN_DEAL; ++i)
             {
-                position = tab.BuyAtMarket(volume, signalType);
+                position = tab.BuyAtMarket(volumeSum, signalType);
                 if (position != null)
                 {
                     position.Comment = comment;
@@ -175,12 +156,12 @@ namespace OsEngine.Robots.SqueezyBot
                 }
                 else
                 {
-                    sendLogErrorLocal("Не удалось открыть  заявку. volume:" + volume + ", signalType:" + signalType + " попытка:" + i);
+                    sendLogErrorLocal("Не удалось открыть  заявку. volume:" + volumeSum + ", signalType:" + signalType + " попытка:" + i);
                 }
             }
             if (position == null)
             {
-                sendLogErrorLocal("Не смогли открыть позицию volume:" + volume + ", signalType:" + signalType + " за " + COUNT_TRY_OPEN_DEAL + " попыток");
+                sendLogErrorLocal("Не смогли открыть позицию volume:" + volumeSum + ", signalType:" + signalType + " за " + COUNT_TRY_OPEN_DEAL + " попыток");
             }
             return position;
         }

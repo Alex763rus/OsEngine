@@ -25,25 +25,21 @@ namespace OsEngine.Robots.Squeezy.Trend
     {
         private BotTabSimple tab;
         private GeneralParametersTrend generalParameters;
-        private GroupParametersTrendService groupParametersService;
         private MovingAverageService movingAverageService;
         private DealService dealService;
         private LogService logService;
         private PaintService paintService;
         private VolumeSumService volumeSumService;
-        private TgService tgService;
 
         private DirectionType directionTypeCurrent; //Направление текущего бара по МА. 
         private decimal priceForPaintGroup;         //Цена чтобы рисовать тренд. Заполняется единажды.
         DateTime timeStartPaintGroup;               //Время начала тренда
         private bool isStart;                       //Признак начала работы
-        public EventServiceTrend(BotTabSimple tab, GeneralParametersTrend generalParameters, GroupParametersTrendService groupParametersService,  LogService logService, TgService tgService)
+        public EventServiceTrend(BotTabSimple tab, GeneralParametersTrend generalParameters, LogService logService)
         {
             this.tab = tab;
             this.generalParameters = generalParameters;
-            this.groupParametersService = groupParametersService;
             this.logService = logService;
-            this.tgService = tgService;
             init();
         }
 
@@ -69,7 +65,6 @@ namespace OsEngine.Robots.Squeezy.Trend
                 paintService.deleteAllChartElement();
                 priceForPaintGroup = MathService.getValueAddPercent(candles[candles.Count - 1].Low, generalParameters.getPaintGroup());
                 timeStartPaintGroup = candles[candles.Count - 1].TimeStart;
-                logBotSettings();
                 isStart = false;
             }
             DirectionType directionTypeTmp = getDirectionType();
@@ -156,28 +151,12 @@ namespace OsEngine.Robots.Squeezy.Trend
             return directionType;
         }
 
-        private void logBotSettings()
-        {
-            logService.sendLogSystem("");
-            logService.sendLogSystem("");
-            logService.sendLogSystem(LogService.SEPARATE_PARAMETR_LINE);
-            logService.sendLogSystem(LogService.SEPARATE_PARAMETR_LINE);
-            logService.sendLogSystem(SqueezyTrend.BOT_NAME + " init successful, started version bot:" + SqueezyTrend.VERSION);
-            logService.sendLogSystem(generalParameters.getAllSettings());
-            List<GroupParametersTrend> listParameters = groupParametersService.getGroupsParameters();
-            foreach (var groupParameters in listParameters)
-            {
-                logService.sendLogSystem(groupParameters.getAllGroupParameters());
-            }
-        }
-
         public void parametrsChangeByUserLogic()
         {
             movingAverageService.updateMaLen();
             paintService.deleteAllChartElement();
             volumeSumService = new VolumeSumService(generalParameters.getVolumeSum(), generalParameters.getCoeffMonkey(), logService);
             logService.setup(generalParameters.getLogEnabled(), generalParameters.getCountBufferLogLine());
-            tgService.setIsEnabled(generalParameters.getTgAlertEnabled());
         }
 
         public void bestBidAskChangeEventLogic(decimal bestBid, decimal bestAsk)

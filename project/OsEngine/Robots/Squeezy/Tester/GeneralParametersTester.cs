@@ -10,9 +10,7 @@ namespace OsEngine.Robots.Squeezy.Tester
     public class GeneralParametersTester
     {
         private StrategyParameterInt maLenSlow;
-        private StrategyParameterDecimal maCorridorHighSlow;
         private StrategyParameterInt maLenFast;
-        private StrategyParameterDecimal volumePercent;
         private StrategyParameterDecimal volumeSum;
         private StrategyParameterInt coeffMonkey;
         private StrategyParameterInt countBufferLogLine;
@@ -33,15 +31,13 @@ namespace OsEngine.Robots.Squeezy.Tester
         private StrategyParameterBool tgAlertEnabled;
         private StrategyParameterString stand;
 
-        public GeneralParametersTester(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow, StrategyParameterInt maLenFast
-            , StrategyParameterDecimal volumePercent, StrategyParameterDecimal volumeSum, StrategyParameterInt coeffMonkey, StrategyParameterInt countBufferLogLine
+        public GeneralParametersTester(StrategyParameterInt maLenSlow, StrategyParameterInt maLenFast
+            , StrategyParameterDecimal volumeSum, StrategyParameterInt coeffMonkey, StrategyParameterInt countBufferLogLine
             , StrategyParameterBool logEnabled, StrategyParameterBool statisticEnabled, StrategyParameterDecimal maStrength, StrategyParameterBool paintGroupEnabled, StrategyParameterDecimal paintGroup
             , StrategyParameterBool paintSqueezyEnabled, StrategyParameterDecimal paintSqueezy)
         {
             this.maLenSlow = maLenSlow;
-            this.maCorridorHighSlow = maCorridorHighSlow;
             this.maLenFast = maLenFast;
-            this.volumePercent = volumePercent;
             this.volumeSum = volumeSum;
             this.coeffMonkey = coeffMonkey;
             this.countBufferLogLine = countBufferLogLine;
@@ -147,18 +143,9 @@ namespace OsEngine.Robots.Squeezy.Tester
             return maLenSlow.ValueInt;
         }
 
-        public decimal getMaCorridorHighSlow()
-        {
-            return maCorridorHighSlow.ValueDecimal;
-        }
         public int getMaLenFast()
         {
             return maLenFast.ValueInt;
-        }
-
-        public decimal getVolumePercent()
-        {
-            return volumePercent.ValueDecimal;
         }
 
         public int getCountBufferLogLine()
@@ -178,9 +165,7 @@ namespace OsEngine.Robots.Squeezy.Tester
         {
             StringBuilder str = new StringBuilder(" Settings:");
             str.Append(" maLenSlow = ").Append(getMaLenSlow());
-            str.Append(", maCorridorHighSlow = ").Append(getMaCorridorHighSlow());
             str.Append(", maLenFast = ").Append(getMaLenFast());
-            str.Append(", volumePercent = ").Append(getVolumePercent());
             str.Append(", volumeSum = ").Append(getVolumeSum());
             str.Append(", coeffMonkey = ").Append(getCoeffMonkey());
             str.Append(", countBufferLogLine = ").Append(getCountBufferLogLine());

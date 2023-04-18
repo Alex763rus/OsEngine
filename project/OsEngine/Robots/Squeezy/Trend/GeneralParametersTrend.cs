@@ -9,13 +9,13 @@ namespace OsEngine.Robots.Squeezy.Trend
         private StrategyParameterBool clearJournal;
         private StrategyParameterBool developMode;
         private StrategyParameterBool tgPingEnabled;        //пингование тг робота
-        public GeneralParametersTrend(StrategyParameterInt maLenSlow, StrategyParameterDecimal maCorridorHighSlow
-            , StrategyParameterInt maLenFast, StrategyParameterDecimal volumePercent, StrategyParameterDecimal volumeSum
+        public GeneralParametersTrend(StrategyParameterInt maLenSlow
+            , StrategyParameterInt maLenFast, StrategyParameterDecimal volumeSum
             , StrategyParameterInt coeffMonkey, StrategyParameterDecimal triggerStartPercent, StrategyParameterInt countBufferLogLine
             , StrategyParameterBool logEnabled, StrategyParameterBool statisticEnabled, StrategyParameterDecimal maStrength
             , StrategyParameterBool paintGroupEnabled, StrategyParameterDecimal paintGroup, StrategyParameterBool paintSqueezyEnabled
             , StrategyParameterDecimal paintSqueezy)
-        : base(maLenSlow, maCorridorHighSlow, maLenFast, volumePercent, volumeSum, coeffMonkey, countBufferLogLine, logEnabled, statisticEnabled, maStrength, paintGroupEnabled, paintGroup, paintSqueezyEnabled, paintSqueezy)
+        : base(maLenSlow, maLenFast, volumeSum, coeffMonkey, countBufferLogLine, logEnabled, statisticEnabled, maStrength, paintGroupEnabled, paintGroup, paintSqueezyEnabled, paintSqueezy)
         {
             this.triggerStartPercent = triggerStartPercent;
         }

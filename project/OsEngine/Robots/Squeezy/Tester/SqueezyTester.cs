@@ -40,9 +40,7 @@ namespace OsEngine.Robots.Squeezy.Tester
 
             generalParameters = new GeneralParametersTester(
                           CreateParameter("MovingAverage длина slow", 20, 0, 50, 5)
-                        , CreateParameter("%ОТКЛЮЧЕН MovingAverage высота коридора slow", 0.1m, 0.0m, 1.0m, 0.1m)
                         , CreateParameter("MovingAverage длина fast", 10, 0, 50, 5)
-                        , CreateParameter("ОТКЛЮЧЕН % депозита для сделки", 10.0m, 5.0m, 50.0m, 5.0m)
                         , CreateParameter("Сумма для открытия", 10.0m, 5.0m, 50.0m, 5.0m)
                         , CreateParameter("Коэфф мартышки:", 1, 5, 5, 1)
                         , CreateParameter("Количество строк лога в буфере", 1, 1, 1, 1, TAB_SERVICE_CONTROL_NAME)

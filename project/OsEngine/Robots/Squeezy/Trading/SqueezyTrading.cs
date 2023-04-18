@@ -33,9 +33,7 @@ namespace OsEngine.Robots.Squeezy.Trading
             
             generalParametersTrading = new GeneralParametersTrading(
                           CreateParameter("MovingAverage длина slow", 130, 0, 130, 5)
-                        , CreateParameter("ОТКЛЮЧЕН %MovingAverage высота коридора slow ", 0.4m, 0.4m, 0.4m, 0.4m)
                         , CreateParameter("MovingAverage длина fast", 10, 0, 10, 1)
-                        , CreateParameter("ОТКЛЮЧЕН % депозита для сделки", 10.0m, 10.0m, 50.0m, 5.0m)
                         , CreateParameter("Сумма для открытия", 100.0m, 0.0m, 100.0m, 5.0m)
                         , CreateParameter("Коэфф мартышки:", 1, 1, 1, 1)
                         , CreateParameter("%Триггер старта", 0.5m, 0.5m, 0.5m, 0.5m)
