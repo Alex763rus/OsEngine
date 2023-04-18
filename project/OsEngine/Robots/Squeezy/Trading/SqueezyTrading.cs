@@ -136,6 +136,7 @@ namespace OsEngine.Robots.Squeezy.Trading
             logService = new LogService(logFileName, generalParametersTrading.getLogEnabled(), generalParametersTrading.getCountBufferLogLine(), tab);
             TgService tgService = new TgService(generalParametersTrading.getTgAlertEnabled(), generalParametersTrading.getStand(), NameStrategyUniq);
             tgService.sendSqueezyStart(VERSION);
+            PingService.getInstance(generalParametersTrading.getTgPingEnabled(), tgService);
 
             eventServiceTrading = new EventServiceTrading(tab, generalParametersTrading, groupParametersTradingService, logService, stDrawdownService, tgService);
             eventServiceDevelop = new EventServiceDevelop(tab, generalParametersTrading, groupParametersTradingService, logService);

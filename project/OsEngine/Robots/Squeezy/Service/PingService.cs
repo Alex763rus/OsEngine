@@ -44,8 +44,8 @@ namespace OsEngine.Robots.Squeezy.Service
         {
             while (true)
             {
-                Thread.Sleep(PING_TIME_OUT);
                 tgService.sendPing();
+                Thread.Sleep(PING_TIME_OUT);
             }
         }
     }
