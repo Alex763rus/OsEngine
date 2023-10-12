@@ -12,7 +12,7 @@ namespace OsEngine.Robots.Squeezy.Service
         private int levelBuy;
         private int levelSell;
         private decimal [] calculatedSum;
-        private decimal [] coeffForCalculateSum;
+        private int [] coeffForCalculateSum;
 
         public VolumeSumService(decimal volumeSum, int coeffMonkey, LogService logService)
         {
@@ -22,17 +22,17 @@ namespace OsEngine.Robots.Squeezy.Service
 
         private void calculateAndSetVolumeSum(decimal volumeSum, int coeffMonkey)
         {
-            coeffForCalculateSum = new decimal[coeffMonkey];
-            decimal coeffSum = 0.0m;
+            coeffForCalculateSum = new int[coeffMonkey];
+            int coeffSum = 0;
             for (int i = 0; i < coeffForCalculateSum.Length; ++i)
             {
                 if (i == 0)
                 {
-                    coeffForCalculateSum[i] = 1.0m;
+                    coeffForCalculateSum[i] = 1;
                 }
                 else if (i == 1)
                 {
-                    coeffForCalculateSum[i] = 2.0m;
+                    coeffForCalculateSum[i] = 2;
                 }
                 else
                 {

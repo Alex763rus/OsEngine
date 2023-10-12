@@ -141,7 +141,7 @@ namespace OsEngine.Robots.Squeezy.Tester
             tab.PositionOpeningSuccesEvent += positionOpeningSuccesEventLogic;
             ParametrsChangeByUser += parametrsChangeByUserLogic;
 
-            if (startProgram == StartProgram.IsTester || startProgram == StartProgram.IsOsOptimizer)
+            if (startProgram == StartProgram.IsTester)
             {
                 TesterServer testerServer = (TesterServer)ServerMaster.GetServers()[0];
                 testerServer.TestingStartEvent += testingStartEventLogic;

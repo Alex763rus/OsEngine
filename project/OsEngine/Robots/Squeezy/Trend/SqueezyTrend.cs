@@ -70,7 +70,7 @@ namespace OsEngine.Robots.Squeezy.Trend
             ParametrsChangeByUser += parametrsChangeByUserLogic;
             ParametrsChangeByUser += testingStartEventLogic;
 
-            if (startProgram == StartProgram.IsTester || startProgram == StartProgram.IsOsOptimizer)
+            if (startProgram == StartProgram.IsTester)
             {
                 TesterServer testerServer = (TesterServer)ServerMaster.GetServers()[0];
                 testerServer.TestingStartEvent += testingStartEventLogic;
