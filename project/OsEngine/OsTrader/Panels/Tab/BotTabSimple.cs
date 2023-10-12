@@ -9,6 +9,7 @@ using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms.Integration;
 using System.Windows.Shapes;
@@ -26,17 +27,16 @@ using OsEngine.Market.Servers.Optimizer;
 using OsEngine.Market.Servers.Tester;
 using OsEngine.OsTrader.Panels.Tab.Internal;
 
+
 namespace OsEngine.OsTrader.Panels.Tab
 {
     /// <summary>
-    /// trading tab / 
-    /// вкладка для торговли 
+    /// Trading tab
     /// </summary>
     public class BotTabSimple : IIBotTab
     {
         /// <summary>
-        /// constructor / 
-        /// конструктор
+        /// Constructor
         /// </summary>
         public BotTabSimple(string name, StartProgram startProgram)
         {
@@ -91,11 +91,34 @@ namespace OsEngine.OsTrader.Panels.Tab
                 ManualPositionSupport.LogMessageEvent += SetNewLogMessage;
                 ManualPositionSupport.DontOpenOrderDetectedEvent += _dealOpeningWatcher_DontOpenOrderDetectedEvent;
 
-                _stopsOpener = new List<PositionOpenerToStop>();
-
                 _acebergMaker = new AcebergMaker();
                 _acebergMaker.NewOrderNeadToExecute += _acebergMaker_NewOrderNeadToExecute;
                 _acebergMaker.NewOrderNeadToCansel += _acebergMaker_NewOrderNeadToCansel;
+
+                if (startProgram == StartProgram.IsOsTrader)
+                {// load the latest orders for robots to the general storage in ServerMaster
+
+                    List<Order> oldOrders = _journal.GetLastOrdersToPositions(50);
+
+                    for (int i = 0; i < oldOrders.Count; i++)
+                    {
+                        _connector.LoadOrderInOrderStorage(oldOrders[i]);
+                    }
+                }
+
+                PositionOpenerToStop = new List<PositionOpenerToStopLimit>();
+
+                if (startProgram == StartProgram.IsOsTrader)
+                {
+                    List<PositionOpenerToStopLimit> stopLimitsFromJournal = _journal.LoadStopLimits();
+
+                    if (stopLimitsFromJournal != null &&
+                        stopLimitsFromJournal.Count > 0)
+                    {
+                        PositionOpenerToStop = stopLimitsFromJournal;
+                    }
+                    UpdateStopLimits();
+                }
             }
             catch (Exception error)
             {
@@ -104,17 +127,27 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// the connector has started the reconnection procedure / 
-        /// коннектор запустил процедуру переподключения
+        /// source type
         /// </summary>
-        /// <param name="securityName">security name / имя бумаги</param>
-        /// <param name="timeFrame">timeframe DateTime/ таймфрейм бумаги</param>
-        /// <param name="timeFrameSpan">timeframe TimeSpan / таймфрейм в виде времени</param>
-        /// <param name="portfolioName">porrtfolio name / номер портфеля</param>
-        /// <param name="serverType">server type / тип сервера у коннектора</param>
+        public BotTabType TabType 
+        {
+            get
+            {
+                return BotTabType.Simple;
+            } 
+        }
+
+        /// <summary>
+        /// The connector has started the reconnection procedure
+        /// </summary>
+        /// <param name="securityName">security name</param>
+        /// <param name="timeFrame">timeframe DateTime</param>
+        /// <param name="timeFrameSpan">timeframe TimeSpan</param>
+        /// <param name="portfolioName">porrtfolio name</param>
+        /// <param name="serverType">server type</param>
         void _connector_ConnectorStartedReconnectEvent(string securityName, TimeFrame timeFrame, TimeSpan timeFrameSpan, string portfolioName, ServerType serverType)
         {
-            if(_chartMaster == null)
+            if (_chartMaster == null)
             {
                 return;
             }
@@ -127,19 +160,18 @@ namespace OsEngine.OsTrader.Panels.Tab
             _chartMaster.SetNewSecurity(securityName, _connector.TimeFrameBuilder, portfolioName, serverType);
         }
 
-        // control / управление
+        // control
 
         /// <summary>
-        /// start drawing this robot / 
-        /// начать прорисовку этого робота
+        /// Start drawing this robot
         /// </summary>
         public void StartPaint(Grid gridChart, WindowsFormsHost hostChart, WindowsFormsHost hostGlass, WindowsFormsHost hostOpenDeals,
-                     WindowsFormsHost hostCloseDeals, Rectangle rectangleChart, WindowsFormsHost hostAlerts, TextBox textBoxLimitPrice, Grid gridChartControlPanel)
+                     WindowsFormsHost hostCloseDeals, Rectangle rectangleChart, WindowsFormsHost hostAlerts, TextBox textBoxLimitPrice, Grid gridChartControlPanel, TextBox textBoxVolume)
         {
             try
             {
                 _chartMaster?.StartPaint(gridChart, hostChart, rectangleChart);
-                _marketDepthPainter?.StartPaint(hostGlass, textBoxLimitPrice);
+                _marketDepthPainter?.StartPaint(hostGlass, textBoxLimitPrice, textBoxVolume);
                 _journal?.StartPaint(hostOpenDeals, hostCloseDeals);
 
                 _alerts?.StartPaint(hostAlerts);
@@ -153,8 +185,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// stop drawing this robot / 
-        /// остановить прорисовку этого робота
+        /// Stop drawing this robot
         /// </summary>
         public void StopPaint()
         {
@@ -172,20 +203,76 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// unique robot name / 
-        /// уникальное имя робота
+        /// Unique robot name
         /// </summary>
         public string TabName { get; set; }
 
         /// <summary>
-        /// tab num /
-        /// номер вкладки
+        /// Tab number
         /// </summary>
         public int TabNum { get; set; }
+		
+        /// <summary>
+        /// has this BotTabScreener tab been created
+        /// создана ли вкладка BotTabScreener
+        /// </summary>
+
+        public bool IsCreatedByScreener { get; set; }
 
         /// <summary>
-        /// clear data in the robot / 
-        /// очистить данные в роботе
+        /// are events sent to the top from the tab?
+        /// </summary>
+        public bool EventsIsOn 
+        { 
+            get 
+            {
+                if(Connector == null)
+                {
+                    return false;
+                }
+
+                return Connector.EventsIsOn;
+            } 
+            set 
+            {
+                if (Connector == null)
+                {
+                    return;
+                }
+
+                if(Connector.EventsIsOn == value)
+                {
+                    return;
+                }
+
+                Connector.EventsIsOn = value;
+            } 
+        
+        }
+
+        /// <summary>
+        /// custom name robot
+        /// пользовательское имя робота
+        /// </summary>
+        public string NameStrategy
+        {
+            get
+            {
+                if (!TabName.Contains("tab"))
+                {
+                    return "";
+                }
+                string _nameStrategy = TabName.Remove(TabName.LastIndexOf("tab"), TabName.Length - TabName.LastIndexOf("tab"));
+                if (IsCreatedByScreener == true)
+                {
+                    _nameStrategy = _nameStrategy.Remove(0, _nameStrategy.IndexOf(" ") + 1);
+                }
+                return _nameStrategy;
+            }
+        }		
+
+        /// <summary>
+        /// Clear
         /// </summary>
         public void Clear()
         {
@@ -222,14 +309,13 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// remove the robot and all child structures / 
-        /// удалить робота и все дочерние структуры
+        /// Remove tab and all child structures
         /// </summary>
         public void Delete()
         {
             try
             {
-                if(_connector != null)
+                if (_connector != null)
                 {
                     _connector.OrderChangeEvent -= _connector_OrderChangeEvent;
                     _connector.MyTradeEvent -= _connector_MyTradeEvent;
@@ -247,7 +333,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                     _connector = null;
                 }
 
-                if(_journal != null)
+                if (_journal != null)
                 {
                     _journal.PositionStateChangeEvent -= _journal_PositionStateChangeEvent;
                     _journal.PositionNetVolumeChangeEvent -= _journal_PositionNetVolumeChangeEvent;
@@ -264,14 +350,14 @@ namespace OsEngine.OsTrader.Panels.Tab
                     _alerts = null;
                 }
 
-                if(_acebergMaker != null)
+                if (_acebergMaker != null)
                 {
                     _acebergMaker.NewOrderNeadToExecute -= _acebergMaker_NewOrderNeadToExecute;
                     _acebergMaker.NewOrderNeadToCansel -= _acebergMaker_NewOrderNeadToCansel;
                     _acebergMaker = null;
                 }
 
-                if(ManualPositionSupport != null)
+                if (ManualPositionSupport != null)
                 {
                     ManualPositionSupport.DontOpenOrderDetectedEvent -= _dealOpeningWatcher_DontOpenOrderDetectedEvent;
                     ManualPositionSupport.Delete();
@@ -279,13 +365,13 @@ namespace OsEngine.OsTrader.Panels.Tab
                     ManualPositionSupport = null;
                 }
 
-                if(_chartMaster!= null)
+                if (_chartMaster != null)
                 {
                     _chartMaster.IndicatorUpdateEvent -= _chartMaster_IndicatorUpdateEvent;
                     _chartMaster.Delete();
                     _chartMaster.LogMessageEvent -= SetNewLogMessage;
                     _chartMaster = null;
-                }                
+                }
 
                 if (_marketDepthPainter != null)
                 {
@@ -294,18 +380,18 @@ namespace OsEngine.OsTrader.Panels.Tab
                     _marketDepthPainter = null;
                 }
 
-                if(_stopsOpener != null)
+                if (PositionOpenerToStop != null)
                 {
-                    _stopsOpener.Clear();
-                    _stopsOpener = null;
+                    PositionOpenerToStop.Clear();
+                    PositionOpenerToStop = null;
                 }
 
-                if(_dealCreator != null)
+                if (_dealCreator != null)
                 {
                     _dealCreator = null;
                 }
 
-                if(StartProgram != StartProgram.IsOsOptimizer)
+                if (StartProgram != StartProgram.IsOsOptimizer)
                 {
                     if (File.Exists(@"Engine\" + TabName + @"SettingsBot.txt"))
                     {
@@ -317,6 +403,11 @@ namespace OsEngine.OsTrader.Panels.Tab
                 {
                     DeleteBotEvent(TabNum);
                 }
+
+                if(TabDeletedEvent != null)
+                {
+                    TabDeletedEvent();
+                }
             }
             catch (Exception error)
             {
@@ -325,8 +416,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// whether the connector is connected to download data / 
-        /// подключен ли коннектор на скачивание данных
+        /// Whether the connector is connected to download data
         /// </summary>
         public bool IsConnected
         {
@@ -343,8 +433,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// connector is ready to send Orders / 
-        /// готов ли коннектор к выставленю заявок
+        /// Connector is ready to send Orders
         /// </summary>
         public bool IsReadyToTrade
         {
@@ -360,16 +449,14 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// the program that created the object / 
-        /// программа создавшая объект
+        /// The program that created the object
         /// </summary>
         public StartProgram StartProgram;
 
-        // logging / работа с логом
+        // logging
 
         /// <summary>
-        /// put a new message in the log / 
-        /// положить в лог новое сообщение
+        /// Put a new message in the log
         /// </summary>
         public void SetNewLogMessage(string message, LogMessageType messageType)
         {
@@ -384,20 +471,17 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// outgoing message for log / 
-        /// исходящее сообщение для лога
+        /// New log message event
         /// </summary>
         public event Action<string, LogMessageType> LogMessageEvent;
 
-        // indicator management / менеджмент индикаторов
+        // indicator management
 
         /// <summary>
-        /// create indicator / 
-        /// создать индикатор
+        /// Create indicator
         /// </summary>
-        /// <param name="indicator">indicator / индикатор</param>
-        /// <param name="nameArea">the name of the area on which it will be placed. Default: "Prime" / название области на которую он будет помещён. По умолчанию: "Prime"</param>
-        /// <returns></returns>
+        /// <param name="indicator">indicator</param>
+        /// <param name="nameArea">the name of the area on which it will be placed. Default: "Prime"</param>
         public IIndicator CreateCandleIndicator(IIndicator indicator, string nameArea)
         {
             if (indicator == null)
@@ -407,12 +491,10 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// create and save indicator / 
-        /// создать и сохранить индикатор
+        /// Create and save indicator
         /// </summary>
-        /// <param name="indicator">indicator / индикатор</param>
-        /// <param name="nameArea">the name of the area on which it will be placed. Default: "Prime" / название области на которую он будет помещён. По умолчанию: "Prime"</param>
-        /// <returns></returns>
+        /// <param name="indicator">indicator</param>
+        /// <param name="nameArea">the name of the area on which it will be placed. Default: "Prime"</param>
         public T CreateIndicator<T>(T indicator, string nameArea = "Prime") where T : IIndicator
         {
             T newIndicator = (T)_chartMaster.CreateIndicator(indicator, nameArea);
@@ -421,8 +503,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// remove indicator / 
-        /// удалить индикатор 
+        /// Remove indicator
         /// </summary>
         public void DeleteCandleIndicator(IIndicator indicator)
         {
@@ -430,8 +511,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// all available indicators in the system / 
-        /// все доступные индикаторы в системе
+        /// All available indicators in the system
         /// </summary>
         public List<IIndicator> Indicators
         {
@@ -445,11 +525,10 @@ namespace OsEngine.OsTrader.Panels.Tab
             }
         }
 
-        // drawing elements / рисование элементов
+        // drawing elements
 
         /// <summary>
-        /// add custom element to the chart / 
-        /// добавить на график пользовательский элемент
+        /// Add custom element to the chart
         /// </summary>
         public void SetChartElement(IChartElement element)
         {
@@ -457,8 +536,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// remove user element from chart / 
-        /// удалить с графика пользовательский элемент
+        /// Remove user element from chart
         /// </summary>
         public void DeleteChartElement(IChartElement element)
         {
@@ -466,8 +544,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// remove all custom elements from the graphic / 
-        /// удалить все пользовательские элементы с графика
+        /// Remove all custom elements from the graphic
         /// </summary>
         public void DeleteAllChartElement()
         {
@@ -475,8 +552,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// get chart information
-        /// получить информацию о чарте
+        /// Get chart information
         /// </summary>
         public string GetChartLabel()
         {
@@ -484,18 +560,17 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// сдвинуть представление чарта вправо до конца
+        /// Move the chart view all the way to the right
         /// </summary>
         public void MoveChartToTheRight()
         {
             _chartMaster.MoveChartToTheRight();
         }
 
-        // closed components / закрытые составные части
+        // closed components
 
         /// <summary>
-        /// class responsible for connecting the tab to the exchange
-        /// класс отвечающий за подключение вкладки к бирже
+        /// Class responsible for connecting the tab to the exchange
         /// </summary>
         public ConnectorCandles Connector
         {
@@ -504,8 +579,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         private ConnectorCandles _connector;
 
         /// <summary>
-        /// an object that holds settings for assembling candles / 
-        /// объект хранящий в себе настройки для сборки свечей
+        /// An object that holds settings for assembling candles
         /// </summary>
         public TimeFrameBuilder TimeFrameBuilder
         {
@@ -520,41 +594,38 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// chart drawing master / 
-        /// мастер прорисовки чарта
+        /// Chart drawing master
         /// </summary>
         private ChartCandleMaster _chartMaster;
 
         /// <summary>
-        /// class drawing a marketDepth / 
-        /// класс прорисовывающий движения стакана котировок
+        /// Class drawing a marketDepth
         /// </summary>
         private MarketDepthPainter _marketDepthPainter;
 
         /// <summary>
-        /// transaction creation wizard / 
-        /// мастер создания сделок
+        /// Transaction creation wizard
         /// </summary>
         public PositionCreator _dealCreator;
 
         /// <summary>
-        /// Journal positions / 
-        /// журнал
+        /// Journal positions
         /// </summary>
         public Journal.Journal _journal;
 
         /// <summary>
-        /// settings maintenance settings / 
-        /// настройки ручного сопровождения
+        /// Settings maintenance settings
         /// </summary>
         public BotManualControl ManualPositionSupport;
 
         /// <summary>
-        /// alerts wizard /
-        /// мастер Алертов
+        /// Alerts wizard
         /// </summary>
         public AlertMaster _alerts;
 
+        /// <summary>
+        /// New alert event
+        /// </summary>
         public event Action AlertSignalEvent;
 
         public ChartCandleMaster GetChartMaster()
@@ -562,17 +633,62 @@ namespace OsEngine.OsTrader.Panels.Tab
             return _chartMaster;
         }
 
-        // properties / свойства 
+        // properties
 
         /// <summary>
-        ///  the status of the server to which the tab is connected /
-        /// статус сервера к которому подключена вкладка
+        /// Flag indicates whether order emulation is enabled in the system
+        /// </summary>
+        public bool EmulatorIsOn
+        {
+            get
+            {
+                if (_connector == null)
+                {
+                    return false;
+                }
+
+                return _connector.EmulatorIsOn;
+            }
+            set
+            {
+                if (_connector == null || _journal == null)
+                {
+                    return;
+                }
+
+                List<Position> openPoses = _journal.OpenPositions;
+
+                if (openPoses.Count > 0)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label192 + this.TabName, LogMessageType.Error);
+                    return;
+                }
+
+                if (_connector.EmulatorIsOn == value)
+                {
+                    return;
+                }
+
+                _connector.EmulatorIsOn = value;
+                _connector.Save();
+
+                if (EmulatorIsOnChangeStateEvent != null)
+                {
+                    EmulatorIsOnChangeStateEvent(value);
+                }
+            }
+        }
+
+        public event Action<bool> EmulatorIsOnChangeStateEvent;
+
+        /// <summary>
+        ///  The status of the server to which the tab is connected
         /// </summary>
         public ServerConnectStatus ServerStatus
         {
             get
             {
-                if(StartProgram == StartProgram.IsOsOptimizer)
+                if (StartProgram == StartProgram.IsOsOptimizer)
                 {
                     return ServerConnectStatus.Connect;
                 }
@@ -589,14 +705,13 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// security to trading / 
-        /// инструмент для торговли
+        /// Security to trading
         /// </summary>
         public Security Securiti
         {
             get
             {
-                if(_connector == null)
+                if (_connector == null)
                 {
                     return null;
                 }
@@ -612,28 +727,28 @@ namespace OsEngine.OsTrader.Panels.Tab
         private Security _security;
 
         /// <summary>
-        /// timeframe data received / 
-        /// таймФрейм получаемых данных
+        /// Timeframe data received
         /// </summary>
         public TimeSpan TimeFrame
         {
-            get { 
-                if(_connector == null)
+            get
+            {
+                if (_connector == null)
                 {
                     return TimeSpan.Zero;
                 }
-                return _connector.TimeFrameTimeSpan; }
+                return _connector.TimeFrameTimeSpan;
+            }
         }
 
         /// <summary>
-        /// trading account / 
-        /// счёт для торговли
+        /// Trading account
         /// </summary>
         public Portfolio Portfolio
         {
             get
             {
-                if(_connector == null)
+                if (_connector == null)
                 {
                     return null;
                 }
@@ -650,7 +765,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         private Portfolio _portfolio;
 
         /// <summary>
-        /// тип комиссии для позиций
+        /// Commission type for positions
         /// </summary>
         public ComissionType ComissionType
         {
@@ -662,11 +777,15 @@ namespace OsEngine.OsTrader.Panels.Tab
                 }
                 return _journal.ComissionType;
             }
-            set { _journal.ComissionType = value; }
+            set
+            {
+                _journal.ComissionType = value;
+                _connector.ComissionType = value;
+            }
         }
 
         /// <summary>
-        /// размер комиссии
+        /// Commission amount
         /// </summary>
         public decimal ComissionValue
         {
@@ -679,12 +798,15 @@ namespace OsEngine.OsTrader.Panels.Tab
 
                 return _journal.ComissionValue;
             }
-            set { _journal.ComissionValue = value; }
+            set
+            {
+                _journal.ComissionValue = value;
+                _connector.ComissionValue = value;
+            }
         }
 
         /// <summary>
-        /// All positions are owned by bot. Open, closed and with errors / 
-        /// все позиции принадлежащие боту. Открытые, закрытые и с ошибками
+        /// All positions are owned by bot. Open, closed and with errors
         /// </summary>
         public List<Position> PositionsAll
         {
@@ -694,18 +816,18 @@ namespace OsEngine.OsTrader.Panels.Tab
                 {
                     return null;
                 }
-                return _journal.AllPosition; }
+                return _journal.AllPosition;
+            }
         }
 
         /// <summary>
-        /// all open, partially open and opening positions owned by bot
-        /// все открытые, частично открытые и открывающиеся позиции принадлежащие боту
+        /// All open, partially open and opening positions owned by bot
         /// </summary>
         public List<Position> PositionsOpenAll
         {
             get
             {
-                if(_journal == null)
+                if (_journal == null)
                 {
                     return null;
                 }
@@ -714,17 +836,15 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// stop-limit orders
-        /// все ожидающие цены ордера бота
+        /// Stop-limit orders
         /// </summary>
-        public List<PositionOpenerToStop> PositionOpenerToStopsAll
+        public List<PositionOpenerToStopLimit> PositionOpenerToStopsAll
         {
-            get { return _stopsOpener; }
+            get { return PositionOpenerToStop; }
         }
 
         /// <summary>
-        /// all closed, error positions owned by bot / 
-        /// все закрытые, с ошибками позиции принадлежащие боту
+        /// All closed, error positions owned by bot
         /// </summary>
         public List<Position> PositionsCloseAll
         {
@@ -739,8 +859,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// last open position / 
-        /// последняя открытая позиция
+        /// Last open position
         /// </summary>
         public Position PositionsLast
         {
@@ -755,8 +874,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// all open positions are short / 
-        /// все открытые позиции шорт
+        /// All open positions are short
         /// </summary>
         public List<Position> PositionOpenShort
         {
@@ -771,8 +889,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// all open positions long / 
-        /// все открытые позиции лонг
+        /// All open positions long
         /// </summary>
         public List<Position> PositionOpenLong
         {
@@ -787,16 +904,15 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// exchange position for security
-        /// позиция на бирже по инструменту
+        /// Exchange position for security
         /// </summary>
-        public PositionOnBoard PositionsOnBoard
+        public List<PositionOnBoard> PositionsOnBoard
         {
             get
             {
                 try
                 {
-                    if (Portfolio == null 
+                    if (Portfolio == null
                         || Securiti == null)
                     {
                         return null;
@@ -804,11 +920,22 @@ namespace OsEngine.OsTrader.Panels.Tab
 
                     List<PositionOnBoard> positionsOnBoard = Portfolio.GetPositionOnBoard();
 
-                    if (positionsOnBoard != null && positionsOnBoard.Count != 0 &&
-                        positionsOnBoard.Find(pose => pose.PortfolioName == Portfolio.Number && pose.SecurityNameCode == Securiti.Name) != null)
+                    List<PositionOnBoard> posesWithMySecurity = new List<PositionOnBoard>();
+
+                    for (int i = 0; positionsOnBoard != null && i < positionsOnBoard.Count; i++)
                     {
-                        return positionsOnBoard.Find(pose => pose.SecurityNameCode == Securiti.Name);
+                        if (positionsOnBoard[i] == null)
+                        {
+                            continue;
+                        }
+
+                        if (positionsOnBoard[i].SecurityNameCode.Contains(Securiti.Name))
+                        {
+                            posesWithMySecurity.Add(positionsOnBoard[i]);
+                        }
                     }
+
+                    return posesWithMySecurity;
                 }
                 catch (Exception error)
                 {
@@ -820,8 +947,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// net position recruited by the robot / 
-        /// нетто позиция набранная роботом
+        /// Net position recruited by the robot
         /// </summary>
         public decimal VolumeNetto
         {
@@ -831,7 +957,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                 {
                     List<Position> openPos = PositionsOpenAll;
 
-                    if(openPos == null)
+                    if (openPos == null)
                     {
                         return 0;
                     }
@@ -844,7 +970,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                         {
                             volume += openPos[i].OpenVolume;
                         }
-                        else // if (openPos[i].Direction == Side.Sell)
+                        else
                         {
                             volume -= openPos[i].OpenVolume;
                         }
@@ -860,8 +986,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// were there closed positions on the current bar / 
-        /// были ли закрытые позиции на текущем баре
+        /// Were there closed positions on the current bar
         /// </summary>
         public bool CheckTradeClosedThisBar()
         {
@@ -892,14 +1017,13 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// all candles of the instrument. Both molded and completed / 
-        /// все свечи инструмента. И формируемые и завершённые
+        /// All candles of the instrument. Both molded and completed
         /// </summary>
         public List<Candle> CandlesAll
         {
             get
             {
-                if(_connector == null)
+                if (_connector == null)
                 {
                     return null;
                 }
@@ -908,8 +1032,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// all candles of the instrument. Only completed / 
-        /// все свечи инструмента. Только завершённые
+        /// All candles of the instrument. Only completed
         /// </summary>
         public List<Candle> CandlesFinishedOnly
         {
@@ -924,8 +1047,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// all instrument trades / 
-        /// все тики по инструменту
+        /// All instrument trades
         /// </summary>
         public List<Trade> Trades
         {
@@ -940,8 +1062,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// server time / 
-        /// текущее время сервера
+        /// Server time
         /// </summary>
         public DateTime TimeServerCurrent
         {
@@ -956,14 +1077,12 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// marketDepth / 
-        /// стакан по инструменту
+        /// MarketDepth
         /// </summary>
         public MarketDepth MarketDepth { get; set; }
 
         /// <summary>
-        /// best selling price / 
-        /// лучшая цена продажи инструмента
+        /// Best selling price
         /// </summary>
         public decimal PriceBestAsk
         {
@@ -978,8 +1097,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// best buy price / 
-        /// лучшая цена покупки инструмента этой вкладки
+        /// Best buy price
         /// </summary>
         public decimal PriceBestBid
         {
@@ -994,8 +1112,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// marketDepth center price /
-        /// цена центра стакана
+        /// MarketDepth center price
         /// </summary>
         public decimal PriceCenterMarketDepth
         {
@@ -1009,11 +1126,10 @@ namespace OsEngine.OsTrader.Panels.Tab
             }
         }
 
-        // call control windows / вызыв окон управления
+        // call control windows
 
         /// <summary>
-        /// show connector settings window / 
-        /// показать окно настроек коннектора
+        /// Show connector settings window
         /// </summary>
         public void ShowConnectorDialog()
         {
@@ -1024,8 +1140,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// show custom settings window / 
-        /// показать индивидуальное окно настроек
+        /// Show custom settings window
         /// </summary>
         public void ShowManualControlDialog()
         {
@@ -1033,38 +1148,81 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// show position closing window / 
-        /// показать окно закрытия позиции
+        /// Show position opening window
         /// </summary>
-        /// <param name="position">position to be closed / позиция которую будем закрывать</param>
+        public void ShowOpenPositionDialog()
+        {
+            BotTabSimple activTab = this;
+
+            for (int i = 0; i < _guisOpenPos.Count; i++)
+            {
+                if (_guisOpenPos[i].Tab.TabName == activTab.TabName)
+                {
+                    _guisOpenPos[i].Activate();
+                    return;
+                }
+            }
+
+            PositionOpenUi2 ui = new PositionOpenUi2(activTab);
+            ui.Show();
+
+            _guisOpenPos.Add(ui);
+
+            ui.Closing += Ui_Closing;
+        }
+
+        private List<PositionOpenUi2> _guisOpenPos = new List<PositionOpenUi2>();
+
+        /// <summary>
+        /// Window close event handler
+        /// </summary>
+        private void Ui_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            try
+            {
+                PositionOpenUi2 myUi = (PositionOpenUi2)sender;
+
+                for (int i = 0; i < _guisOpenPos.Count; i++)
+                {
+                    if (_guisOpenPos[i].Tab.TabName == myUi.Tab.TabName)
+                    {
+                        _guisOpenPos.RemoveAt(i);
+                        return;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
+        private List<PositionCloseUi2> _guisClosePos = new List<PositionCloseUi2>();
+
+        /// <summary>
+        /// Show position closing window
+        /// </summary>
+        /// <param name="position">position to be closed</param>
         public void ShowClosePositionDialog(Position position)
         {
             try
             {
-                ClosePositionUi ui = new ClosePositionUi(position, _connector.BestBid);
-                ui.ShowDialog();
-
-                if (ui.IsAccept == false)
+                for (int i = 0; i < _guisClosePos.Count; i++)
                 {
-                    return;
-                }
-
-                if (ui.OpenType == PositionOpenType.Market)
-                {
-                    CloseAtMarket(position, position.OpenVolume);
-                }
-                else if (ui.OpenType == PositionOpenType.Limit)
-                {
-                    if (ui.Price <= 0)
+                    if (_guisClosePos[i].Position.Number == position.Number)
                     {
+                        _guisClosePos[i].Activate();
+                        _guisClosePos[i].SelectTabIndx(ClosePositionType.Limit);
                         return;
                     }
-                    CloseAtLimit(position, ui.Price, position.OpenVolume);
                 }
-                else if (ui.OpenType == PositionOpenType.Aceberg)
-                {
-                    CloseAtAceberg(position, ui.Price, position.OpenVolume, ui.CountAcebertOrder);
-                }
+
+
+                PositionCloseUi2 ui = new PositionCloseUi2(this, ClosePositionType.Limit, position);
+                ui.Show();
+                _guisClosePos.Add(ui);
+                ui.Closing += Ui_Closing1;
+
             }
             catch (Exception error)
             {
@@ -1072,259 +1230,43 @@ namespace OsEngine.OsTrader.Panels.Tab
             }
         }
 
-        /// <summary>
-        /// show position opening window / 
-        /// показать окно открытия позиции
-        /// </summary>
-        public void ShowOpenPositionDialog()
+        private void Ui_Closing1(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            try
+            PositionCloseUi2 myUi = (PositionCloseUi2)sender;
+
+            for (int i = 0; i < _guisClosePos.Count; i++)
             {
-                if (Securiti == null ||
-                    _connector.IsConnected == false)
+                if (_guisClosePos[i].Position.Number == myUi.Position.Number)
                 {
+                    _guisClosePos.RemoveAt(i);
                     return;
                 }
-
-                PositionOpenUi ui = new PositionOpenUi(_connector.BestBid, Securiti.Name);
-                ui.ShowDialog();
-
-                if (ui.IsAccept == false)
-                {
-                    return;
-                }
-
-                if (ui.OpenType == PositionOpenType.Market)
-                {
-                    if (ui.Side == Side.Buy)
-                    {
-                        BuyAtMarket(ui.Volume);
-                    }
-                    else
-                    {
-
-                        SellAtMarket(ui.Volume);
-                    }
-                }
-
-                else if (ui.OpenType == PositionOpenType.Limit)
-                {
-                    if (ui.Price <= 0)
-                    {
-                        return;
-                    }
-                    if (ui.Side == Side.Buy)
-                    {
-                        BuyAtLimit(ui.Volume, ui.Price);
-                    }
-                    else
-                    {
-                        SellAtLimit(ui.Volume, ui.Price);
-                    }
-                }
-
-                else if (ui.OpenType == PositionOpenType.Aceberg)
-                {
-                    if (ui.Price <= 0)
-                    {
-                        return;
-                    }
-
-                    if (ui.CountAcebertOrder == 1 || ui.CountAcebertOrder == 0 ||
-                        ui.Volume == 1)
-                    {
-                        if (ui.Side == Side.Buy)
-                        {
-                            BuyAtLimit(ui.Volume, ui.Price);
-                        }
-                        else
-                        {
-                            SellAtLimit(ui.Volume, ui.Price);
-                        }
-                    }
-                    else
-                    {
-                        if (ui.Side == Side.Buy)
-                        {
-                            BuyAtAceberg(ui.Volume, ui.Price, ui.CountAcebertOrder);
-                        }
-                        else
-                        {
-                            SellAtAceberg(ui.Volume, ui.Price, ui.CountAcebertOrder);
-                        }
-                    }
-                }
-            }
-            catch (Exception error)
-            {
-                SetNewLogMessage(error.ToString(), LogMessageType.Error);
             }
         }
 
         /// <summary>
-        /// show window for position modification / 
-        /// показать окно для модификации позиции
-        /// </summary>
-        public void ShowPositionModificateDialog(Position position)
-        {
-            try
-            {
-                PositionModificateUi ui = new PositionModificateUi(_connector.BestBid, Securiti.Name);
-                ui.ShowDialog();
-
-                if (ui.IsAccept == false)
-                {
-                    return;
-                }
-
-                if (ui.OpenType == PositionOpenType.Market)
-                {
-                    if (ui.Side == Side.Buy)
-                    {
-                        if (position.Direction == Side.Buy)
-                        {
-                            BuyAtMarketToPosition(position, ui.Volume);
-                        }
-                        else
-                        {
-                            if (position.OpenVolume > ui.Volume)
-                            {
-                                CloseAtMarket(position, ui.Volume);
-                            }
-                            else
-                            {
-                                CloseAtMarket(position, position.OpenVolume);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (position.Direction == Side.Sell)
-                        {
-                            SellAtMarketToPosition(position, ui.Volume);
-                        }
-                        else
-                        {
-                            if (position.OpenVolume > ui.Volume)
-                            {
-                                CloseAtMarket(position, ui.Volume);
-                            }
-                            else
-                            {
-                                CloseAtMarket(position, position.OpenVolume);
-                            }
-                        }
-                    }
-                }
-
-                else if (ui.OpenType == PositionOpenType.Limit ||
-                    ui.OpenType == PositionOpenType.Aceberg && ui.CountAcebertOrder == 1)
-                {
-                    if (ui.Side == Side.Buy)
-                    {
-                        if (position.Direction == Side.Buy)
-                        {
-                            BuyAtLimitToPosition(position, ui.Price, ui.Volume);
-                        }
-                        else
-                        {
-                            if (position.OpenVolume > ui.Volume)
-                            {
-                                CloseAtLimit(position, ui.Price, ui.Volume);
-                            }
-                            else
-                            {
-                                CloseAtLimit(position, ui.Price, position.OpenVolume);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (position.Direction == Side.Sell)
-                        {
-                            SellAtLimitToPosition(position, ui.Price, ui.Volume);
-                        }
-                        else
-                        {
-                            if (position.OpenVolume > ui.Volume)
-                            {
-                                CloseAtLimit(position, ui.Price, ui.Volume);
-                            }
-                            else
-                            {
-                                CloseAtLimit(position, ui.Price, position.OpenVolume);
-                            }
-                        }
-                    }
-                }
-                else if (ui.OpenType == PositionOpenType.Aceberg)
-                {
-                    if (ui.Side == Side.Buy)
-                    {
-                        if (position.Direction == Side.Buy)
-                        {
-                            BuyAtAcebergToPosition(position, ui.Price, ui.Volume, ui.CountAcebertOrder);
-                        }
-                        else
-                        {
-                            if (position.OpenVolume > ui.Volume)
-                            {
-                                CloseAtAceberg(position, ui.Price, ui.Volume, ui.CountAcebertOrder);
-                            }
-                            else
-                            {
-                                CloseAtAceberg(position, ui.Price, position.OpenVolume, ui.CountAcebertOrder);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (position.Direction == Side.Sell)
-                        {
-                            SellAtAcebergToPosition(position, ui.Price, ui.Volume, ui.CountAcebertOrder);
-                        }
-                        else
-                        {
-                            if (position.OpenVolume > ui.Volume)
-                            {
-                                CloseAtAceberg(position, ui.Price, ui.Volume, ui.CountAcebertOrder);
-                            }
-                            else
-                            {
-                                CloseAtAceberg(position, ui.Price, position.OpenVolume, ui.CountAcebertOrder);
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception error)
-            {
-                SetNewLogMessage(error.ToString(), LogMessageType.Error);
-            }
-        }
-
-        /// <summary>
-        /// show stop order window 
-        /// показать окно выставления стопа для позиции
+        /// Show stop order window
         /// </summary>
         public void ShowStopSendDialog(Position position)
         {
             try
             {
-                PositionStopUi ui = new PositionStopUi(position, _connector.BestBid, OsLocalization.Trader.Label107);
-                ui.ShowDialog();
-
-                if (ui.IsAccept == false)
+                for (int i = 0; i < _guisClosePos.Count; i++)
                 {
-                    return;
+                    if (_guisClosePos[i].Position.Number == position.Number)
+                    {
+                        _guisClosePos[i].Activate();
+                        _guisClosePos[i].SelectTabIndx(ClosePositionType.Stop);
+                        return;
+                    }
                 }
 
-                if (ui.PriceActivate <= 0 || ui.PriceOrder <= 0)
-                {
-                    return;
-                }
 
-                CloseAtStop(position, ui.PriceActivate, ui.PriceOrder);
+                PositionCloseUi2 ui = new PositionCloseUi2(this, ClosePositionType.Stop, position);
+                ui.Show();
+                _guisClosePos.Add(ui);
+                ui.Closing += Ui_Closing1;
+
             }
             catch (Exception error)
             {
@@ -1333,26 +1275,27 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// show profit order window 
-        /// показать окно выставления профита для позиции
+        /// Show profit order window
         /// </summary>
         public void ShowProfitSendDialog(Position position)
         {
             try
             {
-                PositionStopUi ui = new PositionStopUi(position, _connector.BestBid, OsLocalization.Trader.Label110);
-                ui.ShowDialog();
-
-                if (ui.IsAccept == false)
+                for (int i = 0; i < _guisClosePos.Count; i++)
                 {
-                    return;
-                }
-                if (ui.PriceActivate <= 0 || ui.PriceOrder <= 0)
-                {
-                    return;
+                    if (_guisClosePos[i].Position.Number == position.Number)
+                    {
+                        _guisClosePos[i].Activate();
+                        _guisClosePos[i].SelectTabIndx(ClosePositionType.Profit);
+                        return;
+                    }
                 }
 
-                CloseAtProfit(position, ui.PriceActivate, ui.PriceOrder);
+                PositionCloseUi2 ui = new PositionCloseUi2(this, ClosePositionType.Profit, position);
+                ui.Show();
+                _guisClosePos.Add(ui);
+                ui.Closing += Ui_Closing1;
+
             }
             catch (Exception error)
             {
@@ -1361,8 +1304,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// move the graph to the current time / 
-        /// переместить график к текущему времени
+        /// Move the graph to the current time
         /// </summary>
         public void GoChartToThisTime(DateTime time)
         {
@@ -1370,36 +1312,18 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// взять контекстное меню настройки чарта и индикаторов
+        /// Take the context menu for setting the chart and indicators
         /// </summary>
-        /// <returns></returns>
         public System.Windows.Forms.ContextMenu GetContextDialog()
         {
             return _chartMaster.GetContextMenu();
         }
 
-
         // standard public functions for position management
-        // стандартные публичные функции для управления позицией
 
-        private bool IsMarketOrderSupport()
-        {
-            if (_connector.ServerType == ServerType.InteractiveBrokers ||
-                _connector.ServerType == ServerType.Lmax ||
-                _connector.ServerType == ServerType.AscendEx_BitMax ||
-                _connector.ServerType == ServerType.BinanceFutures ||
-                _connector.ServerType == ServerType.Transaq ||
-                _connector.ServerType == ServerType.Tester ||
-                _connector.ServerType == ServerType.BitMex ||
-                _connector.ServerType == ServerType.Bybit
-                )
-            {
-                return true;
-            }
-
-            return false;
-        }
-
+        /// <summary>
+        /// True - if the server supports stop orders
+        /// </summary>
         private bool IsMarketStopOrderSupport()
         {
             if (_connector.ServerType == ServerType.BinanceFutures)
@@ -1411,19 +1335,24 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// enter a long position at any price / 
-        /// войти в позицию Лонг по любой цене
+        /// Enter a long position at any price
         /// </summary>
-        /// <param name="volume">volume / объём которым следует войти</param>
+        /// <param name="volume">volume</param>
         public Position BuyAtMarket(decimal volume)
         {
             try
             {
+                if (_connector.IsConnected == false
+                   || _connector.IsReadyToTrade == false)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label191, LogMessageType.Error);
+                    return null;
+                }
                 decimal price = _connector.BestAsk;
 
                 if (price == 0)
                 {
-                    SetNewLogMessage(OsLocalization.Trader.Label62, LogMessageType.System);
+                    SetNewLogMessage(OsLocalization.Trader.Label290, LogMessageType.System);
                     return null;
                 }
 
@@ -1436,7 +1365,7 @@ namespace OsEngine.OsTrader.Panels.Tab
 
                 TimeSpan timeLife = ManualPositionSupport.SecondToOpen;
 
-                if (IsMarketOrderSupport())
+                if (_connector.MarketOrdersIsSupport)
                 {
                     return LongCreate(price, volume, type, timeLife, false);
                 }
@@ -1455,12 +1384,10 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// enter a long position at any price / 
-        /// войти в позицию Лонг по любой цене
+        /// Enter a long position at any price
         /// </summary>
-        /// <param name="volume">volume / объём которым следует войти</param>
-        /// <param name="signalType">open position signal name / название сигнала для входа </param>
-        /// <returns></returns>
+        /// <param name="volume">volume to be entered</param>
+        /// <param name="signalType">open position signal name</param>
         public Position BuyAtMarket(decimal volume, string signalType)
         {
             Position position = BuyAtMarket(volume);
@@ -1474,15 +1401,21 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// enter position Long at a limit price
-        /// войти в позицию Лонг по определённой цене
+        /// Enter position Long at a limit price
         /// </summary>
-        /// <param name="volume">volume / объём позиции</param>
-        /// <param name="priceLimit">order price / цена выставляемой заявки</param>
+        /// <param name="volume">position volume</param>
+        /// <param name="priceLimit">order price</param>
         public Position BuyAtLimit(decimal volume, decimal priceLimit)
         {
             try
             {
+                if (_connector.IsConnected == false
+                    || _connector.IsReadyToTrade == false)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label191, LogMessageType.Error);
+                    return null;
+                }
+
                 return LongCreate(priceLimit, volume, OrderPriceType.Limit, ManualPositionSupport.SecondToOpen, false);
             }
             catch (Exception error)
@@ -1493,12 +1426,11 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// enter position Long at a limit price
-        /// войти в позицию Лонг по определённой цене
+        /// Enter position Long at a limit price
         /// </summary>
-        /// <param name="volume">volume / объём позиции</param>
-        /// <param name="priceLimit">opder price / цена выставляемой заявки</param>
-        /// <param name="signalType">>open position signal name / название сигнала для входа. Будет записано в свойство позиции: SignalTypeOpen</param>
+        /// <param name="volume">volume</param>
+        /// <param name="priceLimit">opder price</param>
+        /// <param name="signalType">>open position signal nameа. Will be written to position property: SignalTypeOpen</param>
         public Position BuyAtLimit(decimal volume, decimal priceLimit, string signalType)
         {
             Position position = BuyAtLimit(volume, priceLimit);
@@ -1512,16 +1444,22 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// enter position Long at iceberg / 
-        /// войти в позицию Лонг айсбергом
+        /// Enter position Long at iceberg
         /// </summary>
-        /// <param name="volume">volume / объём позиции</param>
-        /// <param name="price">order price / цена выставляемой заявки</param>
-        /// /// <param name="orderCount">iceberg orders count / количество ордеров в айсберге</param>
+        /// <param name="volume">volum</param>
+        /// <param name="price">order price</param>
+        /// <param name="orderCount">iceberg orders count</param>
         public Position BuyAtAceberg(decimal volume, decimal price, int orderCount)
         {
             try
             {
+                if (_connector.IsConnected == false
+                    || _connector.IsReadyToTrade == false)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label191, LogMessageType.Error);
+                    return null;
+                }
+
                 if (StartProgram != StartProgram.IsOsTrader || orderCount <= 1)
                 {
                     return BuyAtLimit(volume, price);
@@ -1529,13 +1467,13 @@ namespace OsEngine.OsTrader.Panels.Tab
 
                 if (volume == 0)
                 {
-                    SetNewLogMessage(OsLocalization.Trader.Label63, LogMessageType.System);
+                    SetNewLogMessage(OsLocalization.Trader.Label63, LogMessageType.System); 
                     return null;
                 }
 
                 if (price == 0)
                 {
-                    SetNewLogMessage(OsLocalization.Trader.Label62, LogMessageType.System);
+                    SetNewLogMessage(OsLocalization.Trader.Label291, LogMessageType.System);
                     return null;
                 }
 
@@ -1600,13 +1538,12 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// enter position Long at iceberg / 
-        /// войти в позицию Лонг айсбергом
+        /// Enter position Long at iceberg
         /// </summary>
-        /// <param name="volume">volume / объём позиции</param>
-        /// <param name="price">order price / цена выставляемой заявки</param>
-        /// <param name="orderCount">iceberg orders count / количество ордеров в айсберге</param>
-        /// <param name="signalType">open position signal name / название сигнала для входа. Будет записано в свойство позиции: SignalTypeOpen</param>
+        /// <param name="volume">volume</param>
+        /// <param name="price">order price</param>
+        /// <param name="orderCount">iceberg orders count</param>
+        /// <param name="signalType">>open position signal nameа. Will be written to position property: SignalTypeOpen</param>
         public Position BuyAtAceberg(decimal volume, decimal price, int orderCount, string signalType)
         {
             Position position = BuyAtAceberg(volume, price, orderCount);
@@ -1620,46 +1557,45 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// enter position Long at price intersection / 
-        /// купить по пересечению цены
+        /// Enter position Long at price intersection
         /// </summary>
-        /// <param name="volume">volume / объём</param>
-        /// <param name="priceLimit">order price / цена ордера</param>
-        /// <param name="priceRedLine">line price / цена линии, после достижения которой будет выставлен ордер на покупку</param>
-        /// <param name="activateType">activation type / тип активации ордера</param>
-        /// /// <param name="expiresBars">life time in candels count / время жизни ордера в барах</param>
-        public void BuyAtStop(decimal volume, decimal priceLimit, decimal priceRedLine, StopActivateType activateType, int expiresBars, string signalType)
+        /// <param name="volume">volum</param>
+        /// <param name="priceLimit">order price</param>
+        /// <param name="priceRedLine">the price of the line, after reaching which a buy order will be placed</param>
+        /// <param name="activateType">activation type</param>
+        /// <param name="expiresBars">life time in candels count</param>
+        /// <param name="signalType">the opening signal. It will be written to the position as SignalTypeOpen</param>
+        /// <param name="lifeTimeType">order life type</param>
+        public void BuyAtStop(decimal volume, decimal priceLimit, decimal priceRedLine,
+            StopActivateType activateType, int expiresBars, string signalType, PositionOpenerToStopLifeTimeType lifeTimeType)
         {
             try
             {
-                PositionOpenerToStop positionOpener = 
-                    new PositionOpenerToStop(CandlesFinishedOnly.Count, expiresBars,TimeServerCurrent);
-                positionOpener.Volume = volume;
-
-               /* if(StartProgram == StartProgram.IsTester ||
-                    StartProgram == StartProgram.IsOsOptimizer)
+                if (_connector.IsConnected == false
+                   || _connector.IsReadyToTrade == false)
                 {
-                    if (activateType == StopActivateType.HigherOrEqual && 
-                        priceRedLine > PriceBestAsk)
-                    {
-                        priceRedLine = PriceBestAsk;
-                    }
-                    else if(activateType == StopActivateType.LowerOrEqyal &&
-                        priceRedLine < PriceBestBid)
-                    {
-                        priceRedLine = PriceBestBid;
-                    }
+                    SetNewLogMessage(OsLocalization.Trader.Label191, LogMessageType.Error);
+                    return;
+                }
 
-                    priceLimit = priceRedLine;
-                }*/
+                PositionOpenerToStopLimit positionOpener = new PositionOpenerToStopLimit();
 
+                positionOpener.Volume = volume;
+                positionOpener.Security = Securiti.Name;
+                positionOpener.Number = NumberGen.GetNumberDeal(StartProgram);
+                positionOpener.ExpiresBars = expiresBars;
+                positionOpener.TimeCreate = TimeServerCurrent;
+                positionOpener.OrderCreateBarNumber = CandlesFinishedOnly.Count;
+                positionOpener.TabName = TabName;
+                positionOpener.LifeTimeType = lifeTimeType;
                 positionOpener.PriceOrder = priceLimit;
                 positionOpener.PriceRedLine = priceRedLine;
                 positionOpener.ActivateType = activateType;
                 positionOpener.Side = Side.Buy;
                 positionOpener.SignalType = signalType;
 
-                _stopsOpener.Add(positionOpener);
+                PositionOpenerToStop.Add(positionOpener);
+                UpdateStopLimits();
             }
             catch (Exception error)
             {
@@ -1669,57 +1605,74 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// enter position Long at price intersection / 
-        /// купить по пересечению цены
+        /// Enter position Long at price intersection
         /// </summary>
-        /// <param name="volume">volume / объём</param>
-        /// <param name="priceLimit">order price / цена ордера</param>
-        /// <param name="priceRedLine">line price / цена линии, после достижения которой будет выставлен ордер на покупку</param>
-        /// <param name="activateType">activation type / тип активации ордера</param>
-        /// /// <param name="expiresBars">life time in candels count / время жизни ордера в барах</param>
+        /// <param name="volume">volume</param>
+        /// <param name="priceLimit">order price</param>
+        /// <param name="priceRedLine">the price of the line, after reaching which a buy order will be placed</param>
+        /// <param name="activateType">activation type</param>
+        /// /// <param name="expiresBars">life time in candels count</param>
+        public void BuyAtStop(decimal volume, decimal priceLimit, decimal priceRedLine,
+            StopActivateType activateType, int expiresBars, string signalType)
+        {
+            BuyAtStop(volume, priceLimit, priceRedLine, activateType, expiresBars, signalType, PositionOpenerToStopLifeTimeType.CandlesCount);
+        }
+
+        /// <summary>
+        /// Enter position Long at price intersection
+        /// </summary>
+        /// <param name="volume">volume</param>
+        /// <param name="priceLimit">order price</param>
+        /// <param name="priceRedLine">the price of the line, after reaching which a buy order will be placed</param>
+        /// <param name="activateType">activation type</param>
+        /// /// <param name="expiresBars">life time in candels count</param>
         public void BuyAtStop(decimal volume, decimal priceLimit, decimal priceRedLine, StopActivateType activateType, int expiresBars)
         {
-            BuyAtStop(volume, priceLimit, priceRedLine, activateType, expiresBars, "");
+            BuyAtStop(volume, priceLimit, priceRedLine, activateType, expiresBars, "", PositionOpenerToStopLifeTimeType.CandlesCount);
         }
 
         /// <summary>
-        /// enter position Long at price intersection. work one candle / 
-        /// купить по пересечению цены. Действует одну свечку
+        /// Enter position Long at price intersection. work one candle
         /// </summary>
-        /// <param name="volume">volume / объём</param>
-        /// <param name="priceLimit">order price / цена ордера</param>
-        /// <param name="priceRedLine">line price / цена линии, после достижения которой будет выставлен ордер на покупку</param>
-        /// <param name="activateType">activation type / тип активации ордера</param>
+        /// <param name="volume">volume</param>
+        /// <param name="priceLimit">order price</param>
+        /// <param name="priceRedLine">the price of the line, after reaching which a buy order will be placed</param>
+        /// <param name="activateType">activation type</param>
         public void BuyAtStop(decimal volume, decimal priceLimit, decimal priceRedLine, StopActivateType activateType)
         {
-            BuyAtStop(volume, priceLimit, priceRedLine, activateType, 1, "");
+            BuyAtStop(volume, priceLimit, priceRedLine, activateType, 1, "", PositionOpenerToStopLifeTimeType.CandlesCount);
         }
 
         /// <summary>
-        /// enter position Long at price intersection. work one candle / 
-        /// купить по пересечению цены. Действует одну свечку
+        /// Enter position Long at price intersection. work one candle
         /// </summary>
-        /// <param name="volume">volume / объём</param>
-        /// <param name="priceLimit">order price / цена ордера</param>
-        /// <param name="priceRedLine">line price / цена линии, после достижения которой будет выставлен ордер на покупку</param>
-        /// <param name="activateType">activation type / тип активации ордера</param>
-        /// <param name="signalType">the opening signal. It will be written to the position as SignalTypeOpen / тип сигнала на открытие. Будет записано в позицию как SignalTypeOpen</param>
+        /// /// <param name="volume">volum</param>
+        /// <param name="priceLimit">order price</param>
+        /// <param name="priceRedLine">the price of the line, after reaching which a buy order will be placed</param>
+        /// <param name="activateType">activation type</param>
+        /// <param name="signalType">the opening signal. It will be written to the position as SignalTypeOpen</param>
         public void BuyAtStop(decimal volume, decimal priceLimit, decimal priceRedLine, StopActivateType activateType, string signalType)
         {
-            BuyAtStop(volume, priceLimit, priceRedLine, activateType, 1, signalType);
+            BuyAtStop(volume, priceLimit, priceRedLine, activateType, 1, signalType, PositionOpenerToStopLifeTimeType.CandlesCount);
         }
 
         /// <summary>
-        /// add new order to Long position at limit
-        /// добавить в Лонг позицию новую заявку по лимиту
+        /// Add new order to Long position at limit
         /// </summary>
-        /// <param name="position">position to which the order will be added / позиция к которой будет добавлена заявка</param>
-        /// <param name="priceLimit">order price / цена заявки</param>
-        /// <param name="volume">volume / объём</param>
+        /// <param name="position">position to which the order will be added</param>
+        /// <param name="priceLimit">order price</param>
+        /// <param name="volume">volume</param>
         public void BuyAtLimitToPosition(Position position, decimal priceLimit, decimal volume)
         {
             try
             {
+                if (_connector.IsConnected == false
+                    || _connector.IsReadyToTrade == false)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label191, LogMessageType.Error);
+                    return;
+                }
+
                 if (position.Direction == Side.Sell)
                 {
                     SetNewLogMessage(TabName + OsLocalization.Trader.Label65, LogMessageType.Error);
@@ -1735,15 +1688,21 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// add new order to Short position at market / 
-        /// добавить в позицию Лонг новую заявку по маркету 
+        /// Add new order to Short position at market
         /// </summary>
-        /// <param name="position">position to which the order will be added / позиция к которой будет добавлена заявка</param>
-        /// <param name="volume">volume / объём</param>
+        /// <param name="position">position to which the order will be added</param>
+        /// <param name="volume">volume</param>
         public void BuyAtMarketToPosition(Position position, decimal volume)
         {
             try
             {
+                if (_connector.IsConnected == false
+                   || _connector.IsReadyToTrade == false)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label191, LogMessageType.Error);
+                    return;
+                }
+
                 if (position.Direction == Side.Sell)
                 {
                     SetNewLogMessage(TabName + OsLocalization.Trader.Label65, LogMessageType.Error);
@@ -1755,7 +1714,7 @@ namespace OsEngine.OsTrader.Panels.Tab
 
                 if (price == 0)
                 {
-                    SetNewLogMessage(OsLocalization.Trader.Label62, LogMessageType.System);
+                    SetNewLogMessage(OsLocalization.Trader.Label290, LogMessageType.System);
                     return;
                 }
 
@@ -1775,7 +1734,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                     }
                 }
 
-                if (IsMarketOrderSupport())
+                if (_connector.MarketOrdersIsSupport)
                 {
                     LongUpdate(position, price, volume, ManualPositionSupport.SecondToOpen, false, OrderPriceType.Market);
                 }
@@ -1792,12 +1751,11 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// add new order to exist position at market / 
-        /// добавить в позицию Лонг новую заявку по маркету 
+        /// Add new order to exist position at market
         /// </summary>
-        /// <param name="position">position to which the order will be added / позиция к которой будет добавлена заявка</param>
-        /// <param name="volume">volume / объём</param>
-        /// <param name="signalType">open position signal name / название сигнала для входа. Будет записано в свойство позиции: SignalTypeOpen</param>
+        /// <param name="position">position to which the order will be added</param>
+        /// <param name="volume">volume</param>
+        /// <param name="signalType">the opening signal. It will be written to the position as SignalTypeOpen</param>
         public void BuyAtMarketToPosition(Position position, decimal volume, string signalType)
         {
             position.SignalTypeOpen = signalType;
@@ -1805,17 +1763,23 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// add new order to Long position at iceberg / 
-        /// добавить в позицию Лонг новую заявку айсберг
+        /// Add new order to Long position at iceberg
         /// </summary>
-        /// <param name="position">position to which the order will be added / позиция к которой будет добавлена заявка</param>
-        /// <param name="price">order price / цена заявок</param>
-        /// <param name="volume">volume / объём</param>
-        /// <param name="orderCount">iceberg orders count / количество ордеров для айсберга</param>
+        /// <param name="position">position to which the order will be added</param>
+        /// <param name="price">order price</param>
+        /// <param name="volume">volume</param>
+        /// <param name="orderCount">iceberg orders count</param>
         public void BuyAtAcebergToPosition(Position position, decimal price, decimal volume, int orderCount)
         {
             try
             {
+                if (_connector.IsConnected == false
+                    || _connector.IsReadyToTrade == false)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label191, LogMessageType.Error);
+                    return;
+                }
+
                 if (StartProgram != StartProgram.IsOsTrader || orderCount <= 1)
                 {
                     if (position.Direction == Side.Sell)
@@ -1837,7 +1801,7 @@ namespace OsEngine.OsTrader.Panels.Tab
 
                 if (price == 0)
                 {
-                    SetNewLogMessage(OsLocalization.Trader.Label62, LogMessageType.System);
+                    SetNewLogMessage(OsLocalization.Trader.Label291, LogMessageType.System);
                     return;
                 }
 
@@ -1887,26 +1851,26 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// cancel all purchase requisitions at level cross / 
-        /// отменить все заявки на покупку по пробитию уровня
+        /// Cancel all purchase requisitions at level cross
         /// </summary>
         public void BuyAtStopCancel()
         {
             try
             {
-                if (_stopsOpener == null || _stopsOpener.Count == 0)
+                if (PositionOpenerToStop == null || PositionOpenerToStop.Count == 0)
                 {
                     return;
                 }
 
-                for (int i = 0; _stopsOpener.Count != 0 && i < _stopsOpener.Count; i++)
+                for (int i = 0; PositionOpenerToStop.Count != 0 && i < PositionOpenerToStop.Count; i++)
                 {
-                    if (_stopsOpener[i].Side == Side.Buy)
+                    if (PositionOpenerToStop[i].Side == Side.Buy)
                     {
-                        _stopsOpener.RemoveAt(i);
+                        PositionOpenerToStop.RemoveAt(i);
                         i--;
                     }
                 }
+                UpdateStopLimits();
             }
             catch (Exception error)
             {
@@ -1915,19 +1879,163 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// enter the short position at any price / 
-        /// войти в позицию Шорт по любой цене
+        /// Enter a FAKE long position
         /// </summary>
-        /// <param name="volume">volume / объём позиции</param>
+        /// <param name="volume">volume</param>
+        public Position BuyAtFake(decimal volume, decimal price, DateTime time)
+        {
+            try
+            {
+                Side direction = Side.Buy;
+
+                if (volume == 0)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label63,
+                        LogMessageType.System);
+                    return null;
+                }
+
+                if (price == 0)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label291, LogMessageType.System);
+                    return null;
+                }
+
+                if (Securiti == null || Portfolio == null)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label64, LogMessageType.System);
+                    return null;
+                }
+                price = RoundPrice(price, Securiti, direction);
+
+                Position newDeal = _dealCreator.CreatePosition(TabName, direction, price, volume, OrderPriceType.Limit,
+                    ManualPositionSupport.SecondToOpen, Securiti, Portfolio, StartProgram);
+
+                _journal.SetNewDeal(newDeal);
+
+                OrderFakeExecute(newDeal.OpenOrders[0], time);
+                return newDeal;
+            }
+            catch (Exception error)
+            {
+                SetNewLogMessage(error.ToString(), LogMessageType.Error);
+            }
+            return null;
+
+        }
+
+        /// <summary>
+        /// Enter a FAKE long position
+        /// </summary>
+        /// <param name="volume">volume</param>
+        public Position SellAtFake(decimal volume, decimal price, DateTime time)
+        {
+            try
+            {
+                Side direction = Side.Sell;
+
+                if (volume == 0)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label63,
+                        LogMessageType.System);
+                    return null;
+                }
+
+                if (price == 0)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label291, LogMessageType.System);
+                    return null;
+                }
+
+                if (Securiti == null || Portfolio == null)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label64, LogMessageType.System);
+                    return null;
+                }
+
+                price = RoundPrice(price, Securiti, direction);
+
+                Position newDeal = _dealCreator.CreatePosition(TabName, direction, price, volume, OrderPriceType.Limit,
+                    ManualPositionSupport.SecondToOpen, Securiti, Portfolio, StartProgram);
+
+                _journal.SetNewDeal(newDeal);
+
+                OrderFakeExecute(newDeal.OpenOrders[0], time);
+                return newDeal;
+            }
+            catch (Exception error)
+            {
+                SetNewLogMessage(error.ToString(), LogMessageType.Error);
+            }
+            return null;
+
+        }
+
+        /// <summary>
+        /// Execute order in Fake mode
+        /// </summary>
+        public void OrderFakeExecute(Order order, DateTime timeExecute)
+        {
+            try
+            {
+                order.TimeCreate = timeExecute;
+                order.TimeCallBack = timeExecute;
+
+                Order newOrder = new Order();
+                newOrder.NumberMarket = "fakeOrder " + NumberGen.GetNumberOrder(StartProgram);
+                newOrder.NumberUser = order.NumberUser;
+                newOrder.State = OrderStateType.Done;
+                newOrder.Volume = order.Volume;
+                newOrder.VolumeExecute = order.Volume;
+                newOrder.Price = order.Price;
+                newOrder.TimeCreate = timeExecute;
+                newOrder.TypeOrder = order.TypeOrder;
+                newOrder.TimeCallBack = timeExecute;
+                newOrder.Side = order.Side;
+                newOrder.SecurityNameCode = order.SecurityNameCode;
+                newOrder.PortfolioNumber = order.PortfolioNumber;
+                newOrder.ServerType = order.ServerType;
+
+                _connector_OrderChangeEvent(newOrder);
+
+                MyTrade trade = new MyTrade();
+
+                trade.Volume = order.Volume;
+                trade.Time = timeExecute;
+                trade.Price = order.Price;
+                trade.SecurityNameCode = order.SecurityNameCode;
+                trade.NumberTrade = "fakeTrade " + NumberGen.GetNumberOrder(StartProgram);
+                trade.Side = order.Side;
+                trade.NumberOrderParent = newOrder.NumberMarket;
+
+                _connector_MyTradeEvent(trade);
+            }
+            catch (Exception error)
+            {
+                SetNewLogMessage(error.ToString(), LogMessageType.Error);
+            }
+        }
+
+        /// <summary>
+        /// Enter the short position at any price
+        /// </summary>
+        /// <param name="volume">volume</param>
         public Position SellAtMarket(decimal volume)
         {
             try
             {
+                if (_connector.IsConnected == false
+                    || _connector.IsReadyToTrade == false)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label191, LogMessageType.Error);
+                    return null;
+                }
+
                 decimal price = _connector.BestBid;
 
                 if (price == 0)
                 {
-                    SetNewLogMessage(OsLocalization.Trader.Label62, LogMessageType.System);
+                    SetNewLogMessage(OsLocalization.Trader.Label290, LogMessageType.System);
                     return null;
                 }
 
@@ -1940,7 +2048,7 @@ namespace OsEngine.OsTrader.Panels.Tab
 
                 TimeSpan timeLife = ManualPositionSupport.SecondToOpen;
 
-                if (IsMarketOrderSupport())
+                if (_connector.MarketOrdersIsSupport)
                 {
                     return ShortCreate(price, volume, type, timeLife, false);
                 }
@@ -1957,11 +2065,10 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// enter the short position at any price / 
-        /// войти в позицию Шорт по любой цене
+        /// Enter the short position at any price
         /// </summary>
-        /// <param name="volume">volume / объём позиции</param>
-        /// <param name="signalType">open position signal name / название сигнала для входа. Будет записано в свойство позиции: SignalTypeOpen</param>
+        /// <param name="volume">volume</param>
+        /// <param name="signalType">open position signal name</param>
         public Position SellAtMarket(decimal volume, string signalType)
         {
             Position position = SellAtMarket(volume);
@@ -1975,15 +2082,21 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// enter the short position at limit price / 
-        /// войти в позицию Шорт по определённой цене
+        /// Enter the short position at limit price
         /// </summary>
-        /// <param name="volume">volume / объём позиции</param>
-        /// <param name="priceLimit">order price / цена заявки</param>
+        /// <param name="volume">volume</param>
+        /// <param name="priceLimit">order price</param>
         public Position SellAtLimit(decimal volume, decimal priceLimit)
         {
             try
             {
+                if (_connector.IsConnected == false
+                   || _connector.IsReadyToTrade == false)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label191, LogMessageType.Error);
+                    return null;
+                }
+
                 return ShortCreate(priceLimit, volume, OrderPriceType.Limit, ManualPositionSupport.SecondToOpen, false);
             }
             catch (Exception error)
@@ -1994,12 +2107,11 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// enter the short position at limit price / 
-        /// войти в позицию Шорт по определённой цене
+        /// Enter the short position at limit price
         /// </summary>
-        /// <param name="volume">volume / объём позиции</param>
-        /// <param name="priceLimit">order price / цена заявки</param>
-        /// <param name="signalType">open position signal name / название сигнала для входа. Будет записано в свойство позиции: SignalTypeOpen</param>
+        /// <param name="volume">volume</param>
+        /// <param name="priceLimit">order price</param>
+        /// <param name="signalType">open position signal name. Will be written to position property: SignalTypeOpen</param>
         public Position SellAtLimit(decimal volume, decimal priceLimit, string signalType)
         {
             Position position = SellAtLimit(volume, priceLimit);
@@ -2013,16 +2125,22 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// enter the short position at iceberg / 
-        /// войти в позицию Шорт айсбергом
+        /// Enter the short position at iceberg
         /// </summary>
-        /// <param name="volume">volume / объём позиции</param>
-        /// <param name="price">price / цена</param>
-        /// <param name="orderCount">iceberg orders count / количество ордеров в айсберге</param>
+        /// <param name="volume">volume</param>
+        /// <param name="price">price</param>
+        /// <param name="orderCount">iceberg orders count</param>
         public Position SellAtAceberg(decimal volume, decimal price, int orderCount)
         {
             try
             {
+                if (_connector.IsConnected == false
+                    || _connector.IsReadyToTrade == false)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label191, LogMessageType.Error);
+                    return null;
+                }
+
                 if (StartProgram != StartProgram.IsOsTrader || orderCount <= 1)
                 {
                     return SellAtLimit(volume, price);
@@ -2036,7 +2154,7 @@ namespace OsEngine.OsTrader.Panels.Tab
 
                 if (price == 0)
                 {
-                    SetNewLogMessage(OsLocalization.Trader.Label62, LogMessageType.System);
+                    SetNewLogMessage(OsLocalization.Trader.Label291, LogMessageType.System);
                     return null;
                 }
 
@@ -2101,15 +2219,21 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// enter the short position at iceberg / 
-        /// войти в позицию Шорт айсбергом
+        /// enter the short position at iceberg
         /// </summary>
-        /// <param name="volume">volume / объём позиции</param>
-        /// <param name="price">price / цена</param>
-        /// <param name="orderCount">orders count / количество ордеров в айсберге</param>
-        /// <param name="signalType">open position signal name / название сигнала для входа. Будет записано в свойство позиции: SignalTypeOpen</param>
+        /// <param name="volume">volume</param>
+        /// <param name="price">price</param>
+        /// <param name="orderCount">orders count</param>
+        /// <param name="signalType">open position signal name. Will be written to position property: SignalTypeOpen</param>
         public Position SellAtAceberg(decimal volume, decimal price, int orderCount, string signalType)
         {
+            if (_connector.IsConnected == false
+                || _connector.IsReadyToTrade == false)
+            {
+                SetNewLogMessage(OsLocalization.Trader.Label191, LogMessageType.Error);
+                return null;
+            }
+
             Position position = SellAtAceberg(volume, price, orderCount);
 
             if (position != null)
@@ -2121,48 +2245,45 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// enter position Short at price intersection / 
-        /// продать по пересечению цены
+        /// Enter position Short at price intersection
         /// </summary>
-        /// <param name="volume">volume / объём</param>
-        /// <param name="priceLimit">order price / цена ордера</param>
-        /// <param name="priceRedLine">line price / цена линии, после достижения которой будет выставлен ордер на продажу</param>
-        /// <param name="activateType">activation type /тип активации ордера</param>
-        /// <param name="expiresBars">life time in candels count / через сколько свечей заявка будет снята</param>
-        /// <param name="signalType">the opening signal. It will be written to the position as SignalTypeOpen / тип сигнала на открытие. Будет записано в позицию как SignalTypeOpen</param>
-        public void SellAtStop(decimal volume, decimal priceLimit, decimal priceRedLine, StopActivateType activateType, int expiresBars, string signalType)
+        /// <param name="volume">volume</param>
+        /// <param name="priceLimit">order price</param>
+        /// <param name="priceRedLine">line price, after reaching which a sell order will be placed</param>
+        /// <param name="activateType">activation type</param>
+        /// <param name="expiresBars">life time in candels count</param>
+        /// <param name="signalType">the opening signal. It will be written to the position as SignalTypeOpen</param>
+        /// <param name="lifeTimeType">order life type</param>
+        public void SellAtStop(decimal volume, decimal priceLimit, decimal priceRedLine,
+            StopActivateType activateType, int expiresBars, string signalType, PositionOpenerToStopLifeTimeType lifeTimeType)
         {
             try
             {
-                PositionOpenerToStop positionOpener = 
-                    new PositionOpenerToStop(CandlesFinishedOnly.Count, expiresBars, TimeServerCurrent);
+                if (_connector.IsConnected == false
+                    || _connector.IsReadyToTrade == false)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label191, LogMessageType.Error);
+                    return;
+                }
+
+                PositionOpenerToStopLimit positionOpener = new PositionOpenerToStopLimit();
 
                 positionOpener.Volume = volume;
-
-                /*if (StartProgram == StartProgram.IsTester ||
-                    StartProgram == StartProgram.IsOsOptimizer)
-                {
-                    if (activateType == StopActivateType.HigherOrEqual &&
-                        priceRedLine > PriceBestAsk)
-                    {
-                        priceRedLine = PriceBestAsk;
-                    }
-                    else if (activateType == StopActivateType.LowerOrEqyal &&
-                        priceRedLine < PriceBestBid)
-                    {
-                        priceRedLine = PriceBestBid;
-                    }
-
-                    priceLimit = priceRedLine;
-                }*/
-
+                positionOpener.Security = Securiti.Name;
+                positionOpener.Number = NumberGen.GetNumberDeal(StartProgram);
+                positionOpener.TabName = TabName;
+                positionOpener.ExpiresBars = expiresBars;
+                positionOpener.TimeCreate = TimeServerCurrent;
+                positionOpener.OrderCreateBarNumber = CandlesFinishedOnly.Count;
+                positionOpener.LifeTimeType = lifeTimeType;
                 positionOpener.PriceOrder = priceLimit;
                 positionOpener.PriceRedLine = priceRedLine;
                 positionOpener.ActivateType = activateType;
                 positionOpener.Side = Side.Sell;
                 positionOpener.SignalType = signalType;
 
-                _stopsOpener.Add(positionOpener);
+                PositionOpenerToStop.Add(positionOpener);
+                UpdateStopLimits();
             }
             catch (Exception error)
             {
@@ -2171,57 +2292,74 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// enter position Short at price intersection / 
-        /// продать по пересечению цены
+        /// Enter position Short at price intersection
         /// </summary>
-        /// <param name="volume">volume / объём</param>
-        /// <param name="priceLimit">order price / цена ордера</param>
-        /// <param name="priceRedLine">line price / цена линии, после достижения которой будет выставлен ордер на продажу</param>
-        /// <param name="activateType">activation type /тип активации ордера</param>
-        /// <param name="expiresBars">life time in candels count / через сколько свечей заявка будет снята</param>
+        /// <param name="volume">volume</param>
+        /// <param name="priceLimit">order price</param>
+        /// <param name="priceRedLine">line price, after reaching which a sell order will be placed</param>
+        /// <param name="activateType">activation type</param>
+        /// <param name="expiresBars">life time in candels count </param>
+        /// <param name="signalType">the opening signal. It will be written to the position as SignalTypeOpen</param>
+        public void SellAtStop(decimal volume, decimal priceLimit, decimal priceRedLine,
+            StopActivateType activateType, int expiresBars, string signalType)
+        {
+            SellAtStop(volume, priceLimit, priceRedLine, activateType, expiresBars, signalType, PositionOpenerToStopLifeTimeType.CandlesCount);
+        }
+
+        /// <summary>
+        /// Enter position Short at price intersection
+        /// </summary>
+        /// <param name="volume">volume</param>
+        /// <param name="priceLimit">order price</param>
+        /// <param name="priceRedLine">line price, after reaching which a sell order will be placed</param>
+        /// <param name="activateType">activation type</param>
+        /// <param name="expiresBars">life time in candels count</param>
         public void SellAtStop(decimal volume, decimal priceLimit, decimal priceRedLine, StopActivateType activateType, int expiresBars)
         {
-            SellAtStop(volume, priceLimit, priceRedLine, activateType, expiresBars, "");
+            SellAtStop(volume, priceLimit, priceRedLine, activateType, expiresBars, "", PositionOpenerToStopLifeTimeType.CandlesCount);
         }
 
         /// <summary>
-        /// enter position Short at price intersection. Work one candle / 
-        /// продать по пересечению цены. Работает одну свечу
+        /// Enter position Short at price intersection. Work one candle
         /// </summary>
-        /// <param name="volume">volume / объём</param>
-        /// <param name="priceLimit">order price / цена ордера</param>
-        /// <param name="priceRedLine">line price / цена линии, после достижения которой будет выставлен ордер на продажу</param>
-        /// <param name="activateType">activation type /тип активации ордера</param>
+        /// <param name="volume">volume</param>
+        /// <param name="priceLimit">order price</param>
+        /// <param name="priceRedLine">line price, after reaching which a sell order will be placed</param>
+        /// <param name="activateType">activation type</param>
         public void SellAtStop(decimal volume, decimal priceLimit, decimal priceRedLine, StopActivateType activateType)
         {
-            SellAtStop(volume, priceLimit, priceRedLine, activateType, 1, "");
+            SellAtStop(volume, priceLimit, priceRedLine, activateType, 1, "", PositionOpenerToStopLifeTimeType.CandlesCount);
         }
 
         /// <summary>
-        /// enter position Short at price intersection. Work one candle / 
-        /// продать по пересечению цены. Работает одну свечу
+        /// Enter position Short at price intersection. Work one candle
         /// </summary>
-        /// <param name="volume">volume / объём</param>
-        /// <param name="priceLimit">order price / цена ордера</param>
-        /// <param name="priceRedLine">line price / цена линии, после достижения которой будет выставлен ордер на продажу</param>
-        /// <param name="activateType">activation type /тип активации ордера</param>
-        /// <param name="signalType">the opening signal. It will be written to the position as SignalTypeOpen / тип сигнала на открытие. Будет записано в позицию как SignalTypeOpen</param>
+        /// <param name="volume">volume</param>
+        /// <param name="priceLimit">order price</param>
+        /// <param name="priceRedLine">line price, after reaching which a sell order will be placed</param>
+        /// <param name="activateType">activation type</param>
+        /// <param name="signalType">the opening signal. It will be written to the position as SignalTypeOpen</param>
         public void SellAtStop(decimal volume, decimal priceLimit, decimal priceRedLine, StopActivateType activateType, string signalType)
         {
-            SellAtStop(volume, priceLimit, priceRedLine, activateType, 1, signalType);
+            SellAtStop(volume, priceLimit, priceRedLine, activateType, 1, signalType, PositionOpenerToStopLifeTimeType.CandlesCount);
         }
 
         /// <summary>
-        /// add new order to Short position at limit
-        /// добавить в позицию Шорт новую заявку по лимиту
+        /// Add new order to Short position at limit
         /// </summary>
-        /// <param name="position">position to which the order will be added / позиция к которой будет добавлена заявка</param>
-        /// <param name="priceLimit">order price / цена заявки</param>
-        /// <param name="volume">volume / объём</param>
+        /// <param name="position">position to which the order will be added</param>
+        /// <param name="priceLimit">order price</param>
+        /// <param name="volume">volume</param>
         public void SellAtLimitToPosition(Position position, decimal priceLimit, decimal volume)
         {
             try
             {
+                if (_connector.IsConnected == false
+                   || _connector.IsReadyToTrade == false)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label191, LogMessageType.Error);
+                    return;
+                }
                 if (position.Direction == Side.Buy)
                 {
                     SetNewLogMessage(TabName + OsLocalization.Trader.Label66, LogMessageType.Error);
@@ -2238,15 +2376,21 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// add new order to Short position at market / 
-        /// добавить в позицию Short новую заявку по маркету 
+        /// Add new order to Short position at market 
         /// </summary>
-        /// <param name="position">position to which the order will be added / позиция к которой будет добавлена заявка</param>
-        /// <param name="volume">volume / объём</param>
+        /// <param name="position">position to which the order will be added</param>
+        /// <param name="volume">volume</param>
         public void SellAtMarketToPosition(Position position, decimal volume)
         {
             try
             {
+                if (_connector.IsConnected == false
+                    || _connector.IsReadyToTrade == false)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label191, LogMessageType.Error);
+                    return;
+                }
+
                 if (position.Direction == Side.Buy)
                 {
                     SetNewLogMessage(TabName + OsLocalization.Trader.Label66, LogMessageType.Error);
@@ -2278,7 +2422,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                     }
                 }
 
-                if (IsMarketOrderSupport())
+                if (_connector.MarketOrdersIsSupport)
                 {
                     ShortUpdate(position, price, volume, ManualPositionSupport.SecondToOpen, false, OrderPriceType.Market);
                 }
@@ -2295,17 +2439,35 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// add new order to Short position at iceberg / 
-        /// добавить в позицию Short новую заявку айсберг
+        /// Add new order to Short position at market 
         /// </summary>
-        /// <param name="position">position to which the order will be added / позиция к которой будет добавлена заявка</param>
-        /// <param name="price">order price / цена заявок</param>
-        /// <param name="volume">volume / объём</param>
-        /// <param name="orderCount">iceberg orders count / количество ордеров для айсберга</param>
+        /// <param name="position">position to which the order will be added</param>
+        /// <param name="volume">volume</param>
+        /// <param name="signalType">the opening signal. It will be written to the position as SignalTypeOpen</param>
+        public void SellAtMarketToPosition(Position position, decimal volume, string signalType)
+        {
+            position.SignalTypeOpen = signalType;
+            SellAtMarketToPosition(position, volume);
+        }
+
+        /// <summary>
+        /// Add new order to Short position at iceberg
+        /// </summary>
+        /// <param name="position">position to which the order will be added</param>
+        /// <param name="price">order price</param>
+        /// <param name="volume">volum</param>
+        /// <param name="orderCount">iceberg orders count</param>
         public void SellAtAcebergToPosition(Position position, decimal price, decimal volume, int orderCount)
         {
             try
             {
+                if (_connector.IsConnected == false
+                   || _connector.IsReadyToTrade == false)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label191, LogMessageType.Error);
+                    return;
+                }
+
                 if (StartProgram != StartProgram.IsOsTrader || orderCount <= 1)
                 {
                     if (position.Direction == Side.Buy)
@@ -2326,7 +2488,7 @@ namespace OsEngine.OsTrader.Panels.Tab
 
                 if (price == 0)
                 {
-                    SetNewLogMessage(OsLocalization.Trader.Label62, LogMessageType.System);
+                    SetNewLogMessage(OsLocalization.Trader.Label291, LogMessageType.System);
                     return;
                 }
 
@@ -2337,9 +2499,9 @@ namespace OsEngine.OsTrader.Panels.Tab
                 }
 
                 if (Securiti != null)
-                {// если не тестируем, то обрезаем цену по минимальному шагу инструмента
+                {// if we do not test, then we cut the price by the minimum step of the instrument
                     if (Convert.ToDouble(Securiti.PriceStep).ToString(new CultureInfo("ru-RU")).Split(',').Length != 1)
-                    { // обрезаем если знаки после запятой
+                    { // truncate if decimal places
                         int point = Convert.ToDouble(Securiti.PriceStep).ToString(new CultureInfo("ru-RU")).Split(',')[1].Length;
                         price = Math.Round(price, point);
                     }
@@ -2356,7 +2518,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                 {
                     decimal lastPrice = _connector.BestBid;
                     if (lastPrice.ToString(new CultureInfo("ru-RU")).Split(',').Length != 1)
-                    { // обрезаем если знаки после запятой
+                    { // truncate if decimal places
                         int point = lastPrice.ToString(new CultureInfo("ru-RU")).Split(',')[1].Length;
                         price = Math.Round(price, point);
                     }
@@ -2376,26 +2538,27 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// cancel all purchase requisitions at level cross / 
-        /// отменить все заявки на продажу по пробитию уровня
+        /// Cancel all purchase requisitions at level cross
         /// </summary>
         public void SellAtStopCancel()
         {
             try
             {
-                if (_stopsOpener == null || _stopsOpener.Count == 0)
+                if (PositionOpenerToStop == null || PositionOpenerToStop.Count == 0)
                 {
                     return;
                 }
 
-                for (int i = 0; _stopsOpener.Count != 0 && i < _stopsOpener.Count; i++)
+                for (int i = 0; PositionOpenerToStop.Count != 0 && i < PositionOpenerToStop.Count; i++)
                 {
-                    if (_stopsOpener[i].Side == Side.Sell)
+                    if (PositionOpenerToStop[i].Side == Side.Sell)
                     {
-                        _stopsOpener.RemoveAt(i);// будет работать
+                        PositionOpenerToStop.RemoveAt(i);
                         i--;
                     }
                 }
+
+                UpdateStopLimits();
             }
             catch (Exception error)
             {
@@ -2404,8 +2567,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// close all positions on the market / 
-        /// закрыть все позиции по рынку
+        /// Close all positions on the market
         /// </summary>
         public void CloseAllAtMarket()
         {
@@ -2428,10 +2590,9 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// close all positions at market / 
-        /// закрыть все позиции по рынку
+        /// Close all positions at market
         /// </summary>
-        /// <param name="signalType">close position signal name / название сигнала для выхода. Будет записан в свойство позиции: SignalTypeClose</param>
+        /// <param name="signalType">close position signal name</param>
         public void CloseAllAtMarket(string signalType)
         {
             try
@@ -2453,20 +2614,116 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// close a position at any price / 
-        /// закрыть позицию по любой цене
+        /// Close the position in Fake mode
         /// </summary>
-        /// <param name="position">position to be closed / позиция которую будем закрывать</param>
-        /// <param name="volume">volume / объём нужный к закрытию</param>
+        /// <param name="position">position to be closed</param>
+        public void CloseAtFake(Position position, decimal volume, decimal price, DateTime time)
+        {
+            try
+            {
+                if (_connector.IsConnected == false
+                    || _connector.IsReadyToTrade == false)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label191, LogMessageType.Error);
+                    return;
+                }
+
+                if (volume <= 0 || position.OpenVolume <= 0)
+                {
+                    return;
+                }
+
+                if (position == null)
+                {
+                    return;
+                }
+
+                position.ProfitOrderIsActiv = false;
+                position.StopOrderIsActiv = false;
+
+                for (int i = 0; position.CloseOrders != null && i < position.CloseOrders.Count; i++)
+                {
+                    if (position.CloseOrders[i].State == OrderStateType.Activ)
+                    {
+                        _connector.OrderCancel(position.CloseOrders[i]);
+                    }
+                }
+
+                for (int i = 0; position.OpenOrders != null && i < position.OpenOrders.Count; i++)
+                {
+                    if (position.OpenOrders[i].State == OrderStateType.Activ)
+                    {
+                        _connector.OrderCancel(position.OpenOrders[i]);
+                    }
+                }
+
+                if (Securiti == null)
+                {
+                    return;
+                }
+
+                Side sideCloseOrder = Side.Buy;
+
+                if (position.Direction == Side.Buy)
+                {
+                    sideCloseOrder = Side.Sell;
+                }
+
+                price = RoundPrice(price, Securiti, sideCloseOrder);
+
+                if (position.State == PositionStateType.Done &&
+                    position.OpenVolume == 0)
+                {
+                    return;
+                }
+
+                position.State = PositionStateType.Closing;
+
+                Order closeOrder
+                    = _dealCreator.CreateCloseOrderForDeal(Securiti, position, price, OrderPriceType.Limit, new TimeSpan(1, 1, 1, 1), StartProgram); ;
+
+                closeOrder.SecurityNameCode = Securiti.Name;
+                closeOrder.SecurityClassCode = Securiti.NameClass;
+                closeOrder.PortfolioNumber = Portfolio.Number;
+
+                position.AddNewCloseOrder(closeOrder);
+
+                OrderFakeExecute(closeOrder, time);
+
+            }
+            catch (Exception error)
+            {
+                SetNewLogMessage(error.ToString(), LogMessageType.Error);
+            }
+        }
+
+        /// <summary>
+        /// Close a position at any price
+        /// </summary>
+        /// <param name="position">position to be closed</param>
+        /// <param name="volume">volume</param>
         public void CloseAtMarket(Position position, decimal volume)
         {
             try
             {
+                if (_connector.IsConnected == false
+                    || _connector.IsReadyToTrade == false)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label191, LogMessageType.Error);
+                    return;
+                }
+
                 if (volume <= 0 || position.OpenVolume <= 0)
                 {
                     return;
                 }
                 decimal price = _connector.BestAsk;
+
+                if (price == 0)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label290, LogMessageType.System);
+                    return;
+                }
 
                 if (position.Direction == Side.Buy)
                 {
@@ -2487,13 +2744,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                     }
                 }
 
-                if (price == 0)
-                {
-                    SetNewLogMessage(OsLocalization.Trader.Label62, LogMessageType.System);
-                    return;
-                }
-
-                if (IsMarketOrderSupport())
+                if (_connector.MarketOrdersIsSupport)
                 {
                     if (position.OpenVolume <= volume)
                     {
@@ -2516,12 +2767,11 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// close a position at any price / 
-        /// закрыть позицию по любой цене
+        /// Close a position at any price
         /// </summary>
-        /// <param name="position">position to be closed / позиция которую будем закрывать</param>
-        /// <param name="volume">volume / объём нужный к закрытию</param>
-        /// <param name="signalType">close position signal name / название сигнала для выхода. Будет записан в свойство позиции: SignalTypeClose</param>
+        /// <param name="position">position to be closed</param>
+        /// <param name="volume">volume</param>
+        /// <param name="signalType">close position signal name. Will be written to position property: SignalTypeClose</param>
         public void CloseAtMarket(Position position, decimal volume, string signalType)
         {
             position.SignalTypeClose = signalType;
@@ -2529,12 +2779,11 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// close a position at a limit price / 
-        /// закрыть позицию по определённой цене
+        /// Close a position at a limit price
         /// </summary>
-        /// <param name="position">position to be closed / позиция которую будем закрывать</param>
-        /// <param name="priceLimit">order price / цена ордера</param>
-        /// <param name="volume">volume required to close / объём нужный к закрытию</param>
+        /// <param name="position">position to be closed</param>
+        /// <param name="priceLimit">order price</param>
+        /// <param name="volume">volume required to close</param>
         public void CloseAtLimit(Position position, decimal priceLimit, decimal volume)
         {
             try
@@ -2559,13 +2808,12 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// close a position at a limit price / 
-        /// закрыть позицию по определённой цене
+        /// Close a position at a limit price
         /// </summary>
-        /// <param name="position">position to be closed / позиция которую будем закрывать</param>
-        /// <param name="priceLimit">order price / цена ордера</param>
-        /// <param name="volume">volume required to close / объём нужный к закрытию</param>
-        /// <param name="signalType">close position signal name / название сигнала для входа. Будет записано в свойство позиции: SignalTypeOpen</param>
+        /// <param name="position">position to be closed</param>
+        /// <param name="priceLimit">order price</param>
+        /// <param name="volume">volume required to close</param>
+        /// <param name="signalType">close position signal name. Will be written to position property: SignalTypeClose</param>
         public void CloseAtLimit(Position position, decimal priceLimit, decimal volume, string signalType)
         {
             position.SignalTypeClose = signalType;
@@ -2573,13 +2821,12 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// close position at iceberg / 
-        /// закрыть позицию по айсбергу определённой цене
+        /// Close position at iceberg
         /// </summary>
-        /// <param name="position">position to be closed / позиция которую будем закрывать</param>
-        /// <param name="priceLimit">order price / цена ордера</param>
-        /// <param name="volume">volume required to close / объём нужный к закрытию</param>
-        /// <param name="orderCount">iceberg orders count / количество ордеров для айсберга</param>
+        /// <param name="position">position to be closed</param>
+        /// <param name="priceLimit">order price</param>
+        /// <param name="volume">volume required to close</param>
+        /// <param name="orderCount">iceberg orders count</param>
         public void CloseAtAceberg(Position position, decimal priceLimit, decimal volume, int orderCount)
         {
             try
@@ -2617,14 +2864,13 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// close position at iceberg / 
-        /// закрыть позицию по айсбергу определённой цене
+        /// Close position at iceberg
         /// </summary>
-        /// <param name="position">position to be closed / позиция которую будем закрывать</param>
-        /// <param name="priceLimit">order price / цена ордера</param>
-        /// <param name="volume">volume required to close / объём нужный к закрытию</param>
-        /// <param name="orderCount">iceberg orders count / количество ордеров для айсберга</param>
-        /// <param name="signalType">close position signal name / название сигнала для выхода. Будет записано в свойство позиции: SignalTypeClose</param>
+        /// <param name="position">position to be closed</param>
+        /// <param name="priceLimit">order price</param>
+        /// <param name="volume">volume required to close</param>
+        /// <param name="orderCount">iceberg orders count</param>
+        /// <param name="signalType">close position signal name</param>
         public void CloseAtAceberg(Position position, decimal priceLimit, decimal volume, int orderCount, string signalType)
         {
             position.SignalTypeClose = signalType;
@@ -2632,25 +2878,23 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// place a stop order for a position / 
-        /// выставить стоп-ордер для позиции
+        /// Place a stop order for a position
         /// </summary>
-        /// <param name="position">position to be closed / позиция которую будем закрывать</param>
-        /// <param name="priceActivation">price activation / цена стоп приказа, после достижения которой выставиться ордер</param>
-        /// <param name="priceOrder">order price / цена ордера</param>
+        /// <param name="position">position to be closed</param>
+        /// <param name="priceActivation">the price of the stop order, after reaching which the order is placed</param>
+        /// <param name="priceOrder">order price</param>
         public void CloseAtStop(Position position, decimal priceActivation, decimal priceOrder)
         {
             TryReloadStop(position, priceActivation, priceOrder);
         }
 
         /// <summary>
-        /// place a stop order for a position / 
-        /// выставить стоп-ордер для позиции
+        /// Place a stop order for a position
         /// </summary>
-        /// <param name="position">position to be closed / позиция которую будем закрывать</param>
-        /// <param name="priceActivation">price activation / цена стоп приказа, после достижения которой выставиться ордер</param>
-        /// <param name="priceOrder">order price / цена ордера</param>
-        /// <param name="signalType">close position signal name / название сигнала для выхода. Будет записано в свойство позиции: SignalTypeClose</param>
+        /// <param name="position">position to be closed</param>
+        /// <param name="priceActivation">the price of the stop order, after reaching which the order is placed</param>
+        /// <param name="priceOrder">order price</param>
+        /// <param name="signalType">close position signal name</param>
         public void CloseAtStop(Position position, decimal priceActivation, decimal priceOrder, string signalType)
         {
             position.SignalTypeClose = signalType;
@@ -2658,12 +2902,11 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// place a trailing stop order for a position / 
-        /// выставить трейлинг стоп-ордер для позиции 
+        /// Place a trailing stop order for a position
         /// </summary>
-        /// <param name="position">position to be closed / позиция которую будем закрывать</param>
-        /// <param name="priceActivation">price activation / цена стоп приказа, после достижения которой выставиться ордер</param>
-        /// <param name="priceOrder">order price / цена ордера</param>
+        /// <param name="position">position to be closed</param>
+        /// <param name="priceActivation">the price of the stop order, after reaching which the order is placed</param>
+        /// <param name="priceOrder">order price</param>
         public void CloseAtTrailingStop(Position position, decimal priceActivation, decimal priceOrder)
         {
             if (position.StopOrderIsActiv &&
@@ -2684,13 +2927,12 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// place a trailing stop order for a position / 
-        /// выставить трейлинг стоп-ордер для позиции 
+        /// Place a trailing stop order for a position
         /// </summary>
-        /// <param name="position">position to be closed / позиция которую будем закрывать</param>
-        /// <param name="priceActivation">price activation / цена стоп приказа, после достижения которой выставиться ордер</param>
-        /// <param name="priceOrder">order price / цена ордера</param>
-        /// <param name="signalType">close position signal name / название сигнала для выхода. Будет записано в свойство позиции: SignalTypeClose</param>
+        /// <param name="position">position to be closed</param>
+        /// <param name="priceActivation">the price of the stop order, after reaching which the order is placed</param>
+        /// <param name="priceOrder">order price</param>
+        /// <param name="signalType">close position signal name</param>
         public void CloseAtTrailingStop(Position position, decimal priceActivation, decimal priceOrder, string signalType)
         {
             position.SignalTypeClose = signalType;
@@ -2698,25 +2940,23 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// place profit order for a position / 
-        /// выставить профит ордер для позиции 
+        /// Place profit order for a position
         /// </summary>
-        /// <param name="position">position to be closed / позиция которую будем закрывать</param>
-        /// <param name="priceActivation">price activation / цена стоп приказа, после достижения которой выставиться ордер</param>
-        /// <param name="priceOrder">order price / цена ордера</param>
+        /// <param name="position">position to be closed</param>
+        /// <param name="priceActivation">the price of the stop order, after reaching which the order is placed</param>
+        /// <param name="priceOrder">order price</param>
         public void CloseAtProfit(Position position, decimal priceActivation, decimal priceOrder)
         {
             TryReloadProfit(position, priceActivation, priceOrder);
         }
 
         /// <summary>
-        /// place profit order for a position / 
-        /// выставить профит ордер для позиции 
+        /// Place profit order for a position
         /// </summary>
-        /// <param name="position">position to be closed / позиция которую будем закрывать</param>
-        /// <param name="priceActivation">price activation / цена стоп приказа, после достижения которой выставиться ордер</param>
-        /// <param name="priceOrder">order price / цена ордера</param>
-        /// <param name="signalType">close position signal name / название сигнала для выхода. Будет записано в свойство позиции: SignalTypeClose</param>
+        /// <param name="position">position to be closed</param>
+        /// <param name="priceActivation">the price of the stop order, after reaching which the order is placed</param>
+        /// <param name="priceOrder">order price</param>
+        /// <param name="signalType">close position signal name</param>
         public void CloseAtProfit(Position position, decimal priceActivation, decimal priceOrder, string signalType)
         {
             position.SignalTypeClose = signalType;
@@ -2724,8 +2964,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// withdraw all robot open orders from the system / 
-        /// отозвать все открытые роботом ордера из системы
+        /// Withdraw all robot open orders from the system
         /// </summary>
         public void CloseAllOrderInSystem()
         {
@@ -2750,10 +2989,9 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// close all robot open orders from the system / 
-        /// отозвать все открытые роботом ордера из системы
+        /// Close all robot open orders from the system
         /// </summary>
-        /// <param name="signalType">close position signal name / название сигнала для выхода. Будет записано в свойство позиции: SignalTypeClose</param>
+        /// <param name="signalType">close position signal name</param>
         public void CloseAllOrderInSystem(string signalType)
         {
             try
@@ -2777,8 +3015,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// withdraw all orders from the system associated with this transaction / 
-        /// отозвать все ордера из системы, связанные с этой сделкой
+        /// Withdraw all orders from the system associated with this transaction
         /// </summary>
         public void CloseAllOrderToPosition(Position position)
         {
@@ -2794,8 +3031,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                     for (int i = 0; i < position.OpenOrders.Count; i++)
                     {
                         Order order = position.OpenOrders[i];
-                        if (order.State != OrderStateType.Done
-                            && order.State != OrderStateType.Fail && order.State != OrderStateType.Cancel)
+                        if (order.State == OrderStateType.Activ)
                         {
                             _connector.OrderCancel(position.OpenOrders[i]);
                         }
@@ -2808,8 +3044,8 @@ namespace OsEngine.OsTrader.Panels.Tab
                     for (int i = 0; i < position.CloseOrders.Count; i++)
                     {
                         Order closeOrder = position.CloseOrders[i];
-                        if (closeOrder.State != OrderStateType.Done
-                        && closeOrder.State != OrderStateType.Fail && closeOrder.State != OrderStateType.Cancel)
+
+                        if (closeOrder.State == OrderStateType.Activ)
                         {
                             _connector.OrderCancel(closeOrder);
                         }
@@ -2823,10 +3059,9 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// withdraw all orders from the system associated with this transaction / 
-        /// отозвать все ордера из системы, связанные с этой сделкой
+        /// Withdraw all orders from the system associated with this transaction
         /// </summary>
-		/// <param name = "signalType" > close position signal name / название сигнала для выхода. Будет записан в свойство позиции: SignalTypeClose</param>
+		/// <param name = "signalType" > close position signal name. Will be written to position property: SignalTypeClose</param>
         public void CloseAllOrderToPosition(Position position, string signalType)
         {
             position.SignalTypeClose = signalType;
@@ -2834,26 +3069,23 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// withdraw order / 
-        /// отозвать ордер
+        /// Withdraw order
         /// </summary>
         public void CloseOrder(Order order)
         {
             _connector.OrderCancel(order);
         }
 
-        // внутренние функции управления позицией
         // internal position management functions
 
         /// <summary>
         /// Create short position
-        /// Создать позицию шорт
         /// </summary>
-        /// <param name="price">price order / цена заявки</param>
-        /// <param name="volume">volume / объём</param>
-        /// <param name="priceType">price type / тип цены</param>
-        /// <param name="timeLife">life time / время жизни</param>
-        /// <param name="isStopOrProfit">whether the order is a result of a stop or a profit / является ли ордер следствием срабатывания стопа или профита</param>
+        /// <param name="price">price order</param>
+        /// <param name="volume">volume</param>
+        /// <param name="priceType">price type</param>
+        /// <param name="timeLife">life time</param>
+        /// <param name="isStopOrProfit">whether the order is a result of a stop or a profit </param>
         private Position ShortCreate(decimal price, decimal volume, OrderPriceType priceType, TimeSpan timeLife,
             bool isStopOrProfit)
         {
@@ -2870,7 +3102,7 @@ namespace OsEngine.OsTrader.Panels.Tab
 
                 if (price == 0)
                 {
-                    SetNewLogMessage(OsLocalization.Trader.Label62, LogMessageType.System);
+                    SetNewLogMessage(OsLocalization.Trader.Label291, LogMessageType.System);
                     return null;
                 }
 
@@ -2888,6 +3120,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                 _journal.SetNewDeal(newDeal);
 
                 _connector.OrderExecute(newDeal.OpenOrders[0]);
+
                 return newDeal;
             }
             catch (Exception error)
@@ -2898,14 +3131,13 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// modify position by short order / 
-        /// модифицировать позицию ордером шорт
+        /// Modify position by short order
         /// </summary>
-        /// <param name="position">position / позиция</param>
-        /// <param name="price">order price / цена заявки</param>
-        /// <param name="volume">volume / объём</param>
-        /// <param name="timeLife">life time / время жизни</param>
-        /// <param name="isStopOrProfit">whether the order is a result of a stop or a profit / является ли ордер следствием срабатывания стопа или профита</param>
+        /// <param name="position">position</param>
+        /// <param name="price">order price</param>
+        /// <param name="volume">volume</param>
+        /// <param name="timeLife">life time</param>
+        /// <param name="isStopOrProfit">whether the order is a result of a stop or a profit</param>
         private void ShortUpdate(Position position, decimal price, decimal volume, TimeSpan timeLife,
             bool isStopOrProfit, OrderPriceType OrderType = OrderPriceType.Limit)
         {
@@ -2919,7 +3151,7 @@ namespace OsEngine.OsTrader.Panels.Tab
 
                 if (price == 0)
                 {
-                    SetNewLogMessage(OsLocalization.Trader.Label62, LogMessageType.System);
+                    SetNewLogMessage(OsLocalization.Trader.Label291, LogMessageType.System);
                     return;
                 }
 
@@ -2943,16 +3175,22 @@ namespace OsEngine.OsTrader.Panels.Tab
                     }
                 }
 
-
                 Order newOrder = _dealCreator.CreateOrder(Securiti, Side.Sell, price, volume, OrderType,
                     ManualPositionSupport.SecondToOpen, StartProgram, OrderPositionConditionType.Open);
                 newOrder.IsStopOrProfit = isStopOrProfit;
                 newOrder.LifeTime = timeLife;
                 position.AddNewOpenOrder(newOrder);
 
-                SetNewLogMessage(Securiti.Name + " модификация позиции шорт", LogMessageType.Trade);
+                SetNewLogMessage(Securiti.Name + " short position modification", LogMessageType.Trade);
 
-                _connector.OrderExecute(newOrder);
+                if (position.OpenOrders[0].SecurityNameCode.EndsWith(" TestPaper"))
+                {
+                    _connector.OrderExecute(newOrder, true);
+                }
+                else
+                {
+                    _connector.OrderExecute(newOrder);
+                }
             }
             catch (Exception error)
             {
@@ -2962,19 +3200,17 @@ namespace OsEngine.OsTrader.Panels.Tab
 
         /// <summary>
         /// Create long position
-        /// Создать позицию long
         /// </summary>
-        /// <param name="price">price order / цена заявки</param>
-        /// <param name="volume">volume / объём</param>
-        /// <param name="priceType">price type / тип цены</param>
-        /// <param name="timeLife">life time / время жизни</param>
-        /// <param name="isStopOrProfit">whether the order is a result of a stop or a profit / является ли ордер следствием срабатывания стопа или профита</param>
+        /// <param name="price">price order</param>
+        /// <param name="volume">volume</param>
+        /// <param name="priceType">price type</param>
+        /// <param name="timeLife">life time</param>
+        /// <param name="isStopOrProfit">whether the order is a result of a stop or a profit</param>
         private Position LongCreate(decimal price, decimal volume, OrderPriceType priceType, TimeSpan timeLife,
-            bool isStopOrProfit) // купить
+            bool isStopOrProfit)
         {
             try
             {
-                //SetNewLogMessage(DateTime.Now.Millisecond.ToString(), LogMessageType.System);
                 Side direction = Side.Buy;
 
                 if (volume == 0)
@@ -2985,7 +3221,7 @@ namespace OsEngine.OsTrader.Panels.Tab
 
                 if (price == 0)
                 {
-                    SetNewLogMessage(OsLocalization.Trader.Label62, LogMessageType.System);
+                    SetNewLogMessage(OsLocalization.Trader.Label291, LogMessageType.System);
                     return null;
                 }
 
@@ -2995,10 +3231,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                     return null;
                 }
 
-                //SetNewLogMessage(DateTime.Now.Millisecond.ToString(), LogMessageType.System);
-
                 price = RoundPrice(price, Securiti, Side.Buy);
-
 
                 Position newDeal = _dealCreator.CreatePosition(TabName, direction, price, volume, priceType,
                     timeLife, Securiti, Portfolio, StartProgram);
@@ -3006,7 +3239,6 @@ namespace OsEngine.OsTrader.Panels.Tab
                 _journal.SetNewDeal(newDeal);
 
                 _connector.OrderExecute(newDeal.OpenOrders[0]);
-                //SetNewLogMessage(DateTime.Now.Millisecond.ToString(), LogMessageType.System);
 
                 return newDeal;
             }
@@ -3018,14 +3250,13 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// modify position by long order / 
-        /// модифицировать позицию ордером лонг
+        /// Modify position by long order
         /// </summary>
-        /// <param name="position">position / позиция</param>
-        /// <param name="price">order price / цена заявки</param>
-        /// <param name="volume">volume / объём</param>
-        /// <param name="timeLife">life time / время жизни</param>
-        /// <param name="isStopOrProfit">whether the order is a result of a stop or a profit / является ли ордер следствием срабатывания стопа или профита</param>
+        /// <param name="position">position</param>
+        /// <param name="price">order price</param>
+        /// <param name="volume">volume</param>
+        /// <param name="timeLife">life time</param>
+        /// <param name="isStopOrProfit">whether the order is a result of a stop or a profit</param>
         private void LongUpdate(Position position, decimal price, decimal volume, TimeSpan timeLife,
             bool isStopOrProfit, OrderPriceType OrderType = OrderPriceType.Limit)
         {
@@ -3039,7 +3270,7 @@ namespace OsEngine.OsTrader.Panels.Tab
 
                 if (price == 0)
                 {
-                    SetNewLogMessage(OsLocalization.Trader.Label62, LogMessageType.System);
+                    SetNewLogMessage(OsLocalization.Trader.Label291, LogMessageType.System);
                     return;
                 }
 
@@ -3072,7 +3303,14 @@ namespace OsEngine.OsTrader.Panels.Tab
 
                 position.AddNewOpenOrder(newOrder);
 
-                _connector.OrderExecute(newOrder);
+                if (position.OpenOrders[0].SecurityNameCode.EndsWith(" TestPaper"))
+                {
+                    _connector.OrderExecute(newOrder, true);
+                }
+                else
+                {
+                    _connector.OrderExecute(newOrder);
+                }
             }
             catch (Exception error)
             {
@@ -3081,14 +3319,13 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// close position / 
-        /// закрыть позицию
+        /// Close position
         /// </summary>
-        /// <param name="position">position / позиция</param>
-        /// <param name="priceType">price type / тип цены</param>
-        /// <param name="price">price / цена</param>
-        /// <param name="lifeTime">life time order / время жизни позиции</param>
-        /// <param name="isStopOrProfit">whether the order is a result of a stop or a profit / является ли закрытие следствием срабатывания стопа или профита</param>
+        /// <param name="position">position</param>
+        /// <param name="priceType">price type</param>
+        /// <param name="price">price</param>
+        /// <param name="lifeTime">life time order</param>
+        /// <param name="isStopOrProfit">whether the order is a result of a stop or a profit</param>
         private void CloseDeal(Position position, OrderPriceType priceType, decimal price, TimeSpan lifeTime,
             bool isStopOrProfit)
         {
@@ -3158,7 +3395,15 @@ namespace OsEngine.OsTrader.Panels.Tab
                     closeOrder.IsStopOrProfit = true;
                 }
                 position.AddNewCloseOrder(closeOrder);
-                _connector.OrderExecute(closeOrder);
+
+                if (position.OpenOrders[0].SecurityNameCode.EndsWith(" TestPaper"))
+                {
+                    _connector.OrderExecute(closeOrder, true);
+                }
+                else
+                {
+                    _connector.OrderExecute(closeOrder);
+                }
             }
             catch (Exception error)
             {
@@ -3167,14 +3412,13 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// partially close a position / 
-        /// закрыть позицию частично
+        /// Partially close a position
         /// </summary>
-        /// <param name="position">position / позиция</param>
-        /// <param name="priceType">price type / тип цены</param>
-        /// <param name="price">price / цена</param>
-        /// <param name="lifeTime">life time / время жизни позиции</param>
-        /// <param name="volume">volume / объём на который следует закрыть позицию</param>
+        /// <param name="position">position</param>
+        /// <param name="priceType">price type</param>
+        /// <param name="price">price</param>
+        /// <param name="lifeTime">life time</param>
+        /// <param name="volume">volume</param>
         private void ClosePeaceOfDeal(Position position, OrderPriceType priceType, decimal price, TimeSpan lifeTime,
             decimal volume)
         {
@@ -3236,7 +3480,15 @@ namespace OsEngine.OsTrader.Panels.Tab
 
                 closeOrder.Volume = volume;
                 position.AddNewCloseOrder(closeOrder);
-                _connector.OrderExecute(closeOrder);
+
+                if (position.OpenOrders[0].SecurityNameCode.EndsWith(" TestPaper"))
+                {
+                    _connector.OrderExecute(closeOrder, true);
+                }
+                else
+                {
+                    _connector.OrderExecute(closeOrder);
+                }
             }
             catch (Exception error)
             {
@@ -3245,12 +3497,11 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// restart stop / 
-        /// перезагрузить стоп
+        /// Restart stop
         /// </summary>
-        /// <param name="position">positin / позиция</param>
-        /// <param name="priceActivate">price activation / цена после которой ордер будет выставлен</param>
-        /// <param name="priceOrder">order price / цена ордера для стопа</param>
+        /// <param name="position">positin</param>
+        /// <param name="priceActivate">price activation</param>
+        /// <param name="priceOrder">order price</param>
         private void TryReloadStop(Position position, decimal priceActivate, decimal priceOrder)
         {
             try
@@ -3283,14 +3534,14 @@ namespace OsEngine.OsTrader.Panels.Tab
                 if (StartProgram == StartProgram.IsOsOptimizer ||
                     StartProgram == StartProgram.IsTester)
                 {
-                    // проверяем чтобы стоп был не дальше цены активации глубоко в рынке
+                    // check that the stop is no further than the activation price deep in the market
 
                     decimal lastBid = PriceBestBid;
                     decimal lastAsk = PriceBestAsk;
 
-                    if(lastAsk != 0 && lastBid != 0)
+                    if (lastAsk != 0 && lastBid != 0)
                     {
-                        if(position.Direction == Side.Buy &&
+                        if (position.Direction == Side.Buy &&
                             priceActivate > lastAsk)
                         {
                             //priceActivate = lastAsk;
@@ -3301,7 +3552,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                         if (position.Direction == Side.Sell &&
                             priceActivate < lastBid)
                         {
-                           // priceActivate = lastBid;
+                            // priceActivate = lastBid;
                             //SetNewLogMessage(
                             //    OsLocalization.Trader.Label180
                             //    , LogMessageType.Error);
@@ -3336,12 +3587,11 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// restart profit / 
-        /// перезагрузить профит
+        /// Restart profit
         /// </summary>
-        /// <param name="position">position / позиция</param>
-        /// <param name="priceActivate">activation price / цена после которой ордер будет выставлен</param>
-        /// <param name="priceOrder">order price / цена ордера для профита</param>
+        /// <param name="position">position</param>
+        /// <param name="priceActivate">price after which the order will be placed</param>
+        /// <param name="priceOrder">order price</param>
         private void TryReloadProfit(Position position, decimal priceActivate, decimal priceOrder)
         {
             try
@@ -3374,7 +3624,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                 if (StartProgram == StartProgram.IsOsOptimizer ||
                     StartProgram == StartProgram.IsTester)
                 {
-                    // проверяем чтобы профит был не дальше цены активации глубоко в рынке
+                    // check that the profit is no further than the activation price deep in the market
 
                     decimal lastBid = PriceBestBid;
                     decimal lastAsk = PriceBestAsk;
@@ -3430,12 +3680,11 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// adjust order price to the needs of the exchange / 
-        /// подогнать цену контракта под нужды биржи
+        /// Adjust order price to the needs of the exchange
         /// </summary>
-        /// <param name="price">current price / текущая цена по которой интерфейс высокого уровня захотел закрыть позицию</param>
-        /// <param name="security">security / бумага</param>
-        /// <param name="side">side / сторона входа</param>
+        /// <param name="price">the current price at which the high-level interface wanted to close the position</param>
+        /// <param name="security">security</param>
+        /// <param name="side">side</param>
         private decimal RoundPrice(decimal price, Security security, Side side)
         {
             try
@@ -3493,15 +3742,13 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         // handling alerts and stop maintenance
-        // обработка алертов и сопровождения стопов
 
         private object _lockerManualReload = new object();
 
         /// <summary>
-        /// check the manual support of the stop and profit / 
-        /// проверить ручное сопровождение стопа и профита
+        /// Check the manual support of the stop and profi
         /// </summary>
-        /// <param name="position">position / позиция</param>
+        /// <param name="position">position</param>
         private void ManualReloadStopsAndProfitToPosition(Position position)
         {
             try
@@ -3536,8 +3783,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// check if the trade has a stop or profit / 
-        /// проверить, не сработал ли стоп или профит у сделки
+        /// Check if the trade has a stop or profit
         /// </summary>
         private bool CheckStop(Position position, decimal lastTrade)
         {
@@ -3569,10 +3815,8 @@ namespace OsEngine.OsTrader.Panels.Tab
                             position.StopOrderRedLine
                             + " LastMarketPrice: " + lastTrade,
                             LogMessageType.System);
-                        if(IsMarketStopOrderSupport())
-                            CloseDeal(position, OrderPriceType.Market, position.StopOrderPrice, ManualPositionSupport.SecondToClose, true);
-                        else
-                            CloseDeal(position, OrderPriceType.Limit, position.StopOrderPrice, ManualPositionSupport.SecondToClose, true);
+
+                        CloseDeal(position, OrderPriceType.Limit, position.StopOrderPrice, ManualPositionSupport.SecondToClose, true);
                         PositionStopActivateEvent?.Invoke(position);
                         return true;
                     }
@@ -3589,10 +3833,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                             + " LastMarketPrice: " + lastTrade,
                             LogMessageType.System);
 
-                        if (IsMarketStopOrderSupport())
-                            CloseDeal(position, OrderPriceType.Market, position.StopOrderPrice, ManualPositionSupport.SecondToClose, true);
-                        else
-                            CloseDeal(position, OrderPriceType.Limit, position.StopOrderPrice, ManualPositionSupport.SecondToClose, true);
+                        CloseDeal(position, OrderPriceType.Limit, position.StopOrderPrice, ManualPositionSupport.SecondToClose, true);
                         PositionStopActivateEvent?.Invoke(position);
                         return true;
                     }
@@ -3643,8 +3884,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// alert check / 
-        /// проверка алертов
+        /// alert check
         /// </summary>
         private void AlertControlPosition()
         {
@@ -3662,7 +3902,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                     return;
                 }
 
-                if(AlertSignalEvent != null)
+                if (AlertSignalEvent != null)
                 {
                     AlertSignalEvent();
                 }
@@ -3742,8 +3982,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// get journal / 
-        /// взять журнал
+        /// Get journal
         /// </summary>
         public Journal.Journal GetJournal()
         {
@@ -3751,8 +3990,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// add a new alert to the system / 
-        /// добавить новый алерт в систему
+        /// Add a new alert to the system
         /// </summary>
         public void SetNewAlert(IIAlert alert)
         {
@@ -3760,8 +3998,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// remove alert from system / 
-        /// удалить алерт из системы
+        /// Remove alert from system
         /// </summary>
         public void DeleteAlert(IIAlert alert)
         {
@@ -3769,26 +4006,22 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// remove all alerts from the system / 
-        /// удалить все алерты из системы
+        /// Remove all alerts from the system
         /// </summary>
         public void DeleteAllAlerts()
         {
             _alerts.Delete();
         }
 
-        // дозакрытие сделки если на закрытии мы взяли больший объём чем нужно
         // closing a deal if at closing we took more volume than necessary
 
         /// <summary>
-        /// time to close the deal / 
-        /// время когда надо совершить дозакрытие сделки
+        /// time to close the deal
         /// </summary>
         private DateTime _lastClosingSurplusTime;
 
         /// <summary>
-        /// check whether it is not necessary to close the transactions for which the search was at the close / 
-        /// проверить, не надо ли закрыть сделки по которым был перебор на закрытии
+        /// check whether it is not necessary to close the transactions for which the search was at the close
         /// </summary>
         private void CheckSurplusPositions()
         {
@@ -3881,37 +4114,52 @@ namespace OsEngine.OsTrader.Panels.Tab
             }
         }
 
-        // opening deals by the deferred method
-        // открытие сделок отложенным методом
+        // Stop Limit`s
 
         /// <summary>
-        /// stop opening waiting for its price / 
-        /// стоп - открытия ожидающие своей цены
+        /// Stop opening waiting for its price
         /// </summary>
-        private List<PositionOpenerToStop> _stopsOpener;
+        public List<PositionOpenerToStopLimit> PositionOpenerToStop;
 
+        /// <summary>
+        /// Cancel orders with expired lifetime
+        /// </summary>
+        /// <param name="candles">candles</param>
         private void CancelStopOpenerByNewCandle(List<Candle> candles)
         {
-            for (int i = 0; _stopsOpener != null && i < _stopsOpener.Count; i++)
+            bool neadSave = false;
+
+            for (int i = 0; PositionOpenerToStop != null && i < PositionOpenerToStop.Count; i++)
             {
-                if (_stopsOpener[i].ExpiresBars <= 1)
+                if (PositionOpenerToStop[i].LifeTimeType == PositionOpenerToStopLifeTimeType.NoLifeTime)
                 {
-                    _stopsOpener.RemoveAt(i);
-                    i--;
                     continue;
                 }
 
-                if (candles[candles.Count - 1].TimeStart > _stopsOpener[i].LastCandleTime)
+                if (PositionOpenerToStop[i].ExpiresBars <= 1)
                 {
-                    _stopsOpener[i].LastCandleTime = candles[candles.Count - 1].TimeStart;
-                    _stopsOpener[i].ExpiresBars = _stopsOpener[i].ExpiresBars - 1;
+                    PositionOpenerToStop.RemoveAt(i);
+                    i--;
+                    neadSave = true;
+                    continue;
                 }
+
+                if (candles[candles.Count - 1].TimeStart > PositionOpenerToStop[i].LastCandleTime)
+                {
+                    PositionOpenerToStop[i].LastCandleTime = candles[candles.Count - 1].TimeStart;
+                    PositionOpenerToStop[i].ExpiresBars = PositionOpenerToStop[i].ExpiresBars - 1;
+                    neadSave = true;
+                }
+            }
+
+            if (neadSave == true)
+            {
+                UpdateStopLimits();
             }
         }
 
         /// <summary>
-        /// check whether it is time to open positions on stop openings / 
-        /// проверить, не пора ли открывать позиции по стопОткрытиям
+        /// Check whether it is time to open positions on stop openings
         /// </summary>
         private void CheckStopOpener(decimal price)
         {
@@ -3923,43 +4171,22 @@ namespace OsEngine.OsTrader.Panels.Tab
 
             try
             {
+                bool neadSave = false;
+
                 for (int i = 0;
-                    i > -1 && _stopsOpener != null && _stopsOpener.Count != 0 && i < _stopsOpener.Count;
+                    i > -1 && PositionOpenerToStop != null && PositionOpenerToStop.Count != 0 && i < PositionOpenerToStop.Count;
                     i++)
                 {
-                    if ((_stopsOpener[i].ActivateType == StopActivateType.HigherOrEqual &&
-                         price >= _stopsOpener[i].PriceRedLine)
+                    if ((PositionOpenerToStop[i].ActivateType == StopActivateType.HigherOrEqual &&
+                         price >= PositionOpenerToStop[i].PriceRedLine)
                         ||
-                        (_stopsOpener[i].ActivateType == StopActivateType.LowerOrEqyal &&
-                         price <= _stopsOpener[i].PriceRedLine))
+                        (PositionOpenerToStop[i].ActivateType == StopActivateType.LowerOrEqyal &&
+                         price <= PositionOpenerToStop[i].PriceRedLine))
                     {
-                        if (_stopsOpener[i].Side == Side.Buy)
+                        if (PositionOpenerToStop[i].Side == Side.Buy)
                         {
-                            PositionOpenerToStop opener = _stopsOpener[i];
-                            Position pos = LongCreate(_stopsOpener[i].PriceOrder, _stopsOpener[i].Volume, OrderPriceType.Limit,
-                                ManualPositionSupport.SecondToOpen, true);
-
-                            if (pos != null 
-                                && !string.IsNullOrEmpty(opener.SignalType))
-                            {
-                                pos.SignalTypeOpen = opener.SignalType;
-                            }
-
-                            if (_stopsOpener.Count == 0)
-                            { // пользователь может удалить сам из слоя увидив что сделка открыается
-                                return;
-                            }
-
-                            _stopsOpener.RemoveAt(i);
-                            i = -1;
-                            if (PositionBuyAtStopActivateEvent != null && pos != null)
-                            { PositionBuyAtStopActivateEvent(pos); }
-                            continue;
-                        }
-                        else if (_stopsOpener[i].Side == Side.Sell)
-                        {
-                            PositionOpenerToStop opener = _stopsOpener[i];
-                            Position pos = ShortCreate(_stopsOpener[i].PriceOrder, _stopsOpener[i].Volume, OrderPriceType.Limit,
+                            PositionOpenerToStopLimit opener = PositionOpenerToStop[i];
+                            Position pos = LongCreate(PositionOpenerToStop[i].PriceOrder, PositionOpenerToStop[i].Volume, OrderPriceType.Limit,
                                 ManualPositionSupport.SecondToOpen, true);
 
                             if (pos != null
@@ -3968,20 +4195,54 @@ namespace OsEngine.OsTrader.Panels.Tab
                                 pos.SignalTypeOpen = opener.SignalType;
                             }
 
-                            if (_stopsOpener.Count == 0)
-                            { // пользователь может удалить сам из слоя увидив что сделка открыается
+                            if (PositionOpenerToStop.Count == 0)
+                            { // the user can remove himself from the layer when he sees that the deal is opening
                                 return;
                             }
 
-                            _stopsOpener.RemoveAt(i);
+                            PositionOpenerToStop.RemoveAt(i);
+                            i = -1;
+                            if (PositionBuyAtStopActivateEvent != null && pos != null)
+                            {
+                                PositionBuyAtStopActivateEvent(pos);
+                            }
+                            neadSave = true;
+                            continue;
+                        }
+                        else if (PositionOpenerToStop[i].Side == Side.Sell)
+                        {
+                            PositionOpenerToStopLimit opener = PositionOpenerToStop[i];
+                            Position pos = ShortCreate(PositionOpenerToStop[i].PriceOrder, PositionOpenerToStop[i].Volume, OrderPriceType.Limit,
+                                ManualPositionSupport.SecondToOpen, true);
+
+                            if (pos != null
+                                && !string.IsNullOrEmpty(opener.SignalType))
+                            {
+                                pos.SignalTypeOpen = opener.SignalType;
+                            }
+
+                            if (PositionOpenerToStop.Count == 0)
+                            { // the user can remove himself from the layer when he sees that the deal is opening
+                                return;
+                            }
+
+                            PositionOpenerToStop.RemoveAt(i);
                             i = -1;
 
                             if (PositionSellAtStopActivateEvent != null && pos != null)
-                            { PositionSellAtStopActivateEvent(pos); }
+                            {
+                                PositionSellAtStopActivateEvent(pos);
+                            }
+                            neadSave = true;
                             continue;
                         }
                         i--;
                     }
+                }
+
+                if (neadSave == true)
+                {
+                    UpdateStopLimits();
                 }
             }
             catch (Exception error)
@@ -3990,18 +4251,28 @@ namespace OsEngine.OsTrader.Panels.Tab
             }
         }
 
+        public void UpdateStopLimits()
+        {
+            if (StartProgram != StartProgram.IsOsOptimizer)
+            {
+                _chartMaster?.SetStopLimits(PositionOpenerToStop);
+            }
+
+            if (StartProgram == StartProgram.IsOsTrader)
+            {
+                _journal?.SetStopLimits(PositionOpenerToStop);
+            }
+        }
+
         // icebergs control
-        // управления айсбергами
 
         /// <summary>
-        /// icebergs master
-        /// мастер управления айсбергами
+        /// Icebergs master
         /// </summary>
         private AcebergMaker _acebergMaker;
 
         /// <summary>
-        /// Iceberg Master Requests To Cancel Order / 
-        /// мастер айсбергов требует отозвать ордер
+        /// Iceberg Master Requests To Cancel Order
         /// </summary>
         void _acebergMaker_NewOrderNeadToCansel(Order order)
         {
@@ -4009,8 +4280,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// icebergs master requires you to place an order / 
-        /// мастер айсбергов требует выставить ордер
+        /// Icebergs master requires you to place an order
         /// </summary>
         void _acebergMaker_NewOrderNeadToExecute(Order order)
         {
@@ -4018,8 +4288,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// clear all icebergs from the system / 
-        /// очистить все айсберги из системы
+        /// Clear all icebergs from the system
         /// </summary>
         public void ClearAceberg()
         {
@@ -4034,17 +4303,15 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         // incoming data processing
-        // обработка входящих данных
 
         /// <summary>
-        /// new MarketDepth / 
-        /// пришёл новый стакан
+        /// New MarketDepth event handler
         /// </summary>
         void _connector_GlassChangeEvent(MarketDepth marketDepth)
         {
             MarketDepth = marketDepth;
 
-            if(_marketDepthPainter != null)
+            if (_marketDepthPainter != null)
             {
                 _marketDepthPainter.ProcessMarketDepth(marketDepth);
             }
@@ -4054,7 +4321,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                 MarketDepthUpdateEvent(marketDepth);
             }
 
-            if (StartProgram != StartProgram.IsOsTrader )
+            if (StartProgram != StartProgram.IsOsTrader)
             {
                 if (marketDepth.Asks == null || marketDepth.Asks.Count == 0 ||
                     marketDepth.Bids == null || marketDepth.Bids.Count == 0)
@@ -4072,7 +4339,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                         {
                             continue;
                         }
-                         CheckStop(openPositions[i], marketDepth.Asks[0].Price);
+                        CheckStop(openPositions[i], marketDepth.Asks[0].Price);
 
                         if (openPositions.Count <= i)
                         {
@@ -4085,8 +4352,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// it's time to close the order for this deal / 
-        /// пора закрывать ордер у этой сделки
+        /// It's time to close the order for this deal
         /// </summary>
         private void _dealOpeningWatcher_DontOpenOrderDetectedEvent(Order order, Position deal)
         {
@@ -4109,8 +4375,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// position status has changed
-        /// изменился статус сделки
+        /// Position status has changed
         /// </summary>
         private void _journal_PositionStateChangeEvent(Position position)
         {
@@ -4158,7 +4423,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                     {
                         SetNewLogMessage(TabName + OsLocalization.Trader.Label73 + position.Number, LogMessageType.Trade);
                     }
-                        
+
                     if (PositionOpeningSuccesEvent != null)
                     {
                         PositionOpeningSuccesEvent(position);
@@ -4193,8 +4458,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// open position volume changed
-        /// изменился открытый объём по сделке
+        /// Open position volume changed
         /// </summary>
         void _journal_PositionNetVolumeChangeEvent(Position position)
         {
@@ -4205,24 +4469,21 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// candle is finished / 
-        /// завершилась свеча
+        /// candle is finished
         /// </summary>
-        /// <param name="candles">свечи</param>
+        /// <param name="candles">candles</param>
         private void LogicToEndCandle(List<Candle> candles)
         {
             try
             {
-                
-
                 if (candles == null)
                 {
                     return;
                 }
                 AlertControlPosition();
 
-                if (_stopsOpener != null &&
-                    _stopsOpener.Count != 0)
+                if (PositionOpenerToStop != null &&
+                    PositionOpenerToStop.Count != 0)
                 {
                     CancelStopOpenerByNewCandle(candles);
                 }
@@ -4232,7 +4493,6 @@ namespace OsEngine.OsTrader.Panels.Tab
                     _chartMaster.SetCandles(candles);
                 }
 
-
                 try
                 {
                     CandleFinishedEvent?.Invoke(candles);
@@ -4241,7 +4501,6 @@ namespace OsEngine.OsTrader.Panels.Tab
                 {
                     SetNewLogMessage(error.ToString(), LogMessageType.Error);
                 }
-
             }
             catch (Exception error)
             {
@@ -4249,11 +4508,13 @@ namespace OsEngine.OsTrader.Panels.Tab
             }
         }
 
+        /// <summary>
+        /// Time of the last update of the candle
+        /// </summary>
         public DateTime LastTimeCandleUpdate { get; set; }
 
         /// <summary>
-        /// candle is update / 
-        /// обновилась последняя свеча
+        /// candle is update
         /// </summary>
         private void LogicToUpdateLastCandle(List<Candle> candles)
         {
@@ -4288,8 +4549,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// user ordered a position change / 
-        /// пользователь заказал изменение позиции
+        /// user ordered a position change
         /// </summary>
         private void _journal_UserSelectActionEvent(Position position, SignalType signalType)
         {
@@ -4335,15 +4595,6 @@ namespace OsEngine.OsTrader.Panels.Tab
                     ShowOpenPositionDialog();
                 }
 
-                if (signalType == SignalType.Modificate)
-                {
-                    if (position == null)
-                    {
-                        return;
-                    }
-                    ShowPositionModificateDialog(position);
-                }
-
                 if (signalType == SignalType.DeletePos)
                 {
                     if (position == null)
@@ -4370,8 +4621,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// has the session started today? / 
-        /// стартовала ли сегодня сессия
+        /// has the session started today?
         /// </summary>
         private bool _firstTickToDaySend;
 
@@ -4380,8 +4630,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         private int _lastTradeIndex;
 
         /// <summary>
-        /// new tiki came / 
-        /// пришли новые тики
+        /// new tiki came
         /// </summary>
         private void _connector_TickChangeEvent(List<Trade> trades)
         {
@@ -4418,12 +4667,12 @@ namespace OsEngine.OsTrader.Panels.Tab
 
             List<Trade> newTrades = new List<Trade>();
 
-            if(trades.Count > 1000)
-            { // если удаление трейдов из системы выключено
+            if (trades.Count > 1000)
+            { // if deleting trades from the system is disabled
 
                 int newTradesCount = trades.Count - _lastTradeIndex;
 
-                if(newTradesCount <= 0)
+                if (newTradesCount <= 0)
                 {
                     return;
                 }
@@ -4455,7 +4704,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                     }
                 }
             }
-            
+
             if (newTrades.Count == 0)
             {
                 return;
@@ -4497,24 +4746,25 @@ namespace OsEngine.OsTrader.Panels.Tab
                 }
             }
 
-            if(_stopsOpener != null && 
-                _stopsOpener.Count != 0)
+            if (PositionOpenerToStop != null &&
+                PositionOpenerToStop.Count != 0)
             {
                 for (int i2 = 0; i2 < newTrades.Count; i2++)
                 {
                     CheckStopOpener(newTrades[i2].Price);
-
-                    if (NewTickEvent != null)
+                }
+            }
+            if (NewTickEvent != null)
+            {
+                for (int i2 = 0; i2 < newTrades.Count; i2++)
+                {
+                    try
                     {
-                        try
-                        {
-                            NewTickEvent(newTrades[i2]);
-                        }
-                        catch (Exception error)
-                        {
-                            SetNewLogMessage(error.ToString(), LogMessageType.Error);
-                        }
-
+                        NewTickEvent(newTrades[i2]);
+                    }
+                    catch (Exception error)
+                    {
+                        SetNewLogMessage(error.ToString(), LogMessageType.Error);
                     }
                 }
             }
@@ -4527,26 +4777,23 @@ namespace OsEngine.OsTrader.Panels.Tab
             {
                 CheckSurplusPositions();
             }
-
         }
 
         /// <summary>
-        /// incoming my deal / 
-        /// входящая моя сделка
+        /// Incoming my deal
         /// </summary>
         private void _connector_MyTradeEvent(MyTrade trade)
         {
             _journal.SetNewMyTrade(trade);
 
-            if(MyTradeEvent != null)
+            if (MyTradeEvent != null)
             {
                 MyTradeEvent(trade);
             }
         }
 
         /// <summary>
-        /// security for connector defined
-        /// бумага для коннектора определена
+        /// Security for connector defined
         /// </summary>
         private void _connector_SecuritySubscribeEvent(Security security)
         {
@@ -4557,8 +4804,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// server time has changed / 
-        /// изменилось время сервера
+        /// Server time has changed
         /// </summary>
         void StrategOneSecurity_TimeServerChangeEvent(DateTime time)
         {
@@ -4574,8 +4820,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// incoming orders / 
-        /// входящие ордера
+        /// Incoming orders
         /// </summary>
         private void _connector_OrderChangeEvent(Order order)
         {
@@ -4595,8 +4840,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// incoming new bid with ask / 
-        /// входящие новые бид с аском
+        /// Incoming new bid with ask
         /// </summary>
         private void _connector_BestBidAskChangeEvent(decimal bestBid, decimal bestAsk)
         {
@@ -4606,7 +4850,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
-        /// изменились параметры индикатора
+        /// Indicator parameters changed
         /// </summary>
         private void _chartMaster_IndicatorUpdateEvent()
         {
@@ -4616,139 +4860,124 @@ namespace OsEngine.OsTrader.Panels.Tab
             }
         }
 
-        // исходящие события. Обработчики для стратегии
-        // outgoing events. Handlers for strategy
+        // Outgoing events. Handlers for strategy
 
         /// <summary>
-        /// my new trade event /
-        /// событие моей новой сделки
+        /// My new trade event
         /// </summary>
         public event Action<MyTrade> MyTradeEvent;
 
         /// <summary>
         /// The morning session started. Send the first trades
-        /// утренняя сессия стартовала. Пошли первые тики
         /// </summary>
         public event Action<Trade> FirstTickToDayEvent;
 
         /// <summary>
-        /// new trades
-        /// пришли новые тики
+        /// New trades
         /// </summary>
         public event Action<Trade> NewTickEvent;
 
         /// <summary>
-        /// new server time
-        /// изменилось время сервера
+        /// New server time
         /// </summary>
         public event Action<DateTime> ServerTimeChangeEvent;
 
         /// <summary>
-        /// last candle finished / 
-        /// завершилась новая свечка
+        /// Last candle finished
         /// </summary>
         public event Action<List<Candle>> CandleFinishedEvent;
 
         /// <summary>
-        /// last candle update /
-        /// обновилась последняя свечка
+        /// Last candle update
         /// </summary>
         public event Action<List<Candle>> CandleUpdateEvent;
 
         /// <summary>
-        /// new marketDepth
-        /// пришёл новый стакан
+        /// New marketDepth
         /// </summary>
         public event Action<MarketDepth> MarketDepthUpdateEvent;
 
         /// <summary>
-        /// bid ask change
-        /// изменился лучший бид/аск (лучшая цена покупки, лучшая цена продажи)
+        /// Bid ask change
         /// </summary>
         public event Action<decimal, decimal> BestBidAskChangeEvent;
 
         /// <summary>
-        /// position successfully closed / 
-        /// позиция успешно закрыта
+        /// Position successfully closed
         /// </summary>
         public event Action<Position> PositionClosingSuccesEvent;
 
         /// <summary>
-        /// position successfully opened /
-        /// позиция успешно открыта
+        /// Position successfully opened
         /// </summary>
         public event Action<Position> PositionOpeningSuccesEvent;
 
         /// <summary>
-        /// open position volume has changed / 
-        /// у позиции изменился открытый объём
+        /// Open position volume has changed
         /// </summary>
         public event Action<Position> PositionNetVolumeChangeEvent;
 
         /// <summary>
-        /// opening position failed / 
-        /// открытие позиции не случилось
+        /// Opening position failed
         /// </summary>
         public event Action<Position> PositionOpeningFailEvent;
 
         /// <summary>
-        /// position closing failed / 
-        /// закрытие позиции не прошло
+        /// Position closing failed
         /// </summary>
         public event Action<Position> PositionClosingFailEvent;
 
         /// <summary>
-        /// a stop order is activated for the position
-        /// по позиции активирован стоп-ордер
+        /// A stop order is activated for the position
         /// </summary>
         public event Action<Position> PositionStopActivateEvent;
 
         /// <summary>
-        /// a profit order is activated for the position
-        /// по позиции активирован профит-ордер
+        /// A profit order is activated for the position
         /// </summary>
         public event Action<Position> PositionProfitActivateEvent;
 
         /// <summary>
-        /// stop order buy activated
-        /// активирована покупка по стоп-приказу
+        /// Stop order buy activated
         /// </summary>
         public event Action<Position> PositionBuyAtStopActivateEvent;
 
         /// <summary>
-        /// stop order sell activated
-        /// активирована продажа по стоп-приказу
+        /// Stop order sell activated
         /// </summary>
         public event Action<Position> PositionSellAtStopActivateEvent;
 
         /// <summary>
-        /// the robot is removed from the system / 
-        /// робот удаляется из системы
+        /// The robot is removed from the system
         /// </summary>
         public event Action<int> DeleteBotEvent;
 
         /// <summary>
-        /// updated order
-        /// обновился ордер
+        /// Updated order
         /// </summary>
         public event Action<Order> OrderUpdateEvent;
 
         /// <summary>
-        /// изменились параметры индикатора
+        /// Indicator parameters changed
         /// </summary>
         public event Action IndicatorUpdateEvent;
 
         /// <summary>
-        /// security for connector defined
-        /// бумага для коннектора определена
+        /// Security for connector defined
         /// </summary>
         public event Action<Security> SecuritySubscribeEvent;
+
+        /// <summary>
+        /// Source removed
+        /// </summary>
+        public event Action TabDeletedEvent;
     }
 
-
+    /// <summary>
+    /// Re-sends the position to the top
+    /// </summary>
     public class PositionToSecondLoopSender
     {
-
         public Position Position;
 
         public async void Start()
@@ -4761,26 +4990,5 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         public event Action<Position> PositionNeadToStopSend;
-
-    }
-
-    /// <summary>
-    /// activation type stop order / 
-    /// тип активации стоп приказа
-    /// </summary>
-    public enum StopActivateType
-    {
-
-        /// <summary>
-        /// activate when the price is higher or equal
-        /// активировать когда цена будет выше или равно
-        /// </summary>
-        HigherOrEqual,
-
-        /// <summary>
-        /// activate when the price is lower or equal / 
-        /// активировать когда цена будет ниже или равно
-        /// </summary>
-        LowerOrEqyal
     }
 }

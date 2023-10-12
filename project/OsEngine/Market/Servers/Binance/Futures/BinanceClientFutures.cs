@@ -685,6 +685,8 @@ namespace OsEngine.Market.Servers.Binance.Futures
             {
                 try
                 {
+                    Thread.Sleep(1000); // не убирать RateGate не помогает в CreateQuery
+
                     long from = TimeManager.GetTimeStampMilliSecondsToDateTime(endTime);
 
                     string timeStamp = TimeManager.GetUnixTimeStampMilliseconds().ToString();
@@ -1704,7 +1706,7 @@ namespace OsEngine.Market.Servers.Binance.Futures
                                     newOrder.Volume = order.q.ToDecimal();
                                     newOrder.Price = order.p.ToDecimal();
                                     newOrder.ServerType = ServerType.BinanceFutures;
-                                    newOrder.PortfolioNumber = newOrder.SecurityNameCode;
+                                    newOrder.PortfolioNumber = "BinanceFutures";
 
                                     if (MyOrderEvent != null)
                                     {
@@ -1724,7 +1726,7 @@ namespace OsEngine.Market.Servers.Binance.Futures
                                     newOrder.Volume = order.q.ToDecimal();
                                     newOrder.Price = order.p.ToDecimal();
                                     newOrder.ServerType = ServerType.BinanceFutures;
-                                    newOrder.PortfolioNumber = newOrder.SecurityNameCode;
+                                    newOrder.PortfolioNumber = "BinanceFutures";
 
                                     if (MyOrderEvent != null)
                                     {
@@ -1743,7 +1745,7 @@ namespace OsEngine.Market.Servers.Binance.Futures
                                     newOrder.Volume = order.q.ToDecimal();
                                     newOrder.Price = order.p.ToDecimal();
                                     newOrder.ServerType = ServerType.BinanceFutures;
-                                    newOrder.PortfolioNumber = newOrder.SecurityNameCode;
+                                    newOrder.PortfolioNumber = "BinanceFutures";
 
                                     if (MyOrderEvent != null)
                                     {
@@ -1780,7 +1782,7 @@ namespace OsEngine.Market.Servers.Binance.Futures
                                     newOrder.Volume = order.q.ToDecimal();
                                     newOrder.Price = order.p.ToDecimal();
                                     newOrder.ServerType = ServerType.BinanceFutures;
-                                    newOrder.PortfolioNumber = newOrder.SecurityNameCode;
+                                    newOrder.PortfolioNumber = "BinanceFutures";
 
                                     if (MyOrderEvent != null)
                                     {

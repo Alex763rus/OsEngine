@@ -37,7 +37,6 @@ namespace OsEngine.Alerts
             ComboBoxSignalType.Items.Add(SignalType.Sell);
             ComboBoxSignalType.Items.Add(SignalType.CloseAll);
             ComboBoxSignalType.Items.Add(SignalType.CloseOne);
-            ComboBoxSignalType.Items.Add(SignalType.Modificate);
             ComboBoxSignalType.Items.Add(SignalType.OpenNew);
             ComboBoxSignalType.Items.Add(SignalType.ReloadProfit);
             ComboBoxSignalType.Items.Add(SignalType.ReloadStop);
@@ -47,10 +46,10 @@ namespace OsEngine.Alerts
             ComboBoxOrderType.Items.Add(OrderPriceType.Market);
             ComboBoxOrderType.SelectedItem = MyAlert.OrderPriceType;
 
-            ComboBoxSlippageType.Items.Add(AlertSlippageType.Persent);
-            ComboBoxSlippageType.Items.Add(AlertSlippageType.PriceStep);
-            ComboBoxSlippageType.Items.Add(AlertSlippageType.Absolute);
-            ComboBoxSlippageType.SelectedItem = AlertSlippageType.Persent;
+            ComboBoxSlippageType.Items.Add(AlertSlippageType.Persent.ToString());
+            ComboBoxSlippageType.Items.Add(AlertSlippageType.PriceStep.ToString());
+            ComboBoxSlippageType.Items.Add(AlertSlippageType.Absolute.ToString());
+            ComboBoxSlippageType.SelectedItem = MyAlert.SlippageType.ToString();
 
             TextBoxVolumeReaction.Text = MyAlert.VolumeReaction.ToString();
             TextBoxSlippage.Text = MyAlert.Slippage.ToString(new CultureInfo("RU-ru"));

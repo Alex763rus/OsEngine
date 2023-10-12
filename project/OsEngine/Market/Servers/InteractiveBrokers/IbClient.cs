@@ -353,7 +353,7 @@ namespace OsEngine.Market.Servers.InteractiveBrokers
                 TcpWrite(contract.LocalSymbol);
                 TcpWrite(contract.TradingClass);
                 TcpWrite(0);
-                string time = endDateTime.ToString("yyyyMMdd HH:mm:ss") + " GMT";
+                string time = endDateTime.ToString("yyyyMMdd HH:mm:ss");// + " GMT";
                 TcpWrite(time);
                 TcpWrite(barSizeSetting);
                 string period = ConvertPeriodtoIb(endDateTime, startTime);
@@ -1050,7 +1050,7 @@ namespace OsEngine.Market.Servers.InteractiveBrokers
 
             Candles series = new Candles();
             series.ContractId = requestId;
-            var format = "yyyyMMdd  HH:mm:ss";
+            var format = "yyyyMMdd HH:mm:ss";
 
             for (int ctr = 0; ctr < itemCount; ctr++)
             {
@@ -1483,7 +1483,7 @@ namespace OsEngine.Market.Servers.InteractiveBrokers
             trade.Price = price;
             trade.Volume = size;
             trade.Time = DateTime.Now;
-            trade.SecurityNameCode = security.LocalSymbol + "_" + security.SecType + "_" + security.Exchange;
+            trade.SecurityNameCode = security.Symbol + "_" + security.SecType + "_" + security.Exchange;
 
             if (tickType == 1)
             {

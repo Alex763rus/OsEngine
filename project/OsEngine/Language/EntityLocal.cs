@@ -283,25 +283,13 @@ namespace OsEngine.Language
             "Eng:Accept_" +
             "Ru:Принять_");
 
+        public string ButtonUpdate => OsLocalization.ConvertToLocString(
+            "Eng:Update_" +
+            "Ru:Обновить_");
+
         public string ButtonCancel1 => OsLocalization.ConvertToLocString(
-            "Eng:Think again_" +
-            "Ru:Ещё подумать_");
-
-        public string ButtonCancel2 => OsLocalization.ConvertToLocString(
-            "Eng:Earn more_" +
-            "Ru:Дальше зарабатывать_");
-
-        public string ButtonCancel3 => OsLocalization.ConvertToLocString(
-            "Eng:No!_" +
-            "Ru:Нет!_");
-
-        public string ButtonCancel4 => OsLocalization.ConvertToLocString(
-            "Eng:Stop!_" +
-            "Ru:Остановится!_");
-
-        public string ButtonCancel5 => OsLocalization.ConvertToLocString(
-            "Eng:Don't do it_" +
-            "Ru:Не нужно так_");
+            "Eng:No_" +
+            "Ru:Нет_");
 
         public string ErrorSave => OsLocalization.ConvertToLocString(
             "Eng:The saving process is interrupted. One of the fields does not have a valid value_" +
@@ -418,5 +406,54 @@ namespace OsEngine.Language
         public string AwaitUiLabel1 => OsLocalization.ConvertToLocString(
              "Eng:Work in progress_" +
              "Ru:Работа идёт..._");
+
+        public string PositionBuyAtStopColumn1 => OsLocalization.ConvertToLocString(
+              "Eng:Number_" +
+              "Ru:Номер_");
+
+        public string PositionBuyAtStopColumn2 => OsLocalization.ConvertToLocString(
+              "Eng:Time create_" +
+              "Ru:Время создания_");
+
+        public string PositionBuyAtStopColumn3 => OsLocalization.ConvertToLocString(
+              "Eng:Tab name_" +
+              "Ru:Имя вкладки_");
+
+        public string PositionBuyAtStopColumn4 => OsLocalization.ConvertToLocString(
+             "Eng:Security_" +
+             "Ru:Бумага_");
+
+        public string PositionBuyAtStopColumn5 => OsLocalization.ConvertToLocString(
+             "Eng:Volume_" +
+             "Ru:Объём_");
+
+        public string PositionBuyAtStopColumn6 => OsLocalization.ConvertToLocString(
+             "Eng:Side_" +
+             "Ru:Сторона_");
+
+        public string PositionBuyAtStopColumn7 => OsLocalization.ConvertToLocString(
+             "Eng:Activate Type_" +
+             "Ru:Тип активации_");
+
+        public string PositionBuyAtStopColumn8 => OsLocalization.ConvertToLocString(
+             "Eng:Activate price_" +
+             "Ru:Цена активации_");
+
+        public string PositionBuyAtStopColumn9 => OsLocalization.ConvertToLocString(
+             "Eng:Order price_" +
+             "Ru:Цена ордера_");
+
+        public string PositionBuyAtStopColumn10 => OsLocalization.ConvertToLocString(
+             "Eng:Candles lifetime_" +
+             "Ru:Время жизни свечей_");
+
+        public string PositionBuyAtStopColumn11 => OsLocalization.ConvertToLocString(
+             "Eng:Lifetime type_" +
+             "Ru:Тип жизни заявки_");
+
+        public string CustomColorDialogUiTitle => OsLocalization.ConvertToLocString(
+             "Eng:Color dialog_" +
+             "Ru:Выбор цвета_");
+
     }
 }

@@ -18,6 +18,8 @@ using OsEngine.Market.Servers;
 using OsEngine.Market.Servers.Tester;
 using OsEngine.Layout;
 using System.IO;
+using OsEngine.OsTrader.Panels.Tab.Internal;
+using OsEngine.Alerts;
 
 namespace OsEngine.OsTrader.Panels
 {
@@ -49,6 +51,7 @@ namespace OsEngine.OsTrader.Panels
                 if (_testerServer != null)
                 {
                     _testerServer.TestingFastEvent += Serv_TestingFastEvent;
+                    _testerServer.TestingEndEvent += _testerServer_TestingEndEvent;
                 }
 
             }
@@ -67,29 +70,42 @@ namespace OsEngine.OsTrader.Panels
             CheckPanels();
 
             GlobalGUILayout.Listen(this, "botPanel_" + panel.NameStrategyUniq);
+
+            _stopLimitsViewer = new BuyAtStopPositionsViewer(HostStopLimits, panel.StartProgram);
+            _stopLimitsViewer.UserSelectActionEvent += _stopLimitsViewer_UserSelectActionEvent;
+            _stopLimitsViewer.LogMessageEvent += SendNewLogMessage;
+
+            UpdateTabsInStopLimitViewer();
+            panel.NewTabCreateEvent += UpdateTabsInStopLimitViewer;
         }
 
-        // для тестирования
-
-        TesterServer _testerServer = null;
-
-        private void Serv_TestingFastEvent()
+        private void UpdateTabsInStopLimitViewer()
         {
-            if (_testerServer.TestingFastIsActivate == true)
+            List<BotTabSimple> allTabs = new List<BotTabSimple>();
+
+            if (_panel.TabsSimple != null)
             {
-                _panel.StopPaint();
+                allTabs.AddRange(_panel.TabsSimple);
             }
-            else if (_testerServer.TestingFastIsActivate == false)
+            if (_panel.TabsScreener != null)
             {
-                StartPaint();
-                _panel.MoveChartToTheRight();
+                for (int i = 0; i < _panel.TabsScreener.Count; i++)
+                {
+                    if (_panel.TabsScreener[i].Tabs != null)
+                    {
+                        allTabs.AddRange(_panel.TabsScreener[i].Tabs);
+                    }
+                }
             }
+
+            _stopLimitsViewer.LoadTabToWatch(allTabs);
         }
 
         private void BotPanelChartUi_Closed(object sender, EventArgs e)
         {
             Closed -= BotPanelChartUi_Closed;
             _panel.StopPaint();
+            _panel.NewTabCreateEvent -= UpdateTabsInStopLimitViewer;
             _panel = null;
             LocationChanged -= RobotUi_LocationChanged;
             TabControlBotsName.SizeChanged -= TabControlBotsName_SizeChanged;
@@ -97,15 +113,101 @@ namespace OsEngine.OsTrader.Panels
             if (_testerServer != null)
             {
                 _testerServer.TestingFastEvent -= Serv_TestingFastEvent;
+                _testerServer.TestingEndEvent -= _testerServer_TestingEndEvent;
                 _testerServer = null;
             }
+
+            _stopLimitsViewer.UserSelectActionEvent -= _stopLimitsViewer_UserSelectActionEvent;
+            _stopLimitsViewer.LogMessageEvent -= SendNewLogMessage;
+            _stopLimitsViewer.ClearDelete();
+            _stopLimitsViewer = null;
+        }
+
+        // стоп - лимиты
+
+        private void _stopLimitsViewer_UserSelectActionEvent(int limitNum, Alerts.SignalType signal)
+        {
+            try
+            {
+
+                List<BotTabSimple> allTabs = new List<BotTabSimple>();
+
+                if(_panel.TabsSimple != null)
+                {
+                    allTabs.AddRange(_panel.TabsSimple);
+                }
+                if (_panel.TabsScreener != null)
+                {
+                    for(int i = 0;i < _panel.TabsScreener.Count;i++)
+                    {
+                        if (_panel.TabsScreener[i].Tabs != null)
+                        {
+                            allTabs.AddRange(_panel.TabsScreener[i].Tabs);
+                        }
+                    }
+                }
+
+                for (int i = 0; i < allTabs.Count; i++)
+                {
+                    if (signal == SignalType.DeleteAllPoses)
+                    {
+                        allTabs[i].BuyAtStopCancel();
+                        allTabs[i].SellAtStopCancel();
+                    }
+                    else
+                    {
+                        for (int i2 = 0; i2 < allTabs[i].PositionOpenerToStop.Count; i2++)
+                        {
+                            if (allTabs[i].PositionOpenerToStop[i2].Number == limitNum)
+                            {
+                                allTabs[i].PositionOpenerToStop.RemoveAt(i2);
+                                allTabs[i].UpdateStopLimits();
+                                return;
+                            }
+                        }
+                    }
+                }
+
+            }
+            catch (Exception error)
+            {
+                SendNewLogMessage(error.ToString(), LogMessageType.Error);
+            }
+        }
+
+        // для тестирования
+
+        TesterServer _testerServer = null;
+
+        BuyAtStopPositionsViewer _stopLimitsViewer;
+
+        private void Serv_TestingFastEvent()
+        {
+            if (_testerServer.TestingFastIsActivate == true)
+            {
+                _panel.StopPaint();
+                _stopLimitsViewer.StopPaint();
+            }
+            else if (_testerServer.TestingFastIsActivate == false)
+            {
+                StartPaint();
+                _panel.MoveChartToTheRight();
+                _stopLimitsViewer.StartPaint();
+            }
+        }
+
+        private void _testerServer_TestingEndEvent()
+        {
+             StartPaint();
+             _panel.MoveChartToTheRight();
+             _stopLimitsViewer.StartPaint();
         }
 
         public void StartPaint()
         {
             _panel.StartPaint(GridChart, ChartHostPanel, HostGlass, HostOpenPosition,
              HostClosePosition, HostBotLog, RectChart,
-             HostAllert, TabControlBotTab, TextBoxPrice, GridChartControlPanel);
+             HostAllert, TabControlBotTab, TextBoxPrice, GridChartControlPanel, TextBoxVolumeFast);
         }
 
         private BotPanel _panel;
@@ -142,6 +244,7 @@ namespace OsEngine.OsTrader.Panels
             TabItemMarketDepth.Header = OsLocalization.Trader.Label25;
             TabItemAlerts.Header = OsLocalization.Trader.Label26;
             TabItemControl.Header = OsLocalization.Trader.Label27;
+            TabItemStopLimits.Header = OsLocalization.Trader.Label193;
             ButtonBuyFast.Content = OsLocalization.Trader.Label28;
             ButtonSellFast.Content = OsLocalization.Trader.Label29;
             TextBoxVolumeInterText.Text = OsLocalization.Trader.Label30;
@@ -156,6 +259,7 @@ namespace OsEngine.OsTrader.Panels
             ButtonStrategSettings.Content = OsLocalization.Trader.Label47;
             ButtonStrategSettingsIndividual.Content = OsLocalization.Trader.Label43;
             ButtonRedactTab.Content = OsLocalization.Trader.Label44;
+            ButtonMoreOpenPositionDetail.Content = OsLocalization.Trader.Label197;
         }
 
         private void buttonBuyFast_Click_1(object sender, RoutedEventArgs e)
@@ -198,7 +302,6 @@ namespace OsEngine.OsTrader.Panels
             ((BotTabSimple)_panel.ActivTab).SellAtMarket(volume);
         }
 
-        // manual control of the position
         // ручное управление позицией
 
         private void ButtonBuyLimit_Click(object sender, RoutedEventArgs e)
@@ -289,10 +392,7 @@ namespace OsEngine.OsTrader.Panels
             ((BotTabSimple)_panel.ActivTab).CloseAllOrderInSystem();
         }
 
-        /// <summary>
-        /// journal window
-        /// </summary>
-        private JournalUi _journalUi;
+        private JournalUi2 _journalUi;
 
         private void ButtonJournalCommunity_Click(object sender, RoutedEventArgs e)
         {
@@ -325,7 +425,7 @@ namespace OsEngine.OsTrader.Panels
 
                 panelsJournal.Add(botPanel);
 
-                _journalUi = new JournalUi(panelsJournal, _panel.StartProgram);
+                _journalUi = new JournalUi2(panelsJournal, _panel.StartProgram);
                 _journalUi.Closed += _journalUi_Closed;
                 _journalUi.Show();
             }
@@ -364,18 +464,17 @@ namespace OsEngine.OsTrader.Panels
 
         private void buttonStrategManualSettings_Click(object sender, RoutedEventArgs e)
         {
-            if (_panel.ActivTab.GetType().Name != "BotTabSimple")
+            if (_panel.ActivTab.GetType().Name == "BotTabSimple")
             {
-                return;
+                ((BotTabSimple)_panel.ActivTab).ShowManualControlDialog();
+            }
+            else if (_panel.ActivTab.GetType().Name == "BotTabScreener")
+            {
+                ((BotTabScreener)_panel.ActivTab).ShowManualControlDialog();
             }
 
-            ((BotTabSimple)_panel.ActivTab).ShowManualControlDialog();
         }
 
-        /// <summary>
-        /// send a new message 
-        /// выслать новое сообщение на верх
-        /// </summary>
         private void SendNewLogMessage(string message, LogMessageType type)
         {
             if (LogMessageEvent != null)
@@ -388,10 +487,6 @@ namespace OsEngine.OsTrader.Panels
             }
         }
 
-        /// <summary>
-        /// outgoing message for log
-        /// исходящее сообщение для лога
-        /// </summary>
         public event Action<string, LogMessageType> LogMessageEvent;
 
         private void ButtonRedactTab_Click(object sender, RoutedEventArgs e)
@@ -586,6 +681,75 @@ namespace OsEngine.OsTrader.Panels
             catch (Exception)
             {
                 // ignore
+            }
+        }
+
+        private List<PositionOpenUi2> _guisOpenPos = new List<PositionOpenUi2>();
+
+        private void ButtonMoreOpenPositionDetail_Click(object sender, RoutedEventArgs e)
+        {
+            BotTabSimple activTab = null;
+
+            try
+            {
+                if (_panel.ActivTab.GetType().Name != "BotTabSimple")
+                {
+                    return;
+                }
+
+                activTab = (BotTabSimple)_panel.ActivTab;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                return;
+            }
+
+            for (int i = 0;i < _guisOpenPos.Count;i++)
+            {
+                if (_guisOpenPos[i].Tab.TabName == activTab.TabName)
+                {
+                    _guisOpenPos[i].Activate();
+                    return;
+                }
+            }
+
+            /*if(activTab.Connector.ServerType == ServerType.None
+                || string.IsNullOrEmpty(activTab.Connector.SecurityName)
+                || activTab.IsConnected == false 
+                || activTab.IsReadyToTrade == false)
+            {
+                activTab.SetNewLogMessage(OsLocalization.Trader.Label195, LogMessageType.Error);
+                return;
+            }*/
+
+            PositionOpenUi2 ui = new PositionOpenUi2(activTab);
+            ui.Show();
+
+            _guisOpenPos.Add(ui);
+
+            ui.Closing += Ui_Closing;
+
+        }
+
+        private void Ui_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            try
+            {
+                PositionOpenUi2 myUi = (PositionOpenUi2)sender;
+
+                for (int i = 0; i < _guisOpenPos.Count; i++)
+                {
+                    if (_guisOpenPos[i].Tab.TabName == myUi.Tab.TabName)
+                    {
+                        _guisOpenPos.RemoveAt(i);
+                        return;
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show(ex.Message);
             }
         }
     }

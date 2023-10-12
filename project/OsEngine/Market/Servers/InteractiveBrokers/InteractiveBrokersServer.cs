@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
 using System.Threading;
 using OsEngine.Entity;
 using OsEngine.Language;
 using OsEngine.Logging;
 using OsEngine.Market.Servers.Entity;
-using OsEngine.Market.Servers.InteractiveBrokers;
 using System.IO;
 
 
@@ -149,14 +146,14 @@ namespace OsEngine.Market.Servers.InteractiveBrokers
         /// </summary>
         void _ibClient_ConnectionSucsess()
         {
+            GetSecurities();
+
             ServerStatus = ServerConnectStatus.Connect;
 
             if (ConnectEvent != null)
             {
                 ConnectEvent();
             }
-
-            GetSecurities();
         }
 
         /// <summary>
@@ -196,6 +193,8 @@ namespace OsEngine.Market.Servers.InteractiveBrokers
                 return;
             }
 
+            _securitiesIsConnect = false;
+
             if (_namesSubscribleSecurities == null)
             {
                 _namesSubscribleSecurities = new List<string>();
@@ -221,7 +220,11 @@ namespace OsEngine.Market.Servers.InteractiveBrokers
 
                 _client.GetSecurityDetail(_secIB[i]);
             }
+
+            _securitiesIsConnect = true;
         }
+
+        private bool _securitiesIsConnect = false;
 
         // security. What the user enters for the subscription. Storage and management
         // бумаги. То что пользователь вводит для подписки. Хранение и менеджмент
@@ -309,6 +312,7 @@ namespace OsEngine.Market.Servers.InteractiveBrokers
         {
             if (!File.Exists(@"Engine\" + @"IbSecuritiesToWatch.txt"))
             {
+                LoadStartSecurities();
                 return;
             }
 
@@ -358,29 +362,7 @@ namespace OsEngine.Market.Servers.InteractiveBrokers
 
                     if (_secIB.Count == 0)
                     {
-                        SecurityIb sec1 = new SecurityIb();
-                        sec1.Symbol = "AAPL";
-                        sec1.Exchange = "SMART";
-                        sec1.SecType = "STK";
-                        _secIB.Add(sec1);
-
-                        SecurityIb sec2 = new SecurityIb();
-                        sec2.Symbol = "FB";
-                        sec2.Exchange = "SMART";
-                        sec2.SecType = "STK";
-                        _secIB.Add(sec2);
-
-                        SecurityIb sec3 = new SecurityIb();
-                        sec3.Symbol = "EUR";
-                        sec3.Exchange = "IDEALPRO";
-                        sec3.SecType = "CASH";
-                        _secIB.Add(sec3);
-
-                        SecurityIb sec4 = new SecurityIb();
-                        sec4.Symbol = "GBP";
-                        sec4.Exchange = "IDEALPRO";
-                        sec4.SecType = "CASH";
-                        _secIB.Add(sec4);
+                        LoadStartSecurities();
                     }
                 }
             }
@@ -388,6 +370,37 @@ namespace OsEngine.Market.Servers.InteractiveBrokers
             {
                 // ignored
             }
+        }
+
+        private void LoadStartSecurities()
+        {
+            SecurityIb sec1 = new SecurityIb();
+            sec1.LocalSymbol = "AAPL";
+            sec1.Exchange = "SMART";
+            sec1.SecType = "STK";
+            sec1.Currency = "USD";
+
+            _secIB.Add(sec1);
+
+            SecurityIb sec2 = new SecurityIb();
+            sec2.LocalSymbol = "FB";
+            sec2.Exchange = "SMART";
+            sec2.SecType = "STK";
+            sec2.Currency = "USD";
+
+            _secIB.Add(sec2);
+
+            SecurityIb sec3 = new SecurityIb();
+            sec3.LocalSymbol = "EUR.USD";
+            sec3.Exchange = "IDEALPRO";
+            sec3.SecType = "CASH";
+            _secIB.Add(sec3);
+
+            SecurityIb sec4 = new SecurityIb();
+            sec4.LocalSymbol = "GBP.USD";
+            sec4.Exchange = "IDEALPRO";
+            sec4.SecType = "CASH";
+            _secIB.Add(sec4);
         }
 
         void _ibClient_NewContractEvent(SecurityIb contract)
@@ -918,6 +931,11 @@ namespace OsEngine.Market.Servers.InteractiveBrokers
         public void Subscrible(Security security)
         {
 
+            while (_securitiesIsConnect == false)
+            {
+                Thread.Sleep(500);
+            }
+
             SecurityIb contractIb =
            _secIB.Find(
          contract =>
@@ -1122,34 +1140,24 @@ contract =>
         }
 
         public List<Candle> StraichCandles(Candles series)
-        {/*
-            if (series.CandlesArray != null &&
-    series.CandlesArray.Count > 2)
+        {
+            List<Candle> newArray = new List<Candle>();
+
+            for (int i = 0; i < series.CandlesArray.Count; i++)
             {
-                Candle standart = series.CandlesArray[0];
-                TimeSpan timeBetwenCandles =
-                    series.CandlesArray[series.CandlesArray.Count - 2].TimeStart - series.CandlesArray[series.CandlesArray.Count - 1].TimeStart;
+                Candle curCandle = series.CandlesArray[i];
 
-                DateTime lastTime = series.CandlesArray[0].TimeStart;
-
-                int indexInsert = 0;
-
-                while (series.CandlesArray.Count < 205)
+                if (curCandle.Open == 0
+                    || curCandle.High == 0
+                    || curCandle.Low == 0
+                    || curCandle.Close == 0)
                 {
-                    lastTime = lastTime.Add(timeBetwenCandles);
-
-                    Candle newCandle = new Candle();
-
-                    newCandle.Volume = standart.Volume;
-                    newCandle.Open = standart.Open;
-                    newCandle.High = standart.High;
-                    newCandle.Low = standart.Low;
-                    newCandle.Close = standart.Close;
-                    newCandle.TimeStart = lastTime;
-
-                    series.CandlesArray.Insert(0, newCandle);
+                    continue;
                 }
-            }*/
+                newArray.Add(curCandle);
+            }
+
+            series.CandlesArray = newArray;
 
             return series.CandlesArray;
         }
@@ -1333,6 +1341,11 @@ contract =>
         }
 
         public void ResearchTradesToOrders(List<Order> orders)
+        {
+
+        }
+
+        public void CancelAllOrdersToSecurity(Security security)
         {
 
         }

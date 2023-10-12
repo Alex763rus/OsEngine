@@ -1,10 +1,6 @@
 ﻿using Com.Lmax.Api;
 using Jayrock.Services;
 using Kraken.WebSockets;
-using OkonkwoOandaV20.Framework;
-using OkonkwoOandaV20.TradeLibrary.DataTypes.Communications.Requests;
-using OkonkwoOandaV20.TradeLibrary.DataTypes.Position;
-using OkonkwoOandaV20.TradeLibrary.DataTypes.Pricing;
 using OsEngine.Entity;
 using OsEngine.Market.Servers.Bitfinex.BitfitnexEntity;
 using OsEngine.Market.Servers.GateIo.Futures.Response;

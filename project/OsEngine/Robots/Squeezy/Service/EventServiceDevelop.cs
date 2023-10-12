@@ -1,6 +1,4 @@
 ﻿using Kraken.WebSockets;
-using OkonkwoOandaV20.TradeLibrary.DataTypes.Position;
-using OkonkwoOandaV20.TradeLibrary.DataTypes.Pricing;
 using OsEngine.Alerts;
 using OsEngine.Charts.CandleChart.Indicators;
 using OsEngine.Entity;
@@ -112,7 +110,7 @@ namespace OsEngine.Robots.Squeezy.Trading
 
 
         }
-        private PositionOpenerToStop positionOpenerToStop;
+        private PositionOpenerToStopLimit positionOpenerToStop;
         public void parametrsChangeByUserLogic()
         {
             counter = 0;

@@ -10,7 +10,15 @@ using OsEngine.Language;
 using OsEngine.Market;
 using OsEngine.OsTrader.Panels;
 using OsEngine.OsTrader.Panels.Tab;
-
+/* Description
+The Countertrend robot
+Buy:
+we buy if we are under the largest volume for sale in the last 10 candles.
+Sell:
+sell if we are above the largest purchase volume for the last 10 candles.
+Exit logic:
+By return signal.
+*/
 namespace OsEngine.Robots.CounterTrend
 {
     public class ClusterCountertrend : BotPanel
@@ -34,6 +42,13 @@ namespace OsEngine.Robots.CounterTrend
             Volume = CreateParameter("Volume", 1, 1.0m, 50, 1);
             BackLook = CreateParameter("Back Look", 1, 1, 10, 1);
 
+            Description = "The Countertrend robot " +
+                "Buy: " +
+                "we buy if we are under the largest volume for sale in the last 10 candles. " +
+                "Sell: " +
+                "sell if we are above the largest purchase volume for the last 10 candles. " +
+                "Exit logic: " +
+                "By return signal.";
         }
 
         /// <summary>
@@ -96,6 +111,12 @@ namespace OsEngine.Robots.CounterTrend
 
             HorizontalVolumeCluster maxBuyCluster =
                 _tabCluster.FindMaxVolumeCluster(candles.Count - BackLook.ValueInt, candles.Count, ClusterType.BuyVolume);
+
+            if(maxBuyCluster == null)
+            {
+                return;
+            }
+
             if (candles[candles.Count - 1].Close > maxBuyCluster.MaxBuyVolumeLine.Price)
             { // sell and exit long positions
               // продаём и выходим из позиции лонг
@@ -118,6 +139,11 @@ namespace OsEngine.Robots.CounterTrend
 
             HorizontalVolumeCluster maxSellCluster =
                 _tabCluster.FindMaxVolumeCluster(candles.Count - BackLook.ValueInt, candles.Count, ClusterType.SellVolume);
+
+            if(maxSellCluster == null)
+            {
+                return;
+            }
 
             if (candles[candles.Count - 1].Close < maxSellCluster.MaxSellVolumeLine.Price)
             { // buy and exit short

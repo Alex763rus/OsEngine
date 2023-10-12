@@ -92,6 +92,10 @@ namespace OsEngine.Market.Servers.Tinkoff
 
         #region Trade permission
 
+        public bool MarketOrdersIsSupport
+        {
+            get { return false; }
+        }
         public bool IsTradeServer
         {
             get { return true; }
@@ -129,7 +133,7 @@ namespace OsEngine.Market.Servers.Tinkoff
                 TimeFrameHour1IsOn = true,
                 TimeFrameHour2IsOn = true,
                 TimeFrameHour4IsOn = true,
-                TimeFrameDayIsOn = true
+                TimeFrameDayIsOn = false
             };
 
         #endregion

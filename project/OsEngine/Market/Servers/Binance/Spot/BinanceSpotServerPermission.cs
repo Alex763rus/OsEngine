@@ -68,7 +68,7 @@ namespace OsEngine.Market.Servers.Binance.Spot
         }
         public bool DataFeedTf2HourCanLoad
         {
-            get { return false; }
+            get { return true; }
         }
         public bool DataFeedTf4HourCanLoad
         {
@@ -86,7 +86,10 @@ namespace OsEngine.Market.Servers.Binance.Spot
         #endregion
 
         #region Trade permission
-
+        public bool MarketOrdersIsSupport
+        {
+            get { return true; }
+        }
         public bool IsTradeServer
         {
             get { return true; }

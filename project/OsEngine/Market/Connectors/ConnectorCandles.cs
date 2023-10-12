@@ -50,9 +50,10 @@ namespace OsEngine.Market.Connectors
             {
                 _canSave = true;
                 Load();
+                ServerMaster.RevokeOrderToEmulatorEvent += ServerMaster_RevokeOrderToEmulatorEvent;
             }
 
-            if (createEmulator == true)
+            if (createEmulator == true && startProgram != StartProgram.IsOsOptimizer)
             {
                 _emulator = new OrderExecutionEmulator();
                 _emulator.MyTradeEvent += ConnectorBot_NewMyTradeEvent;
@@ -167,7 +168,7 @@ namespace OsEngine.Market.Connectors
         /// </summary>
         public void Delete()
         {
-          if(StartProgram != StartProgram.IsOsOptimizer)
+            if(StartProgram != StartProgram.IsOsOptimizer)
             {
                 TimeFrameBuilder.Delete();
 
@@ -175,6 +176,8 @@ namespace OsEngine.Market.Connectors
                 {
                     File.Delete(@"Engine\" + _name + @"ConnectorPrime.txt");
                 }
+
+                ServerMaster.RevokeOrderToEmulatorEvent -= ServerMaster_RevokeOrderToEmulatorEvent;
             }
 
             if (_mySeries != null)
@@ -223,8 +226,7 @@ namespace OsEngine.Market.Connectors
                 if (ServerMaster.GetServers() == null ||
                     ServerMaster.GetServers().Count == 0)
                 {
-                    AlertMessageSimpleUi uiMessage = new AlertMessageSimpleUi(OsLocalization.Market.Message1);
-                    uiMessage.Show();
+                    SendNewLogMessage(OsLocalization.Market.Message1, LogMessageType.Error);
                     return;
                 }
 
@@ -376,6 +378,35 @@ namespace OsEngine.Market.Connectors
                 }
 
                 return null;
+            }
+        }
+
+        public bool MarketOrdersIsSupport
+        {
+            get
+            {
+                if (ServerType == ServerType.Lmax ||
+                    ServerType == ServerType.Tester ||
+                    ServerType == ServerType.Transaq ||
+                    ServerType == ServerType.BitMex)
+                {
+                    return true;
+                }
+
+                if (ServerType == ServerType.None)
+                {
+                    return false;
+                }
+
+                IServerPermission serverPermision = ServerMaster.GetServerPermission(ServerType);
+
+                if (serverPermision == null)
+                {
+                    return false;
+                }
+
+
+                return serverPermision.MarketOrdersIsSupport;
             }
         }
 
@@ -745,7 +776,7 @@ namespace OsEngine.Market.Connectors
                     return true;
                 }
 
-                if (_myServer.LastStartServerTime.AddSeconds(60) > DateTime.Now)
+                if (_myServer.LastStartServerTime.AddSeconds(5) > DateTime.Now)
                 {
                     return false;
                 }
@@ -1064,6 +1095,8 @@ namespace OsEngine.Market.Connectors
             }
         }
 
+        DateTime _timeLastEndCandle = DateTime.MinValue;
+
         /// <summary>
         /// the candle has just ended
         /// свеча только что завершилась
@@ -1072,9 +1105,30 @@ namespace OsEngine.Market.Connectors
         {
             try
             {
-                if (NewCandlesChangeEvent != null && EventsIsOn == true)
+                if(EventsIsOn == false)
                 {
-                    NewCandlesChangeEvent(Candles(true));
+                    return;
+                }
+
+                List<Candle> candles = Candles(true);
+
+                if(candles == null || candles.Count == 0)
+                {
+                    return;
+                }
+
+                DateTime timeLastCandle = candles[candles.Count - 1].TimeStart;
+
+                if(timeLastCandle == _timeLastEndCandle)
+                {
+                    return;
+                }
+
+                _timeLastEndCandle = timeLastCandle;
+
+                if (NewCandlesChangeEvent != null)
+                {
+                    NewCandlesChangeEvent(candles);
                 }
             }
             catch (Exception error)
@@ -1114,6 +1168,8 @@ namespace OsEngine.Market.Connectors
                 {
                     OrderChangeEvent(order);
                 }
+
+                ServerMaster.InsertOrder(order);
             }
             catch (Exception error)
             {
@@ -1165,7 +1221,7 @@ namespace OsEngine.Market.Connectors
                 {
                     if (_emulator != null)
                     {
-                        _emulator.ProcessBidAsc(_bestBid, _bestAsk, MarketTime);
+                        _emulator.ProcessBidAsc(_bestBid, _bestAsk);
                     }
                 }
 
@@ -1218,7 +1274,7 @@ namespace OsEngine.Market.Connectors
                 {
                     if(_emulator != null)
                     {
-                        _emulator.ProcessBidAsc(_bestAsk, _bestBid, MarketTime);
+                        _emulator.ProcessBidAsc(_bestAsk, _bestBid);
                     }
                 }
             }
@@ -1282,6 +1338,13 @@ namespace OsEngine.Market.Connectors
                 if (TimeChangeEvent != null && EventsIsOn == true)
                 {
                     TimeChangeEvent(time);
+                }
+                if(EmulatorIsOn == true)
+                {
+                    if(_emulator != null)
+                    {
+                        _emulator.ProcessTime(time);
+                    }
                 }
             }
             catch (Exception error)
@@ -1377,6 +1440,7 @@ namespace OsEngine.Market.Connectors
                 return _bestBid;
             }
         }
+
         /// <summary>
         /// best price of buyer 
         /// лучшая цена покупателя
@@ -1407,14 +1471,38 @@ namespace OsEngine.Market.Connectors
             }
         }
 
-        // forward orders
         // Пересылка ордеров
+
+        private void ServerMaster_RevokeOrderToEmulatorEvent(Order order)
+        {
+            if (order.SecurityNameCode != SecurityName + " TestPaper" 
+                && order.SecurityNameCode != SecurityName)
+            {
+                return;
+            }
+
+            if (IsConnected == false
+               || IsReadyToTrade == false)
+            {
+                SendNewLogMessage(OsLocalization.Trader.Label191, LogMessageType.Error);
+                return;
+            }
+
+            OrderCancel(order);
+        }
+
+        public void LoadOrderInOrderStorage(Order order)
+        {
+            ServerMaster.InsertOrder(order);
+        }
+
+        // Исполнение ордеров
 
         /// <summary>
         /// execute order
         /// исполнить ордер
         /// </summary>
-        public void OrderExecute(Order order)
+        public void OrderExecute(Order order, bool isEmulator = false)
         {
             try
             {
@@ -1437,7 +1525,9 @@ namespace OsEngine.Market.Connectors
 
                 if (StartProgram != StartProgram.IsTester &&
                     StartProgram != StartProgram.IsOsOptimizer &&
-                    (EmulatorIsOn || _myServer.ServerType == ServerType.Finam))
+                    (EmulatorIsOn 
+                    || _myServer.ServerType == ServerType.Finam
+                    || isEmulator))
                 {
                     if(_emulator != null)
                     {
@@ -1467,10 +1557,19 @@ namespace OsEngine.Market.Connectors
                 {
                     return;
                 }
-                order.SecurityNameCode = SecurityName;
-                order.PortfolioNumber = PortfolioName;
-
-                if (EmulatorIsOn || _myServer.ServerType == ServerType.Finam)
+                if(string.IsNullOrEmpty(order.SecurityNameCode))
+                {
+                    order.SecurityNameCode = SecurityName;
+                }
+              
+                if(string.IsNullOrEmpty(order.PortfolioNumber))
+                {
+                    order.PortfolioNumber = PortfolioName;
+                }
+                
+                if (EmulatorIsOn 
+                    || _myServer.ServerType == ServerType.Finam
+                    || order.SecurityNameCode == SecurityName + " TestPaper")
                 {
                     if(_emulator != null)
                     {
@@ -1488,7 +1587,7 @@ namespace OsEngine.Market.Connectors
             }
         }
 
-        // outgoing events
+
         // Исходящие события
 
         /// <summary>

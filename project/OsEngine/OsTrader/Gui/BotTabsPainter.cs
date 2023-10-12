@@ -24,7 +24,7 @@ namespace OsEngine.OsTrader.Gui
             RePaintTable(); 
             _master.BotCreateEvent += _master_NewBotCreateEvent;
             _master.BotDeleteEvent += _master_BotDeleteEvent;
-
+            _master.UserClickOnPositionShowBotInTableEvent += _master_UserClickOnPositionShowBotInTableEvent;
             Thread painterThread = new Thread(UpdaterThreadArea);
             painterThread.Start();
         }
@@ -153,68 +153,83 @@ namespace OsEngine.OsTrader.Gui
             {
                 return;
             }
-            int coluIndex = _grid.SelectedCells[0].ColumnIndex;
 
-            int rowIndex = _grid.SelectedCells[0].RowIndex;
 
-            /*
-colum0.HeaderText = "Num";
-colum01.HeaderText = "Name";
-colum02.HeaderText = "Type";
-colum03.HeaderText = "First Security";
-colum04.HeaderText = "Position";
-colum05.HeaderText = "On/off";
-colum06.HeaderText = "Emulator on/off";
-colum07.HeaderText = "Chart";
-colum08.HeaderText = "Parameters";
-colum9.HeaderText = "Journal";
-colum10.HeaderText = "Action";
-*/
-
-            int botsCount = 0;
-
-            if (_master.PanelsArray != null)
+            try
             {
-                botsCount = _master.PanelsArray.Count;
+                int coluIndex = _grid.SelectedCells[0].ColumnIndex;
+
+                int rowIndex = _grid.SelectedCells[0].RowIndex;
+
+                /*
+    colum0.HeaderText = "Num";
+    colum01.HeaderText = "Name";
+    colum02.HeaderText = "Type";
+    colum03.HeaderText = "First Security";
+    colum04.HeaderText = "Position";
+    colum05.HeaderText = "On/off";
+    colum06.HeaderText = "Emulator on/off";
+    colum07.HeaderText = "Chart";
+    colum08.HeaderText = "Parameters";
+    colum9.HeaderText = "Journal";
+    colum10.HeaderText = "Action";
+    */
+
+                int botsCount = 0;
+
+                if (_master.PanelsArray != null)
+                {
+                    botsCount = _master.PanelsArray.Count;
+                }
+
+                BotPanel bot = null;
+
+                if (rowIndex < botsCount)
+                {
+                    bot = _master.PanelsArray[rowIndex];
+                }
+
+                if (coluIndex == 7 &&
+                    rowIndex < botsCount)
+                { // вызываем чарт робота
+                    bot.ShowChartDialog();
+                }
+                else if (coluIndex == 8 &&
+       rowIndex < botsCount)
+                { // вызываем параметры
+                    bot.ShowParametrDialog();
+                }
+                else if (coluIndex == 9 &&
+        rowIndex < botsCount)
+                { // вызываем окно удаление робота
+                    _master.DeleteByNum(rowIndex);
+                }
+
+                if (coluIndex == 8 &&
+         rowIndex == botsCount + 1)
+                { // вызываем общий журнал
+                    _master.ShowCommunityJournal(2, 0, 0);
+                }
+                else if (coluIndex == 9 &&
+        rowIndex == botsCount + 1)
+                { // вызываем добавление нового бота
+                    _master.CreateNewBot();
+                }
+
+                if(_grid.Rows.Count <= prevActiveRow)
+                {
+                    prevActiveRow = rowIndex;
+                    return;
+                }
+
+                _grid.Rows[prevActiveRow].DefaultCellStyle.ForeColor = System.Drawing.Color.FromArgb(154, 156, 158);
+                _grid.Rows[rowIndex].DefaultCellStyle.ForeColor = System.Drawing.Color.FromArgb(255, 255, 255);
+                prevActiveRow = rowIndex;
             }
-
-            BotPanel bot = null;
-
-            if(rowIndex < botsCount)
+            catch(Exception error)
             {
-                bot = _master.PanelsArray[rowIndex];
+                _master.SendNewLogMessage(error.ToString(),Logging.LogMessageType.Error);
             }
-
-            if (coluIndex == 7 &&
-                rowIndex < botsCount)
-            { // вызываем чарт робота
-                bot.ShowChartDialog();
-            }
-            else if (coluIndex == 8 &&
-   rowIndex < botsCount)
-            { // вызываем параметры
-                bot.ShowParametrDialog();
-            }
-            else if (coluIndex == 9 &&
-    rowIndex < botsCount)
-            { // вызываем окно удаление робота
-                _master.DeleteByNum(rowIndex);
-            }
-
-            if (coluIndex == 8 &&
-     rowIndex == botsCount + 1)
-            { // вызываем общий журнал
-                _master.ShowCommunityJournal(2, 0, 0);
-            }
-            else if (coluIndex == 9 &&
-    rowIndex == botsCount + 1)
-            { // вызываем добавление нового бота
-                _master.CreateNewBot();
-            }
-						
-            _grid.Rows[prevActiveRow].DefaultCellStyle.ForeColor = System.Drawing.Color.FromArgb(154, 156, 158);
-            _grid.Rows[rowIndex].DefaultCellStyle.ForeColor = System.Drawing.Color.FromArgb(255, 255, 255);
-            prevActiveRow = rowIndex;
         }
 
         #region работа с чек-боксами включений и отключений
@@ -572,5 +587,81 @@ colum9.HeaderText = "Journal";
                 _master.SendNewLogMessage(error.ToString(), Logging.LogMessageType.Error);
             }
         }
+
+        #region подсветка робота по клику по позиции
+
+        private void _master_UserClickOnPositionShowBotInTableEvent(string botTabName)
+        {
+            if(_rowToPaintInOpenPoses != -1)
+            {
+                return;
+            }
+
+            int botNum = 0;
+
+            bool findTheBot = false;
+
+            for(int i = 0;i < _master.PanelsArray.Count;i++)
+            {
+                for(int i2 = 0;i2 < _master.PanelsArray[i].TabsSimple.Count; i2++)
+                {
+                    if (_master.PanelsArray[i].TabsSimple[i2].TabName == botTabName)
+                    {
+                        botNum = i;
+                        findTheBot = true;
+                        break;
+                    }
+                }
+
+                if(findTheBot)
+                {
+                    break;
+                }
+            }
+
+            if(findTheBot)
+            {
+                _rowToPaintInOpenPoses = botNum;
+               Task.Run(PaintPos);
+            }
+        }
+
+        int _rowToPaintInOpenPoses = -1;
+
+        System.Drawing.Color _lastBackColor;
+
+        private async void PaintPos()
+        {
+            await Task.Delay(200);
+            ColoredRow(System.Drawing.Color.LightSlateGray);
+            await Task.Delay(600);
+            ColoredRow(_lastBackColor);
+            _rowToPaintInOpenPoses = -1;
+        }
+
+        private void ColoredRow(System.Drawing.Color color)
+        {
+            if (_grid.InvokeRequired)
+            {
+                _grid.Invoke(new Action<System.Drawing.Color>(ColoredRow), color);
+                return;
+            }
+            try
+            {
+                _lastBackColor = _grid.Rows[_rowToPaintInOpenPoses].Cells[0].Style.BackColor;
+
+                for(int i =0;i < 7;i++)
+                {
+                    _grid.Rows[_rowToPaintInOpenPoses].Cells[i].Style.BackColor = color;
+                }
+            }
+            catch
+            {
+                return;
+            }
+        }
+
+        #endregion
+
     }
 }

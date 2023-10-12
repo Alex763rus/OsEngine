@@ -12,6 +12,7 @@ using OsEngine.Entity;
 using OsEngine.Language;
 using OsEngine.Logging;
 using OsEngine.Market.Servers;
+using OsEngine.Market.Servers.Transaq.TransaqEntity;
 using Point = System.Drawing.Point;
 
 namespace OsEngine.Market
@@ -57,12 +58,8 @@ namespace OsEngine.Market
                         continue;
                     }
                     servers[i].PortfoliosChangeEvent -= _server_PortfoliosChangeEvent;
-                    servers[i].NewOrderIncomeEvent -= _server_NewOrderIncomeEvent;
-                    servers[i].NewMyTradeEvent -= serv_NewMyTradeEvent;
-
                     servers[i].PortfoliosChangeEvent += _server_PortfoliosChangeEvent;
-                    servers[i].NewOrderIncomeEvent += _server_NewOrderIncomeEvent;
-                    servers[i].NewMyTradeEvent += serv_NewMyTradeEvent;
+
                 }
                 catch
                 {
@@ -78,16 +75,15 @@ namespace OsEngine.Market
         /// </summary>
         public void StartPaint()
         {
-            if(_positionHost.Dispatcher.CheckAccess() == false)
+            if(_hostPortfolio.Dispatcher.CheckAccess() == false)
             {
-                _positionHost.Dispatcher.Invoke(new Action(StartPaint));
+                _hostPortfolio.Dispatcher.Invoke(new Action(StartPaint));
                 return;
             }
 
             try
             {
-                _positionHost.Child = _gridPosition;
-                _ordersHost.Child = _gridOrders;
+                _hostPortfolio.Child = _gridPortfolio;
             }
             catch (Exception error)
             {
@@ -95,35 +91,26 @@ namespace OsEngine.Market
             }
         }
 
-        /// <summary>
-        /// stop drawing class control
-        /// остановить прорисовку контролов класса 
-        /// </summary>
         public void StopPaint()
         {
-            _positionHost.Child = null;
-            _ordersHost.Child = null;
+            _hostPortfolio.Child = null;
         }
 
-        /// <summary>
-        /// add items for drawing portfolios and orders
-        /// добавить элементы, на котором будут прорисовываться портфели и ордера
-        /// </summary>
-        public void SetHostTable(WindowsFormsHost hostPortfolio, WindowsFormsHost hostOrders)
+      
+        public void SetHostTable(WindowsFormsHost hostPortfolio)
         {
             try
             {
-                _gridPosition = DataGridFactory.GetDataGridPortfolios();
+                if(_gridPortfolio == null)
+                {
+                    _gridPortfolio = DataGridFactory.GetDataGridPortfolios();
+                    _gridPortfolio.CellClick += _gridPortfolio_CellClick;
+                }
 
-                _positionHost = hostPortfolio;
-                _positionHost.Child = _gridPosition;
-                _positionHost.Child.Show();
-                _positionHost.Child.Refresh();
-
-                _gridOrders = DataGridFactory.GetDataGridOrder();
-                _ordersHost = hostOrders;
-                _ordersHost.Child = _gridOrders;
-                _gridOrders.Click += _gridOrders_Click;
+                _hostPortfolio = hostPortfolio;
+                _hostPortfolio.Child = _gridPortfolio;
+                _hostPortfolio.Child.Show();
+                _hostPortfolio.Child.Refresh();
             }
             catch (Exception error)
             {
@@ -184,8 +171,7 @@ namespace OsEngine.Market
             _neadToPaintPortfolio = true;
         }
 
-// work of thread that draws portfolios and orders
-// работа потока прорисовывающего портфели и ордера
+        #region работа потока прорисовывающего портфели и ордера
 
         private async void PainterThreadArea()
         {
@@ -196,12 +182,6 @@ namespace OsEngine.Market
                 if (MainWindow.ProccesIsWorked == false)
                 {
                     return;
-                }
-
-                if (_needToPaintOrders)
-                {
-                    _needToPaintOrders = false;
-                    PaintOrders();
                 }
 
                 if (_neadToPaintPortfolio)
@@ -218,26 +198,21 @@ namespace OsEngine.Market
         /// </summary>
         private bool _neadToPaintPortfolio;
 
-        /// <summary>
-        /// shows whether orders have changed on the exchange and you need to redraw
-        /// флаг, означающий что ордера на бирже изменились и нужно их перерисовать
-        /// </summary>
-        private bool _needToPaintOrders;
+        #endregion
 
-// portfolio drawing
-// прорисовка портфеля
+        #region прорисовка портфеля
 
         /// <summary>
         /// table for drawing portfolios
         /// таблица для прорисовки портфелей
         /// </summary>
-        private DataGridView _gridPosition;
+        private DataGridView _gridPortfolio;
 
         /// <summary>
         /// area for drawing portfolios
         /// область для прорисовки портфелей
         /// </summary>
-        private WindowsFormsHost _positionHost;
+        private WindowsFormsHost _hostPortfolio;
 
         /// <summary>
         /// redraw the portfolio table
@@ -247,7 +222,7 @@ namespace OsEngine.Market
         {
             try
             {
-                if (_positionHost.Child == null)
+                if (_hostPortfolio.Child == null)
                 {
                     return;
                 }
@@ -276,11 +251,6 @@ namespace OsEngine.Market
                     // ignore
                 }
 
-                while (_portfolios != null && _portfolios.Count > 250)
-                {
-                    _portfolios.RemoveAt(500);
-                }
-
                 for(int i = 0;i < _portfolios.Count;i++)
                 {
                     Portfolio port = _portfolios[i];
@@ -289,42 +259,35 @@ namespace OsEngine.Market
                     {
                         continue;
                     }
-                    List<PositionOnBoard> poses = port.GetPositionOnBoard();
-                    
-                    while (poses != null &&
-                        poses.Count > 500)
-                    {
-                        poses.RemoveAt(500);
-                    }
                 }
 
 
-                if (!_positionHost.CheckAccess())
+                if (!_hostPortfolio.CheckAccess())
                 {
-                    _positionHost.Dispatcher.Invoke(RePaintPortfolio);
+                    _hostPortfolio.Dispatcher.Invoke(RePaintPortfolio);
                     return;
                 }
 
                 if (_portfolios == null)
                 {
-                    _gridPosition.Rows.Clear();
+                    _gridPortfolio.Rows.Clear();
                     return;
                 }
 
                 int curUpRow = 0;
                 int curSelectRow = 0;
 
-                if (_gridPosition.RowCount != 0)
+                if (_gridPortfolio.RowCount != 0)
                 {
-                    curUpRow = _gridPosition.FirstDisplayedScrollingRowIndex;
+                    curUpRow = _gridPortfolio.FirstDisplayedScrollingRowIndex;
                 }
 
-                if (_gridPosition.SelectedRows.Count != 0)
+                if (_gridPortfolio.SelectedRows.Count != 0)
                 {
-                    curSelectRow = _gridPosition.SelectedRows[0].Index;
+                    curSelectRow = _gridPortfolio.SelectedRows[0].Index;
                 }
 
-                _gridPosition.Rows.Clear();
+                _gridPortfolio.Rows.Clear();
 
                 // send portfolios to draw
                 // отправляем портфели на прорисовку
@@ -345,14 +308,14 @@ namespace OsEngine.Market
 
                if (curUpRow != 0 && curUpRow != -1)
                {
-                   _gridPosition.FirstDisplayedScrollingRowIndex = curUpRow;
+                   _gridPortfolio.FirstDisplayedScrollingRowIndex = curUpRow;
                }
 
                if (curSelectRow != 0 &&
-                   _gridPosition.Rows.Count > curSelectRow
+                   _gridPortfolio.Rows.Count > curSelectRow
                    && curSelectRow != -1)
                {
-                   _gridPosition.Rows[curSelectRow].Selected = true;
+                   _gridPortfolio.Rows[curSelectRow].Selected = true;
                }
 
             }
@@ -411,7 +374,7 @@ namespace OsEngine.Market
                 secondRow.Cells.Add(new DataGridViewTextBoxCell());
                 secondRow.Cells[3].Value = portfolio.ValueBlocked.ToString().ToDecimal();
 
-                _gridPosition.Rows.Add(secondRow);
+                _gridPortfolio.Rows.Add(secondRow);
 
                 List<PositionOnBoard> positionsOnBoard = portfolio.GetPositionOnBoard();
 
@@ -425,7 +388,7 @@ namespace OsEngine.Market
                     nRow.Cells.Add(new DataGridViewTextBoxCell());
                     nRow.Cells[nRow.Cells.Count - 1].Value = "No positions";
 
-                    _gridPosition.Rows.Add(nRow);
+                    _gridPortfolio.Rows.Add(nRow);
                 }
                 else
                 {
@@ -461,7 +424,14 @@ namespace OsEngine.Market
                         nRow.Cells.Add(new DataGridViewTextBoxCell());
                         nRow.Cells[7].Value = positionsOnBoard[i].ValueBlocked.ToString().ToDecimal();
 
-                        _gridPosition.Rows.Add(nRow);
+                        if(HaveClosePosButton(portfolio, positionsOnBoard[i]))
+                        {
+                            nRow.Cells.Add(new DataGridViewButtonCell());
+                            nRow.Cells[8].Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                            nRow.Cells[8].Value = OsLocalization.Market.Label82;
+                        }
+
+                        _gridPortfolio.Rows.Add(nRow);
                     }
 
                     if (havePoses == false)
@@ -474,7 +444,7 @@ namespace OsEngine.Market
                         nRow.Cells.Add(new DataGridViewTextBoxCell());
                         nRow.Cells[nRow.Cells.Count - 1].Value = "No positions";
 
-                        _gridPosition.Rows.Add(nRow);
+                        _gridPortfolio.Rows.Add(nRow);
                     }
                 }
             }
@@ -493,369 +463,194 @@ namespace OsEngine.Market
         /// </summary>
         private List<Portfolio> _portfolios;
 
-// orders
-// ордера
+        #endregion
 
-        /// <summary>
-        /// table for drawing orders
-        /// таблица для прорисовки ордеров
-        /// </summary>
-        private DataGridView _gridOrders;
+        #region кнопка удалить позицию
 
-        /// <summary>
-        /// area for drawing orders
-        /// область для прорисовки ордеров
-        /// </summary>
-        private WindowsFormsHost _ordersHost;
-
-        private object _lockerOrders = new Object();
-
-        /// <summary>
-        /// new order on the server
-        /// новый ордер в сервере
-        /// </summary>
-        private void _server_NewOrderIncomeEvent(Order order)
+        private bool HaveClosePosButton(Portfolio portfolio, PositionOnBoard positionOnBoard)
         {
-            if (order.ServerType == ServerType.Tester ||
-                order.ServerType == ServerType.Optimizer ||
-                order.ServerType == ServerType.Miner)
+            IServer myServer = GetServerByPortfolioName(portfolio.Number);
+
+            if (myServer == null)
             {
-                return;
+                return false;
             }
 
-            try
+            if (myServer.ServerType == ServerType.Tester)
             {
-                if (_orders == null)
+                return true;
+            }
+
+            if(myServer.ServerType == ServerType.BinanceFutures)
+            {
+                if(positionOnBoard.SecurityNameCode.EndsWith("_LONG")
+                    || positionOnBoard.SecurityNameCode.EndsWith("_SHORT")
+                    || positionOnBoard.SecurityNameCode.EndsWith("_BOTH"))
                 {
-                    _orders = new List<Order>();
-                }
-
-                lock (_lockerOrders)
-                {
-                    Order myOrder = _orders.Find(order1 => order1.NumberUser == order.NumberUser);
-
-                    if (myOrder == null)
-                    {
-                        _orders.Add(order);
-                    }
-                    else
-                    {
-                        if (!string.IsNullOrWhiteSpace(order.NumberMarket))
-                        {
-                            myOrder.NumberMarket = order.NumberMarket;
-                        }
-
-                        if (order.Price != 0)
-                        {
-                            myOrder.Price = order.Price;
-                        }
-
-                        if (order.Side != Side.None)
-                        {
-                            myOrder.Side = order.Side;
-                        }
-
-                        if (!string.IsNullOrWhiteSpace(order.PortfolioNumber))
-                        {
-                            myOrder.PortfolioNumber = order.PortfolioNumber;
-                        }
-
-                        if (order.Volume != 0)
-                        {
-                            myOrder.Volume = order.Volume;
-                        }
-
-                        if (order.VolumeExecute != 0)
-                        {
-                            myOrder.VolumeExecute = order.VolumeExecute;
-                        }
-
-                        if (order.State != OrderStateType.None)
-                        {
-                            myOrder.State = order.State;
-                        }
-
-                        if (string.IsNullOrWhiteSpace(myOrder.SecurityNameCode))
-                        {
-                            myOrder.SecurityNameCode = order.SecurityNameCode;
-                        }
-                        if (myOrder.TimeCallBack == DateTime.MinValue)
-                        {
-                            myOrder.TimeCallBack = order.TimeCallBack;
-                        }
-                    }
-                    if (_orders.Count > 1000)
-                    {
-                        _orders.RemoveAt(0);
-                    }
+                    return true;
                 }
             }
-            catch (Exception error)
+
+            if (myServer.ServerType == ServerType.BitGetFutures)
             {
-                _orders.Clear();
-                SendNewLogMessage(error.ToString(), LogMessageType.Error);
+                if (positionOnBoard.SecurityNameCode.EndsWith("_long")
+                    || positionOnBoard.SecurityNameCode.EndsWith("_short")
+                    || positionOnBoard.SecurityNameCode.EndsWith("_both"))
+                {
+                    return true;
+                }
             }
-            _needToPaintOrders = true;
+
+            return false;
         }
 
-        private object _lockerTrades = new Object();
-
-        /// <summary>
-        /// my new trade on the server
-        /// новый мой трейд в сервере
-        /// </summary>
-        /// <param name="trade"></param>
-        private void serv_NewMyTradeEvent(MyTrade trade)
+        private string TrimmSecName(string secName, IServer server)
         {
-            if (_orders == null || _orders.Count == 0)
+            string trueNameSec = secName;
+
+            if(server.ServerType == ServerType.Tester)
             {
-                return;
+                return trueNameSec;
+            }
+            if(server.ServerType == ServerType.BinanceFutures)
+            {
+                trueNameSec = trueNameSec.Replace("_LONG", "");
+                trueNameSec = trueNameSec.Replace("_SHORT", "");
+                trueNameSec = trueNameSec.Replace("_BOTH", "");
             }
 
-            lock (_lockerTrades)
+            if (server.ServerType == ServerType.BitGetFutures)
             {
-                Order myOrder = _orders.Find(order1 => order1.NumberMarket == trade.NumberOrderParent);
-
-                if (myOrder == null)
-                {
-                    return;
-                }
-
-                if (myOrder.ServerType == ServerType.Tester ||
-                    myOrder.ServerType == ServerType.Optimizer ||
-                    myOrder.ServerType == ServerType.Miner)
-                {
-                    return;
-                }
-
-                _orders.Remove(myOrder);
-                _needToPaintOrders = true;
+                trueNameSec = trueNameSec.Replace("_long", "");
+                trueNameSec = trueNameSec.Replace("_short", "");
+                trueNameSec = trueNameSec.Replace("_both", "");
             }
+
+            return trueNameSec;
         }
 
-        /// <summary>
-        /// all orders
-        /// все ордера
-        /// </summary>
-        private List<Order> _orders;
-
-        /// <summary>
-        /// draw orders
-        /// прорисовать ордера
-        /// </summary>
-        private void PaintOrders()
+        private IServer GetServerByPortfolioName(string portfolioName)
         {
-            try
+            List<IServer> servers = ServerMaster.GetServers();
+
+            IServer myServer = null;
+
+            for (int i = 0; servers != null && i < servers.Count; i++)
             {
-                if (_positionHost.Child == null)
+                try
                 {
-                    return;
-                }
-
-                if (!_positionHost.CheckAccess())
-                {
-                    _positionHost.Dispatcher.Invoke((PaintOrders));
-                    return;
-                }
-                _gridOrders.Rows.Clear();
-
-                if (_orders == null)
-                {
-                    return;
-                }
-
-                for (int i = _orders.Count - 1; _orders != null && _orders.Count != 0 && i > -1; i--)
-                {
-                    if ((_orders[i].State != OrderStateType.Activ &&
-                        _orders[i].State != OrderStateType.Pending)
-                      || _orders[i].Side == Side.None)
+                    if (servers[i] == null)
+                    {
+                        continue;
+                    }
+                    if (servers[i].ServerType == ServerType.Optimizer)
                     {
                         continue;
                     }
 
-                    DataGridViewRow nRow = new DataGridViewRow();
+                    List<Portfolio> portfolios = servers[i].Portfolios;
 
-                    nRow.Cells.Add(new DataGridViewTextBoxCell());
-                    nRow.Cells[0].Value = _orders[i].NumberUser;
-
-                    nRow.Cells.Add(new DataGridViewTextBoxCell());
-                    nRow.Cells[1].Value = _orders[i].NumberMarket;
-
-                    nRow.Cells.Add(new DataGridViewTextBoxCell());
-                    nRow.Cells[2].Value = _orders[i].TimeCreate;
-
-                    nRow.Cells.Add(new DataGridViewTextBoxCell());
-                    nRow.Cells[3].Value = _orders[i].SecurityNameCode;
-
-                    nRow.Cells.Add(new DataGridViewTextBoxCell());
-                    nRow.Cells[4].Value = _orders[i].PortfolioNumber;
-
-                    nRow.Cells.Add(new DataGridViewTextBoxCell());
-                    nRow.Cells[5].Value = _orders[i].Side;
-
-                    nRow.Cells.Add(new DataGridViewTextBoxCell());
-                    nRow.Cells[6].Value = _orders[i].State;
-
-                    nRow.Cells.Add(new DataGridViewTextBoxCell());
-                    nRow.Cells[7].Value = _orders[i].Price.ToStringWithNoEndZero();
-
-                    nRow.Cells.Add(new DataGridViewTextBoxCell());
-                    nRow.Cells[8].Value = _orders[i].PriceReal.ToStringWithNoEndZero();
-
-                    nRow.Cells.Add(new DataGridViewTextBoxCell());
-                    nRow.Cells[9].Value = _orders[i].Volume.ToStringWithNoEndZero();
-
-                    nRow.Cells.Add(new DataGridViewTextBoxCell());
-                    nRow.Cells[10].Value = _orders[i].TypeOrder;
-
-                    nRow.Cells.Add(new DataGridViewTextBoxCell());
-                    nRow.Cells[11].Value = _orders[i].TimeRoundTrip;
-
-                    _gridOrders.Rows.Add(nRow);
-                }
-            }
-            catch
-            {
-                // ignore. Let us sometimes face with null-value, when deleting the original order or modification, but don't break work of mail thread
-                // игнорим. Пусть иногда натыкаемся на налл, при удалении исходного ордера или модификации
-                // зато не мешаем основному потоку работать
-                //SendNewLogMessage(error.ToString(), LogMessageType.Error);
-            }
-        }
-
-// user clicks the popup menu       
-// пользователь кликает по всплывающему меню
-
-        /// <summary>
-        /// user clicked the table with all orders
-        /// пользователь кликнул на таблицу всех ордеров
-        /// </summary>
-        private void _gridOrders_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                MouseEventArgs mouse = (MouseEventArgs)e;
-                if (mouse.Button != MouseButtons.Right)
-                {
-                    return;
-                }
-
-                MenuItem[] items = new MenuItem[2];
-
-                items[0] = new MenuItem { Text = OsLocalization.Market.Message4 };
-
-                items[0].Click += OrdersCloseAll_Click;
-
-                items[1] = new MenuItem { Text = OsLocalization.Market.Message5 };
-                items[1].Click += PositionCloseForNumber_Click;
-
-                ContextMenu menu = new ContextMenu(items);
-
-                _gridOrders.ContextMenu = menu;
-                _gridOrders.ContextMenu.Show(_gridOrders, new Point(mouse.X, mouse.Y));
-            }
-            catch (Exception error)
-            {
-                SendNewLogMessage(error.ToString(), LogMessageType.Error);
-            }
-        }
-
-        /// <summary>
-        /// clear order list
-        /// очистить список ордеров
-        /// </summary>
-        public void ClearOrders()
-        {
-            _orders = new List<Order>();
-        }
-
-        /// <summary>
-        /// user requested closing all orders
-        /// пользователь запросил закрытие всех ордеров
-        /// </summary>
-        private void OrdersCloseAll_Click(object sender, EventArgs e)
-        {
-            new Task(()=>
-            {
-                try
-                {
-                    if (_orders != null)
+                    for (int j = 0; portfolios != null && j < portfolios.Count; j++)
                     {
-                        for (int i = 0; i < _orders.Count; i++)
+                        if (portfolios[j].Number == portfolioName)
                         {
-                            if (_orders[i].State == OrderStateType.Activ &&
-                                !string.IsNullOrEmpty(_orders[i].PortfolioNumber))
-                            {
-                                IServer server = ServerMaster.GetServers().Find(server1 => server1.ServerType == _orders[i].ServerType);
-                                if (server != null)
-                                {
-                                    server.CancelOrder(_orders[i]);
-                                }
-                            }
+                            myServer = servers[i];
+                            break;
                         }
                     }
 
-                    List<IServer> servers = ServerMaster.GetServers();
-
-                    for (int i = 0; servers != null && i < servers.Count; i++)
+                    if (myServer != null)
                     {
-                        IServer server = servers[i];
-                        server.CancelAllOrders();
+                        break;
                     }
-
                 }
-                catch (Exception error)
+                catch
                 {
-                    SendNewLogMessage(error.ToString(), LogMessageType.Error);
+                    // ignore
                 }
-            }).Start();
+            }
+
+            return myServer;
         }
 
-        /// <summary>
-        /// user requested closing order by number
-        /// пользователь запросил закрытие ордера по номеру
-        /// </summary>
-        private void PositionCloseForNumber_Click(object sender, EventArgs e)
+        private void _gridPortfolio_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            new Task(()=>
+            int rowInd = e.RowIndex;
+            int colInd = e.ColumnIndex;
+
+            if(colInd != 8)
             {
-                try
+                return;
+            }
+
+            if (_gridPortfolio.Rows[rowInd].Cells.Count < 9 ||
+                _gridPortfolio.Rows[rowInd].Cells[colInd] == null ||
+                _gridPortfolio.Rows[rowInd].Cells[colInd].Value == null ||
+                _gridPortfolio.Rows[rowInd].Cells[colInd].Value.ToString() != OsLocalization.Market.Label82)
+            {
+                return;
+            }
+
+            string secName = _gridPortfolio.Rows[rowInd].Cells[4].Value.ToString();
+
+            if (String.IsNullOrEmpty(secName))
+            {
+                return;
+            }
+
+            string secVol = _gridPortfolio.Rows[rowInd].Cells[6].Value.ToString();
+
+            AcceptDialogUi ui = new AcceptDialogUi( secName + OsLocalization.Market.Label83);
+
+            ui.ShowDialog();
+
+            if(ui.UserAcceptActioin == false)
+            {
+                return;
+            }
+
+            string portfolioName = "";
+
+            for(int i = rowInd; i >= 0; i--)
+            {
+                if(_gridPortfolio.Rows[i].Cells[0] == null)
                 {
-                    if (_orders == null || _orders.Count == 0)
-                    {
-                        return;
-                    }
-
-                    if (_gridOrders.Rows == null ||
-                        _gridOrders.Rows.Count == 0 ||
-                        _gridOrders.CurrentCell == null)
-                    {
-                        return;
-                    }
-
-                    Order order = _orders[(_orders.Count - 1 - _gridOrders.CurrentCell.RowIndex)];
-
-                    if ((order.State == OrderStateType.Activ || order.State == OrderStateType.Pending)
-                        &&
-                            !string.IsNullOrEmpty(order.PortfolioNumber))
-                    {
-                        IServer server = ServerMaster.GetServers().Find(server1 => server1.ServerType == order.ServerType);
-                        if (server != null)
-                        {
-                            server.CancelOrder(order);
-                        }
-                    }
+                    continue;
                 }
-                catch (Exception error)
+                if (_gridPortfolio.Rows[i].Cells[0].Value == null)
                 {
-                    SendNewLogMessage(error.ToString(), LogMessageType.Error);
+                    continue;
                 }
-            }).Start();
-           
+                if (_gridPortfolio.Rows[i].Cells[0].Value.ToString() == "")
+                {
+                    continue;
+                }
+
+                portfolioName = _gridPortfolio.Rows[i].Cells[0].Value.ToString();
+                break;
+            }
+
+            IServer myServer = GetServerByPortfolioName(portfolioName);
+
+            if(myServer == null)
+            {
+                return;
+            }
+
+            string trimmedSecName = TrimmSecName(secName, myServer);
+
+
+            if (ClearPositionOnBoardEvent != null)
+            {
+                ClearPositionOnBoardEvent(trimmedSecName, myServer, secName);
+            }
         }
 
-// log message
-// сообщения в лог
+        public event Action<string, IServer, string> ClearPositionOnBoardEvent;
+
+        #endregion
+
+        // log message
 
         /// <summary>
         /// send a new message to up

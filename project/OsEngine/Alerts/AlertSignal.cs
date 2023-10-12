@@ -93,12 +93,6 @@ namespace OsEngine.Alerts
         ReloadProfit,
 
         /// <summary>
-        /// modify position
-        /// модифицировать позицию
-        /// </summary>
-        Modificate,
-
-        /// <summary>
         /// open new deal
         /// открыть новую сделку
         /// </summary>
@@ -109,7 +103,13 @@ namespace OsEngine.Alerts
         /// удалить позицию
         /// </summary>
         DeletePos,
-        
+
+        /// <summary>
+        /// delete all positions
+        /// удалить все позиции
+        /// </summary>
+        DeleteAllPoses,
+
         /// <summary>
         /// find position
         /// найти позицию

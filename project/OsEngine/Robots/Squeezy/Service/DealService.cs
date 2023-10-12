@@ -1,6 +1,4 @@
-﻿using OkonkwoOandaV20.Framework;
-using OkonkwoOandaV20.TradeLibrary.DataTypes.Position;
-using OsEngine.Alerts;
+﻿using OsEngine.Alerts;
 using OsEngine.Charts.CandleChart.Elements;
 using OsEngine.Charts.CandleChart.Indicators;
 using OsEngine.Entity;
@@ -171,10 +169,10 @@ namespace OsEngine.Robots.SqueezyBot
             return getOpenLimit(direction) != null;
         }
 
-        public PositionOpenerToStop getOpenLimit(Side direction)
+        public PositionOpenerToStopLimit getOpenLimit(Side direction)
         {
-            List<PositionOpenerToStop> openLimits = tab.PositionOpenerToStopsAll;
-            foreach (PositionOpenerToStop positionOpenerToStop in openLimits)
+            List<PositionOpenerToStopLimit> openLimits = tab.PositionOpenerToStopsAll;
+            foreach (PositionOpenerToStopLimit positionOpenerToStop in openLimits)
             {
                 if (positionOpenerToStop.Side == direction)
                 {

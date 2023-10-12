@@ -34,8 +34,7 @@ namespace OsEngine.Robots
         private static readonly Dictionary<string, Type> BotsWithAttribute = GetTypesWithBotAttribute();
 
         /// <summary>
-        /// list robots name / 
-        /// список доступных роботов
+        /// Get list robots name
         /// </summary>
         public static List<string> GetNamesStrategy()
         {
@@ -110,15 +109,18 @@ namespace OsEngine.Robots
         }
 
         /// <summary>
-        /// create robot
-        /// создать робота
+        /// Create robot
         /// </summary>
         public static BotPanel GetStrategyForName(string nameClass, string name, StartProgram startProgram, bool isScript)
         {
             BotPanel bot = null;
-
             // примеры и бесплатные боты
-            if(nameClass == SqueezyTester.BOT_NAME)
+            if (isScript && bot == null)
+            {
+                bot = CreateScriptStrategyByName(nameClass, name, startProgram);
+                return bot;
+            }
+            if (nameClass == SqueezyTester.BOT_NAME)
             {
                 bot = new SqueezyTester(name, startProgram);
             }
@@ -130,12 +132,6 @@ namespace OsEngine.Robots
             {
                 bot = new SqueezyTrend(name, startProgram);
             }
-            if (isScript && bot == null)
-            {
-                bot = CreateScriptStrategyByName(nameClass, name, startProgram);
-                return bot;
-            }
-
             if (nameClass == "SmaScreener")
             {
                 bot = new SmaScreener(name, startProgram);
@@ -305,6 +301,9 @@ namespace OsEngine.Robots
             return bot;
         }
 
+        /// <summary>
+        /// Get all robots decorated with BotAttribute
+        /// </summary>
         static Dictionary<string, Type> GetTypesWithBotAttribute()
         {
             Assembly assembly = Assembly.GetAssembly(typeof(BotPanel));
@@ -321,10 +320,11 @@ namespace OsEngine.Robots
             return bots;
         }
 
-        // Scripts
+        /// <summary>
+        /// Get a list of all available robots
+        /// </summary>
         public static List<string> GetScriptsNamesStrategy()
         {
-
             if (Directory.Exists(@"Custom") == false)
             {
                 Directory.CreateDirectory(@"Custom");
@@ -342,8 +342,6 @@ namespace OsEngine.Robots
                 resultOne[i] = resultOne[i].Split('\\')[resultOne[i].Split('\\').Length - 1];
                 resultOne[i] = resultOne[i].Split('.')[0];
             }
-
-            // resultOne.Add("Ssma");
 
             List<string> resultTrue = new List<string>();
 
@@ -370,6 +368,10 @@ namespace OsEngine.Robots
             return resultTrue;
         }
 
+        /// <summary>
+        /// Get full path to files with user scripts
+        /// </summary>
+        /// <param name="directory">path to directory</param>
         private static List<string> GetFullNamesFromFolder(string directory)
         {
             List<string> results = new List<string>();
@@ -406,6 +408,12 @@ namespace OsEngine.Robots
             return results;
         }
 
+        /// <summary>
+        /// Find the right script and create a robot
+        /// </summary>
+        /// <param name="nameClass">the name of the type to be instantiated</param>
+        /// <param name="name">name for the robot</param>
+        /// <param name="startProgram">the type of program that is requesting the action</param>
         public static BotPanel CreateScriptStrategyByName(string nameClass, string name, StartProgram startProgram)
         {
             BotPanel bot = null;
@@ -452,9 +460,16 @@ namespace OsEngine.Robots
 
         private static List<BotPanel> _serializedPanels = new List<BotPanel>();
 
+        /// <summary>
+        /// Creating a robot instance
+        /// </summary>
+        /// <param name="path">path to the script file</param>
+        /// <param name="nameClass">the name of the type to be instantiated</param>
+        /// <param name="name">name for the robot</param>
+        /// <param name="startProgram">the type of program that is requesting the action</param>
         private static BotPanel Serialize(string path, string nameClass, string name, StartProgram startProgram)
         {
-            // 1 пробуем клонировать из ранее сериализованных объектов. Это быстрее чем подымать из файла
+            // 1 we try to clone from previously serialized objects. It's faster than raising from a file
 
             for (int i = 0; i < _serializedPanels.Count; i++)
             {
@@ -466,7 +481,7 @@ namespace OsEngine.Robots
                 }
             }
 
-            // сериализуем из файла
+            // serialize from file
             try
             {
                 if (linksToDll == null)
@@ -529,7 +544,7 @@ namespace OsEngine.Robots
 
                 CompilerParameters cp = new CompilerParameters(dllsToCompiler.ToArray());
 
-                // Помечаем сборку, как временную
+                // mark assembly as temporary
                 cp.GenerateInMemory = true;
                 cp.IncludeDebugInformation = true;
                 cp.TempFiles.KeepFiles = false;
@@ -574,10 +589,8 @@ namespace OsEngine.Robots
 
                 string fileStr = ReadFile(path);
 
-                //Объявляем провайдер кода С#
                 CSharpCodeProvider prov = new CSharpCodeProvider();
 
-                // Обрабатываем CSC компилятором
                 CompilerResults results = prov.CompileAssemblyFromSource(cp, fileStr);
 
                 if (results.Errors != null && results.Errors.Count != 0)
@@ -595,8 +608,7 @@ namespace OsEngine.Robots
                     }
 
                     throw new Exception(errorString);
-                }
-                //string name, StartProgram startProgram)
+                }               
 
                 List<object> param = new List<object>();
                 param.Add(name);
@@ -648,6 +660,10 @@ namespace OsEngine.Robots
             }
         }
 
+        /// <summary>
+        /// Get paths to libraries in a directory
+        /// </summary>
+        /// <param name="path">directory path</param>
         private static List<string> GetDllsPathFromFolder(string path)
         {
             string folderPath = path.Remove(path.LastIndexOf('\\'), path.Length - path.LastIndexOf('\\'));
@@ -676,6 +692,10 @@ namespace OsEngine.Robots
             return dlls;
         }
 
+        /// <summary>
+        /// Read data from file
+        /// </summary>
+        /// <param name="path">the path to the file</param>
         private static string ReadFile(string path)
         {
             String result = "";
@@ -691,6 +711,9 @@ namespace OsEngine.Robots
 
         // Names Include Bots With Params
 
+        /// <summary>
+        /// Start loading strategy names with parameters
+        /// </summary>
         public static List<string> GetNamesStrategyWithParametersSync()
         {
             if (NeadToReload == false &&
@@ -731,8 +754,14 @@ namespace OsEngine.Robots
             return _namesWithParam;
         }
 
+        /// <summary>
+        /// Strategy names need to be reloaded
+        /// </summary>
         public static bool NeadToReload;
 
+        /// <summary>
+        /// Load strategy names from file
+        /// </summary>
         private static void LoadBotsNames()
         {
             _namesWithParam.Clear();
@@ -747,12 +776,14 @@ namespace OsEngine.Robots
                 while (reader.EndOfStream == false)
                 {
                     _namesWithParam.Add(reader.ReadLine());
-
                 }
                 reader.Close();
             }
         }
 
+        /// <summary>
+        /// Save strategy names to file
+        /// </summary>
         private static void SaveBotsNames()
         {
             using (StreamWriter writer = new StreamWriter("Engine\\OptimizerBots.txt"))
@@ -768,6 +799,9 @@ namespace OsEngine.Robots
 
         private static List<string> _namesWithParam = new List<string>();
 
+        /// <summary>
+        /// Load strategy names with parameters
+        /// </summary>
         private static void LoadNamesWithParam()
         {
             List<string> names = GetNamesStrategy();
@@ -780,25 +814,23 @@ namespace OsEngine.Robots
                 {
                     BotPanel bot = GetStrategyForName(names[i], numThread.ToString(), StartProgram.IsOsOptimizer, false);
 
-                    if (bot.Parameters == null ||
-                        bot.Parameters.Count == 0)
+                    if (bot.Parameters.Count != 0)
                     {
-                        //SendLogMessage("We are not optimizing. Without parameters/Не оптимизируем. Без параметров: " + bot.GetNameStrategyType(), LogMessageType.System);
-                    }
-                    else
-                    {
-                        if (bot.TabsScreener == null ||
-                            bot.TabsScreener.Count == 0)
+                        if (bot.TabsScreener != null && bot.TabsScreener.Count > 0)
                         {
-                            _namesWithParam.Add(names[i]);
+                            bot.Delete();
+                            continue;
                         }
 
-                        // SendLogMessage("With parameters/С параметрами: " + bot.GetNameStrategyType(), LogMessageType.System);
-                    }
-                    if (numThread == 2)
-                    {
+                        if (bot.TabsPair != null && bot.TabsPair.Count > 0)
+                        {
+                            bot.Delete();
+                            continue;
+                        }
 
+                        _namesWithParam.Add(names[i]);
                     }
+                    
                     bot.Delete();
                 }
                 catch
@@ -813,7 +845,9 @@ namespace OsEngine.Robots
             }
         }
 
+        /// <summary>
+        /// Loaded strategy names with parameters
+        /// </summary>
         public static event Action<List<string>> LoadNamesWithParamEndEvent;
-
     }
 }

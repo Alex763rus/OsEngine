@@ -30,7 +30,6 @@ using OsEngine.Market.Servers.Optimizer;
 using OsEngine.Market.Servers.Plaza;
 using OsEngine.Market.Servers.Quik;
 using OsEngine.Market.Servers.QuikLua;
-using OsEngine.Market.Servers.SmartCom;
 using OsEngine.Market.Servers.Tester;
 using OsEngine.Market.Servers.Transaq;
 using OsEngine.Market.Servers.ZB;
@@ -46,6 +45,9 @@ using OsEngine.Market.Servers.GateIo.Futures;
 using OsEngine.Market.Servers.Bybit;
 using OsEngine.Market.Servers.OKX;
 using OsEngine.Market.Servers.BitMaxFutures;
+using OsEngine.Market.Servers.BybitSpot;
+using OsEngine.Market.Servers.BitGet.BitGetSpot;
+using OsEngine.Market.Servers.BitGet.BitGetFutures;
 
 namespace OsEngine.Market
 {
@@ -77,7 +79,6 @@ namespace OsEngine.Market
 
                 serverTypes.Add(ServerType.QuikDde);
                 serverTypes.Add(ServerType.QuikLua);
-                serverTypes.Add(ServerType.SmartCom);
                 serverTypes.Add(ServerType.Plaza);
                 serverTypes.Add(ServerType.Transaq);
                 serverTypes.Add(ServerType.Tinkoff);
@@ -101,8 +102,11 @@ namespace OsEngine.Market
                 serverTypes.Add(ServerType.HuobiFutures);
                 serverTypes.Add(ServerType.HuobiFuturesSwap);
                 serverTypes.Add(ServerType.Bybit);
+                serverTypes.Add(ServerType.BybitSpot);
                 serverTypes.Add(ServerType.OKX);
                 serverTypes.Add(ServerType.Bitmax_AscendexFutures);
+                serverTypes.Add(ServerType.BitGetSpot);
+                serverTypes.Add(ServerType.BitGetFutures);
 
                 serverTypes.Add(ServerType.InteractiveBrokers);
                 serverTypes.Add(ServerType.NinjaTrader);
@@ -195,11 +199,14 @@ namespace OsEngine.Market
                 serverTypes.Add(ServerType.Bitfinex);
                 serverTypes.Add(ServerType.Kraken);
                 serverTypes.Add(ServerType.Exmo);
+                serverTypes.Add(ServerType.BybitSpot);
                 serverTypes.Add(ServerType.HuobiSpot);
                 serverTypes.Add(ServerType.HuobiFutures);
                 serverTypes.Add(ServerType.HuobiFuturesSwap);
                 serverTypes.Add(ServerType.Bybit);
                 serverTypes.Add(ServerType.OKX);
+                serverTypes.Add(ServerType.BitGetSpot);
+                serverTypes.Add(ServerType.BitGetFutures);
 
                 return serverTypes;
             }
@@ -296,9 +303,21 @@ namespace OsEngine.Market
                 SaveMostPopularServers(type);
 
                 IServer newServer = null;
+                if (type == ServerType.BitGetFutures)
+                {
+                    newServer = new BitGetServerFutures();
+                }
+                if (type == ServerType.BitGetSpot)
+                {
+                    newServer = new BitGetServerSpot();
+                }
                 if (type == ServerType.Bitmax_AscendexFutures)
                 {
                     newServer = new BitMaxFuturesServer();
+                }
+                if (type == ServerType.BybitSpot)
+                {
+                    newServer = new BybitSpotServer();
                 }
                 if (type == ServerType.OKX)
                 {
@@ -403,10 +422,6 @@ namespace OsEngine.Market
                 if (type == ServerType.InteractiveBrokers)
                 {
                     newServer = new InteractiveBrokersServer();
-                }
-                else if (type == ServerType.SmartCom)
-                {
-                    newServer = new SmartComServer();
                 }
                 else if (type == ServerType.Plaza)
                 {
@@ -665,6 +680,31 @@ namespace OsEngine.Market
         {
             IServerPermission serverPermission = null;
 
+            if (type == ServerType.BitGetSpot)
+            {
+                serverPermission = _serversPermissions.Find(s => s.ServerType == type);
+
+                if (serverPermission == null)
+                {
+                    serverPermission = new BitGetSpotServerPermission();
+                    _serversPermissions.Add(serverPermission);
+                }
+
+                return serverPermission;
+            }
+
+            if (type == ServerType.BitGetFutures)
+            {
+                serverPermission = _serversPermissions.Find(s => s.ServerType == type);
+
+                if (serverPermission == null)
+                {
+                    serverPermission = new BitGetFuturesServerPermission();
+                    _serversPermissions.Add(serverPermission);
+                }
+
+                return serverPermission;
+            }
 
             if (type == ServerType.AscendEx_BitMax)
             {
@@ -812,6 +852,18 @@ namespace OsEngine.Market
 
                 return serverPermission;
             }
+            if (type == ServerType.BybitSpot)
+            {
+                serverPermission = _serversPermissions.Find(s => s.ServerType == type);
+
+                if (serverPermission == null)
+                {
+                    serverPermission = new BybitSpotServerPermission();
+                    _serversPermissions.Add(serverPermission);
+                }
+
+                return serverPermission;
+            }
             if (type == ServerType.HuobiFuturesSwap)
             {
                 serverPermission = _serversPermissions.Find(s => s.ServerType == type);
@@ -881,7 +933,9 @@ namespace OsEngine.Market
             task.Start();
         }
 
-        private static ServerMasterPortfoliosPainter _painter;
+        private static ServerMasterPortfoliosPainter _painterPortfolios;
+
+        private static ServerMasterOrdersPainter _ordersStorage;
 
         /// <summary>
         /// save settings
@@ -1060,8 +1114,7 @@ namespace OsEngine.Market
             }
         }
 
-// access to the portfolio and its drawing
-// доступ к портфелю и его прорисовка
+// доступ к портфелю, ордерам и его прорисовка
 
         /// <summary>
         /// start to draw class controls
@@ -1069,7 +1122,8 @@ namespace OsEngine.Market
         /// </summary>
         public static void StartPaint()
         {
-             _painter.StartPaint();
+             _painterPortfolios.StartPaint();
+            _ordersStorage.StartPaint();
         }
 
         /// <summary>
@@ -1078,7 +1132,8 @@ namespace OsEngine.Market
         /// </summary>
         public static void StopPaint()
         {
-            _painter.StopPaint();
+            _painterPortfolios.StopPaint();
+            _ordersStorage.StopPaint();
         }
 
         /// <summary>
@@ -1087,26 +1142,65 @@ namespace OsEngine.Market
         /// </summary>
         public static void ClearOrders()
         {
-            if (_painter == null)
+            if (_painterPortfolios == null)
             {
                 return;
             }
-            _painter.ClearOrders();
+            _ordersStorage.ClearOrders();
         }
 
         /// <summary>
         /// add items on which portfolios and orders will be drawn
         /// добавить элементы, на котором будут прорисовываться портфели и ордера
         /// </summary>
-        public static void SetHostTable(WindowsFormsHost hostPortfolio, WindowsFormsHost hostOrders)
+        public static void SetHostTable(WindowsFormsHost hostPortfolio, WindowsFormsHost hostActiveOrders, WindowsFormsHost hostHistoricalOrders)
         {
-            _painter = new ServerMasterPortfoliosPainter();
-            _painter.LogMessageEvent += SendNewLogMessage;
-            _painter.SetHostTable(hostPortfolio, hostOrders);
+            if (_painterPortfolios == null)
+            {
+                _painterPortfolios = new ServerMasterPortfoliosPainter();
+                _painterPortfolios.LogMessageEvent += SendNewLogMessage;
+                _painterPortfolios.ClearPositionOnBoardEvent += _painterPortfolios_ClearPositionOnBoardEvent;
+                _painterPortfolios.SetHostTable(hostPortfolio);
+            }
+
+            if(_ordersStorage == null)
+            {
+                _ordersStorage = new ServerMasterOrdersPainter();
+                _ordersStorage.LogMessageEvent += SendNewLogMessage;
+                _ordersStorage.SetHostTable(hostActiveOrders, hostHistoricalOrders);
+                _ordersStorage.RevokeOrderToEmulatorEvent += _ordersStorage_RevokeOrderToEmulatorEvent;
+            }
         }
 
-// log messages
-// сообщения в лог
+        private static void _painterPortfolios_ClearPositionOnBoardEvent(string sec, IServer server, string fullName)
+        {
+            if(ClearPositionOnBoardEvent != null)
+            {
+                ClearPositionOnBoardEvent(sec, server, fullName);
+            }
+        }
+
+        public static event Action<string, IServer, string> ClearPositionOnBoardEvent;
+
+        private static void _ordersStorage_RevokeOrderToEmulatorEvent(Order order)
+        {
+            if(RevokeOrderToEmulatorEvent != null)
+            {
+                RevokeOrderToEmulatorEvent(order);
+            }
+        }
+
+        public static void InsertOrder(Order order)
+        {
+            if (_ordersStorage != null)
+            {
+                _ordersStorage.InsertOrder(order);
+            }
+        }
+
+        public static event Action<Order> RevokeOrderToEmulatorEvent;
+
+        // сообщения в лог
 
         public static void ActivateLogging()
         {
@@ -1283,12 +1377,6 @@ namespace OsEngine.Market
         QuikDde,
 
         /// <summary>
-        /// SmartCom
-        /// Смарт-Ком
-        /// </summary>
-        SmartCom,
-
-        /// <summary>
         /// Plaza 2
         /// Плаза 2
         /// </summary>
@@ -1355,6 +1443,21 @@ namespace OsEngine.Market
         /// <summary>
         /// Ascendex exchange
         /// </summary>
-        Bitmax_AscendexFutures
+        Bitmax_AscendexFutures,
+
+        /// <summary>
+        /// BybitSpot exchange
+        /// </summary>
+        BybitSpot,
+
+        /// <summary>
+        /// BitGetSpot exchange
+        /// </summary>
+        BitGetSpot,
+
+        /// <summary>
+        /// BitGetFutures exchange
+        /// </summary>
+        BitGetFutures
     }
 }

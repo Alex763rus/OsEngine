@@ -219,15 +219,12 @@ namespace OsEngine.Entity
 
             Candle lastCandle = CandlesAll[CandlesAll.Count - 1];
 
-            if (
-                (
-                    (lastCandle.TimeStart.Add(TimeFrameSpan) < time.AddSeconds(-5))
-                    ||
-                    (TimeFrame == TimeFrame.Day 
-                     && lastCandle.TimeStart.Date < time.Date)
-                )
-                &&
-                lastCandle.State != CandleState.Finished)
+            if(lastCandle.State == CandleState.Finished)
+            {
+                return;
+            }
+
+            if (lastCandle.TimeStart.Add(TimeFrameSpan) < time.AddSeconds(-5))
             {
                 // пришло время закрыть свечу
                 lastCandle.State = CandleState.Finished;
@@ -307,7 +304,8 @@ namespace OsEngine.Entity
                 { // при классической сборке свечек. Когда мы точно знаем когда у свечи закрытие
                     bool saveInNextCandle = true;
 
-                    if (TimeFrameBuilder.SaveTradesInCandles &&
+                    if (CandlesAll != null &&
+                        TimeFrameBuilder.SaveTradesInCandles &&
                         CandlesAll[CandlesAll.Count - 1].TimeStart.Add(TimeFrameSpan) > trade.Time)
                     {
                         CandlesAll[CandlesAll.Count - 1].Trades.Add(trade);
@@ -367,6 +365,8 @@ namespace OsEngine.Entity
                 }
                 else
                 {
+                    bool isNewTradesFurther = false;
+
                     for (int i = 0; i < trades.Count; i++)
                     {
                         try
@@ -386,12 +386,15 @@ namespace OsEngine.Entity
                                     // если IDшников нет - просто игнорируем трейды с идентичным временем
                                     continue;
                                 }
-                                else
+                                else if(isNewTradesFurther == false)
                                 {
                                     if(IsInArrayTradeIds(trades[i].Id))
                                     {// если IDшник в последних 100 трейдах
                                         continue;
                                     }
+                                    // дальше по массиву точно идут новые трейды.
+                                    // 1) они новые 2) текущий уже не лежит в старых трейдах
+                                    isNewTradesFurther = true;
                                 }
                             }
 
@@ -407,6 +410,13 @@ namespace OsEngine.Entity
 
             _lastTradeIndex = trades.Count;
 
+            if (newTrades.Count == 0)
+            {
+                return null;
+            }
+            
+            _lastTradeTime = newTrades[newTrades.Count - 1].Time;
+
             for (int i2 = 0; i2 < newTrades.Count; i2++)
             {
                 if (newTrades[i2] == null)
@@ -416,30 +426,27 @@ namespace OsEngine.Entity
                 }
                 if (string.IsNullOrEmpty(newTrades[i2].Id) == false)
                 {
-                    AddInListTradeIds(newTrades[i2].Id);
+                    AddInListTradeIds(newTrades[i2].Id, newTrades[i2].Time);
                 } 
             }
 
-            if (newTrades.Count == 0)
-            {
-                return null;
-            }
-
-            _lastTradeTime = newTrades[newTrades.Count - 1].Time;
-            
             return newTrades;
         }
 
         List<string> _lastTradeIds = new List<string>();
 
-        private void AddInListTradeIds(string id)
-        {
-            _lastTradeIds.Add(id);
+        DateTime _idsTime = DateTime.MinValue;
 
-            if(_lastTradeIds.Count > 50)
+        private void AddInListTradeIds(string id, DateTime _timeNow)
+        {
+            if(_idsTime.Second != _timeNow.Second 
+                && _idsTime < _timeNow)
             {
-                _lastTradeIds.RemoveAt(0);
+                _lastTradeIds.Clear();
+                _idsTime = _timeNow;
             }
+
+            _lastTradeIds.Add(id);
         }
 
         private bool IsInArrayTradeIds(string id)

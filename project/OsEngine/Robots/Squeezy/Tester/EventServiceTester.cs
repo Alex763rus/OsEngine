@@ -1,6 +1,4 @@
 ﻿using Kraken.WebSockets;
-using OkonkwoOandaV20.TradeLibrary.DataTypes.Position;
-using OkonkwoOandaV20.TradeLibrary.DataTypes.Pricing;
 using OsEngine.Entity;
 using OsEngine.Market.Servers.Bitfinex.BitfitnexEntity;
 using OsEngine.OsTrader.Panels.Tab;

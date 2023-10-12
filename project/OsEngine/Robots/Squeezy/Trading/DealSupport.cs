@@ -15,7 +15,7 @@ namespace OsEngine.Robots.Squeezy.Trading
         private GroupParametersTrading groupParametersTrading;
         private ProcessState processState;
         private Position position;
-        private PositionOpenerToStop positionLimit;
+        private PositionOpenerToStopLimit positionLimit;
         private IChartElement[] chartElements;
         private int chartCounter;
         private int counterBar;
@@ -26,7 +26,7 @@ namespace OsEngine.Robots.Squeezy.Trading
             reset();
         }
 
-        public void dealSupportUpdate(GroupParametersTrading groupParametersTrading, ProcessState processState, Position position, PositionOpenerToStop positionLimit)
+        public void dealSupportUpdate(GroupParametersTrading groupParametersTrading, ProcessState processState, Position position, PositionOpenerToStopLimit positionLimit)
         {
             this.groupParametersTrading = groupParametersTrading;
             this.processState = processState;
@@ -112,7 +112,7 @@ namespace OsEngine.Robots.Squeezy.Trading
             return position != null;
         }
 
-        public PositionOpenerToStop getPositionLimit()
+        public PositionOpenerToStopLimit getPositionLimit()
         {
             return positionLimit;
         }
@@ -129,7 +129,7 @@ namespace OsEngine.Robots.Squeezy.Trading
             }
             return 0;
         }
-        public void setPositionLimit(PositionOpenerToStop positionLimit)
+        public void setPositionLimit(PositionOpenerToStopLimit positionLimit)
         {
             this.positionLimit = positionLimit;
         }

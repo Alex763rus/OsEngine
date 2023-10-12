@@ -1,6 +1,4 @@
-﻿using OkonkwoOandaV20.TradeLibrary.DataTypes.Position;
-using OkonkwoOandaV20.TradeLibrary.DataTypes.Pricing;
-using OsEngine.Charts.CandleChart.Elements;
+﻿using OsEngine.Charts.CandleChart.Elements;
 using OsEngine.Entity;
 using OsEngine.Market.Servers.Bitfinex.BitfitnexEntity;
 using OsEngine.Market.Servers.GateIo.Futures.Response;

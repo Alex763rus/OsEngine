@@ -8,7 +8,6 @@ using OsEngine.Market.Servers.GateIo.Futures.Entities;
 using OsEngine.Market.Servers.GateIo.Futures.Request;
 using OsEngine.Market.Servers.GateIo.Futures.Response;
 using OsEngine.Market.Services;
-using RestSharp;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -37,7 +36,7 @@ namespace OsEngine.Market.Servers.GateIo.Futures
             CreateParameterString("User ID", "");
             CreateParameterEnum("Base Wallet", "USDT", new List<string> { "USDT", "BTC" });
             CreateParameterEnum("Position Mode", "Single", new List<string> { "Single", "Double" });
-            
+
         }
 
         /// <summary>
@@ -50,7 +49,7 @@ namespace OsEngine.Market.Servers.GateIo.Futures
         }
     }
 
-    public class GateIoFuturesServerRealization : AServerRealization
+    public class GateIoFuturesServerRealization : IServerRealization
     {
         private string _publicKey;
         private string _secretKey;
@@ -62,7 +61,7 @@ namespace OsEngine.Market.Servers.GateIo.Futures
         private readonly GfMarketDepthCreator _mDepthCreator;
         private readonly GfOrderCreator _orderCreator;
         private DateTime _lastTimeUpdateSocket;
-        
+
 
         private string _host = "https://fx-api-testnet.gateio.ws";
         private string _path = "/api/v4/futures";
@@ -107,20 +106,27 @@ namespace OsEngine.Market.Servers.GateIo.Futures
         /// server type
         /// тип сервера
         /// </summary>
-        public override ServerType ServerType { get { return ServerType.GateIoFutures; } }
+        public ServerType ServerType
+        {
+            get { return ServerType.GateIoFutures; }
+        }
+
+        public ServerConnectStatus ServerStatus { get; set; }
+        public List<IServerParameter> ServerParameters { get; set; }
+        public DateTime ServerTime { get; set; }
 
         private CancellationTokenSource _cancelTokenSource;
 
         private readonly ConcurrentQueue<string> _queueMessagesReceivedFromExchange = new ConcurrentQueue<string>();
 
-        public override void Connect()
+        public void Connect()
         {
             _publicKey = ((ServerParameterString)ServerParameters[0]).Value;
             _secretKey = ((ServerParameterPassword)ServerParameters[1]).Value;
             _userId = ((ServerParameterString)ServerParameters[2]).Value;
             _baseWallet = ((ServerParameterEnum)ServerParameters[3]).Value;
             _postionMode = ((ServerParameterEnum)ServerParameters[4]).Value;
-            
+
 
             _host = "https://fx-api.gateio.ws";
             _baseUrlWss = "wss://fx-ws.gateio.ws/v4/ws";
@@ -141,6 +147,9 @@ namespace OsEngine.Market.Servers.GateIo.Futures
             _wsSource = new WsSource(_baseUrlWss + _wallet);
             _wsSource.MessageEvent += WsSourceOnMessageEvent;
             _wsSource.Start();
+
+            _lastTimeUpdateSocket = DateTime.Now;
+            ServerStatus = ServerConnectStatus.Connect;
         }
 
         private void WsSourceOnMessageEvent(WsMessageType msgType, string message)
@@ -148,12 +157,12 @@ namespace OsEngine.Market.Servers.GateIo.Futures
             switch (msgType)
             {
                 case WsMessageType.Opened:
-                    OnConnectEvent();
+                    ConnectEvent();
                     StartPingAliveLogic();
                     StartPortfolioRequester();
                     break;
                 case WsMessageType.Closed:
-                    OnDisconnectEvent();
+                    DisconnectEvent();
                     break;
                 case WsMessageType.StringData:
                     _queueMessagesReceivedFromExchange.Enqueue(message);
@@ -220,11 +229,11 @@ namespace OsEngine.Market.Servers.GateIo.Futures
                     continue;
                 }
 
-                if (_lastTimeUpdateSocket.AddSeconds(60) < DateTime.Now)
+                if (_lastTimeUpdateSocket.AddSeconds(120) < DateTime.Now)
                 {
                     SendLogMessage("The websocket is disabled. Restart", LogMessageType.Error);
                     Dispose();
-                    OnDisconnectEvent();
+                    DisconnectEvent();
                     return;
                 }
             }
@@ -303,7 +312,7 @@ namespace OsEngine.Market.Servers.GateIo.Futures
 
                                 foreach (var depth in marketDepths)
                                 {
-                                    OnMarketDepthEvent(depth);
+                                    MarketDepthEvent(depth);
                                 }
                             }
                             else if (channel == "futures.orders")
@@ -312,14 +321,14 @@ namespace OsEngine.Market.Servers.GateIo.Futures
 
                                 foreach (var order in orders)
                                 {
-                                    OnOrderEvent(order);
+                                    MyOrderEvent(order);
                                 }
                             }
                             else if (channel == "futures.trades")
                             {
                                 foreach (var trade in _orderCreator.TradesCreate(mes))
                                 {
-                                    OnTradeEvent(trade);
+                                    NewTradesEvent(trade);
                                 }
                             }
                             else if (channel == "futures.usertrades")
@@ -328,7 +337,7 @@ namespace OsEngine.Market.Servers.GateIo.Futures
 
                                 foreach (var myTrade in myTrades)
                                 {
-                                    OnMyTradeEvent(myTrade);
+                                    MyTradeEvent(myTrade);
                                 }
                             }
                             else
@@ -360,7 +369,7 @@ namespace OsEngine.Market.Servers.GateIo.Futures
             _wsSource = null;
         }
 
-        public override void Dispose()
+        public void Dispose()
         {
             try
             {
@@ -378,6 +387,8 @@ namespace OsEngine.Market.Servers.GateIo.Futures
             {
                 SendLogMessage("GateIo dispose error: " + e, LogMessageType.Error);
             }
+
+            ServerStatus = ServerConnectStatus.Disconnect;
         }
 
 
@@ -431,46 +442,68 @@ namespace OsEngine.Market.Servers.GateIo.Futures
         #endregion 
 
         #region Запросы
-        public override void GetSecurities()
+        public void GetSecurities()
         {
-            string timeStamp = TimeManager.GetUnixTimeStampSeconds().ToString();
-            var headers = new Dictionary<string, string>();
-            headers.Add("Timestamp", timeStamp);
-            var securitiesJson = _requestREST.SendGetQuery("GET", _host + _path + _wallet, "/contracts", headers);
-
-            var _securities = new List<Security>();
-
-            var jSecurities = JsonConvert.DeserializeObject<GfSecurity[]>(securitiesJson);
-
-            foreach (var jSec in jSecurities)
+            try
             {
-                try
+                string timeStamp = TimeManager.GetUnixTimeStampSeconds().ToString();
+                var headers = new Dictionary<string, string>();
+                headers.Add("Timestamp", timeStamp);
+                var securitiesJson = _requestREST.SendGetQuery("GET", _host + _path + _wallet, "/contracts", headers);
+
+                var _securities = new List<Security>();
+
+                var jSecurities = JsonConvert.DeserializeObject<GfSecurity[]>(securitiesJson);
+
+                foreach (var jSec in jSecurities)
                 {
-                    Security security = new Security();
+                    try
+                    {
+                        Security security = new Security();
 
-                    var name = jSec.Name.ToUpper();
+                        var name = jSec.Name.ToUpper();
 
-                    security.Name = name;
-                    security.NameFull = security.Name;
-                    security.NameId = security.Name;
-                    security.NameClass = SecurityType.Futures.ToString();
-                    security.SecurityType = SecurityType.Futures;
-                    security.Decimals = jSec.MarkPriceRound.Split('.')[1].Count();
-                    security.Lot = 1;
-                    security.PriceStep = Converter.StringToDecimal(jSec.MarkPriceRound);
-                    security.PriceStepCost = Converter.StringToDecimal(jSec.MarkPriceRound);
-                    security.State = SecurityStateType.Activ;
-                    security.Go = jSec.OrderSizeMin;
+                        security.Name = name;
+                        security.NameFull = security.Name;
+                        security.NameId = security.Name;
+                        security.NameClass = SecurityType.Futures.ToString();
+                        security.SecurityType = SecurityType.Futures;
+                        security.Decimals = jSec.MarkPriceRound.Split('.')[1].Count();
+                        security.Lot = 1;
+                        security.PriceStep = Converter.StringToDecimal(jSec.MarkPriceRound);
+                        security.PriceStepCost = Converter.StringToDecimal(jSec.MarkPriceRound);
+                        security.State = SecurityStateType.Activ;
+                        security.Go = jSec.OrderSizeMin;
 
-                    _securities.Add(security);
+                        _securities.Add(security);
+                    }
+                    catch (Exception error)
+                    {
+                        throw new Exception("Security creation error \n" + error.ToString());
+                    }
                 }
-                catch (Exception error)
-                {
-                    throw new Exception("Security creation error \n" + error.ToString());
-                }
+
+                SecurityEvent(_securities);
             }
-
-            OnSecurityEvent(_securities);
+            catch (Exception exception)
+            {
+                if (exception is WebException)
+                {
+                    WebException ex = (WebException)exception;
+                    HttpWebResponse httpResponse = (HttpWebResponse)ex.Response;
+                    if (ex.Response != null)
+                    {
+                        using (Stream stream = ex.Response.GetResponseStream())
+                        {
+                            StreamReader reader = new StreamReader(stream, Encoding.UTF8);
+                            var log = reader.ReadToEnd();
+                            SendLogMessage(log, LogMessageType.Error);
+                            return;
+                        }
+                    }
+                }
+                SendLogMessage(exception.Message, LogMessageType.Error);
+            }
         }
 
         private void StartPortfolioRequester()
@@ -492,7 +525,7 @@ namespace OsEngine.Market.Servers.GateIo.Futures
 
                 Portfolios.Add(portfolioInitial);
 
-                OnPortfolioEvent(Portfolios);
+                PortfolioEvent(Portfolios);
             }
 
             while (!token.IsCancellationRequested)
@@ -509,59 +542,100 @@ namespace OsEngine.Market.Servers.GateIo.Futures
                 }
                 catch (Exception exception)
                 {
-                    SendLogMessage("MessageReader error: " + exception, LogMessageType.Error);
+                    if (exception is WebException)
+                    {
+                        WebException ex = (WebException)exception;
+                        HttpWebResponse httpResponse = (HttpWebResponse)ex.Response;
+                        if (ex.Response != null)
+                        {
+                            using (Stream stream = ex.Response.GetResponseStream())
+                            {
+                                StreamReader reader = new StreamReader(stream, Encoding.UTF8);
+                                var log = reader.ReadToEnd();
+                                SendLogMessage(log, LogMessageType.Error);
+                                return;
+                            }
+                        }
+                    }
+
+
+
+                    SendLogMessage(exception.Message, LogMessageType.Error);
                 }
             }
         }
 
-        public override void GetPortfolios()
+        public void GetPortfolios()
         {
-            string timeStamp = TimeManager.GetUnixTimeStampSeconds().ToString();
-            var headers = new Dictionary<string, string>();
-
-            headers.Add("Timestamp", timeStamp);
-            headers.Add("KEY", _publicKey);
-            headers.Add("SIGN", _signer.GetSignStringRest("GET", _path + _wallet + "/accounts", "", "", timeStamp));
-
-            var result = _requestREST.SendGetQuery("GET", _host + _path + _wallet, "/accounts", headers);
-
-            string jsonPosition = GetPositionSwap(timeStamp);
-
-            if (result.Contains("failed"))
+            try
             {
-                SendLogMessage("GateIFutures: Cant get porfolios", LogMessageType.Error);
-                return;
+                string timeStamp = TimeManager.GetUnixTimeStampSeconds().ToString();
+                var headers = new Dictionary<string, string>();
+
+                headers.Add("Timestamp", timeStamp);
+                headers.Add("KEY", _publicKey);
+                headers.Add("SIGN", _signer.GetSignStringRest("GET", _path + _wallet + "/accounts", "", "", timeStamp));
+
+                var result = _requestREST.SendGetQuery("GET", _host + _path + _wallet, "/accounts", headers);
+
+                string jsonPosition = GetPositionSwap(timeStamp);
+
+                if (result.Contains("failed"))
+                {
+                    SendLogMessage("GateIFutures: Cant get porfolios", LogMessageType.Error);
+                    return;
+                }
+
+                List<PositionResponceSwap> accountPosition = JsonConvert.DeserializeObject<List<PositionResponceSwap>>(jsonPosition);
+
+                GfAccount accountInfo = JsonConvert.DeserializeObject<GfAccount>(result);
+
+                Portfolio portfolio = Portfolios[0];
+
+                portfolio.ClearPositionOnBoard();
+
+                PositionOnBoard pos = new PositionOnBoard();
+                pos.SecurityNameCode = accountInfo.Currency;
+                pos.ValueBegin = Converter.StringToDecimal(accountInfo.Total);
+                pos.ValueCurrent = Converter.StringToDecimal(accountInfo.Available);
+                pos.ValueBlocked = Converter.StringToDecimal(accountInfo.PositionMargin) + Converter.StringToDecimal(accountInfo.OrderMargin);
+
+                portfolio.SetNewPosition(pos);
+
+
+                foreach (var item in accountPosition)
+                {
+                    string mode = item.mode.Contains("single") ? "Single" : item.mode;
+                    string SellBuy = mode == "Single" ? "_Single" : item.mode.Contains("short") ? "_SHORT" : "_LONG";
+                    PositionOnBoard position = new PositionOnBoard();
+                    position.PortfolioName = "GateIoFutures";
+                    position.SecurityNameCode = item.contract + SellBuy;
+                    position.ValueBegin = Math.Abs(Converter.StringToDecimal(item.size));
+                    position.ValueCurrent = Math.Abs(Converter.StringToDecimal(item.size));
+                    portfolio.SetNewPosition(position);
+                }
+
+                PortfolioEvent(Portfolios);
             }
-
-            List<PositionResponceSwap> accountPosition = JsonConvert.DeserializeObject<List<PositionResponceSwap>>(jsonPosition);
-
-            GfAccount accountInfo = JsonConvert.DeserializeObject<GfAccount>(result);
-
-            Portfolio portfolio = Portfolios[0];
-
-            portfolio.ClearPositionOnBoard();
-
-            PositionOnBoard pos = new PositionOnBoard();
-            pos.SecurityNameCode = accountInfo.Currency;
-            pos.ValueBegin = Converter.StringToDecimal(accountInfo.Total);
-            pos.ValueCurrent = Converter.StringToDecimal(accountInfo.Available);
-            pos.ValueBlocked = Converter.StringToDecimal(accountInfo.PositionMargin) + Converter.StringToDecimal(accountInfo.OrderMargin);
-
-            portfolio.SetNewPosition(pos);
-
-
-            foreach (var item in accountPosition)
+            catch (Exception exception)
             {
-                string SellBuy = item.size.ToDecimal() < 0 ? "_Sell" : "_Buy";
-                PositionOnBoard position = new PositionOnBoard();
-                position.PortfolioName = "GateIoFutures";
-                position.SecurityNameCode = item.contract + SellBuy;
-                position.ValueBegin = Math.Abs(Converter.StringToDecimal(item.size));
-                position.ValueCurrent = Math.Abs(Converter.StringToDecimal(item.size));
-                portfolio.SetNewPosition(position);
+                if (exception is WebException)
+                {
+                    WebException ex = (WebException)exception;
+                    HttpWebResponse httpResponse = (HttpWebResponse)ex.Response;
+                    if (ex.Response != null)
+                    {
+                        using (Stream stream = ex.Response.GetResponseStream())
+                        {
+                            StreamReader reader = new StreamReader(stream, Encoding.UTF8);
+                            var log = reader.ReadToEnd();
+                            SendLogMessage(log, LogMessageType.Error);
+                            return;
+                        }
+                    }
+                }
+                SendLogMessage(exception.Message, LogMessageType.Error);
             }
-
-            OnPortfolioEvent(Portfolios);
         }
 
         private string GetPositionSwap(string timeStamp)
@@ -575,7 +649,7 @@ namespace OsEngine.Market.Servers.GateIo.Futures
             return json;
         }
 
-        public override void SendOrder(Order order)
+        public void SendOrder(Order order)
         {
             decimal outputVolume = order.Volume;
             if (order.Side == Side.Sell)
@@ -596,7 +670,6 @@ namespace OsEngine.Market.Servers.GateIo.Futures
                     Size = Convert.ToInt64(outputVolume),
                     Tif = "gtc",
                     Text = $"t-{order.NumberUser}",
-                    //AutoSize = close,
                     Close = false,
                     Reduce_only = true
                 };
@@ -619,7 +692,7 @@ namespace OsEngine.Market.Servers.GateIo.Futures
             }
 
 
-            
+
 
 
             string timeStamp = TimeManager.GetUnixTimeStampSeconds().ToString();
@@ -656,52 +729,81 @@ namespace OsEngine.Market.Servers.GateIo.Futures
 
                     order.State = OrderStateType.Fail;
 
-                    OnOrderEvent(order);
+                    MyOrderEvent(order);
                 }
             }
-            catch (WebException ex)
+            catch (Exception exception)
             {
-                HttpWebResponse httpResponse = (HttpWebResponse)ex.Response;
-                if (ex.Response != null)
+                if (exception is WebException)
                 {
-                    using (Stream stream = ex.Response.GetResponseStream())
+                    WebException ex = (WebException)exception;
+                    HttpWebResponse httpResponse = (HttpWebResponse)ex.Response;
+                    if (ex.Response != null)
                     {
-                        StreamReader reader = new StreamReader(stream, Encoding.UTF8);
-                        var q = reader.ReadToEnd();
+                        using (Stream stream = ex.Response.GetResponseStream())
+                        {
+                            StreamReader reader = new StreamReader(stream, Encoding.UTF8);
+                            var log = reader.ReadToEnd();
+                            SendLogMessage(log, LogMessageType.Error);
+                            return;
+                        }
                     }
                 }
+                SendLogMessage(exception.Message, LogMessageType.Error);
             }
         }
 
-        public override void CancelOrder(Order order)
+        public void CancelOrder(Order order)
         {
-            string timeStamp = TimeManager.GetUnixTimeStampSeconds().ToString();
-            var headers = new Dictionary<string, string>();
-
-            headers.Add("Timestamp", timeStamp);
-            headers.Add("KEY", _publicKey);
-            headers.Add("SIGN", _signer.GetSignStringRest("DELETE", _path + _wallet + $"/orders/{order.NumberMarket}", "", "", timeStamp));
-
-            var result = _requestREST.SendGetQuery("DELETE", _host + _path + _wallet, $"/orders/{order.NumberMarket}", headers);
-
-            CancelOrderResponse cancelResponse = JsonConvert.DeserializeObject<CancelOrderResponse>(result);
-
-            if (cancelResponse.FinishAs == "cancelled")
+            try
             {
-                SendLogMessage($"Order num {order.NumberUser} canceled.", LogMessageType.Trade);
-                order.State = OrderStateType.Cancel;
-                OnOrderEvent(order);
+                string timeStamp = TimeManager.GetUnixTimeStampSeconds().ToString();
+                var headers = new Dictionary<string, string>();
+
+                headers.Add("Timestamp", timeStamp);
+                headers.Add("KEY", _publicKey);
+                headers.Add("SIGN", _signer.GetSignStringRest("DELETE", _path + _wallet + $"/orders/{order.NumberMarket}", "", "", timeStamp));
+
+                var result = _requestREST.SendGetQuery("DELETE", _host + _path + _wallet, $"/orders/{order.NumberMarket}", headers);
+
+                CancelOrderResponse cancelResponse = JsonConvert.DeserializeObject<CancelOrderResponse>(result);
+
+                if (cancelResponse.FinishAs == "cancelled")
+                {
+                    SendLogMessage($"Order num {order.NumberUser} canceled.", LogMessageType.Trade);
+                    order.State = OrderStateType.Cancel;
+                    MyOrderEvent(order);
+                }
+                else
+                {
+                    SendLogMessage($"Error on order cancel num {order.NumberUser}", LogMessageType.Error);
+                }
             }
-            else
+            catch (Exception exception)
             {
-                SendLogMessage($"Error on order cancel num {order.NumberUser}", LogMessageType.Error);
+                if (exception is WebException)
+                {
+                    WebException ex = (WebException)exception;
+                    HttpWebResponse httpResponse = (HttpWebResponse)ex.Response;
+                    if (ex.Response != null)
+                    {
+                        using (Stream stream = ex.Response.GetResponseStream())
+                        {
+                            StreamReader reader = new StreamReader(stream, Encoding.UTF8);
+                            var log = reader.ReadToEnd();
+                            SendLogMessage(log, LogMessageType.Error);
+                            return;
+                        }
+                    }
+                }
+                SendLogMessage(exception.Message, LogMessageType.Error);
             }
         }
 
         #endregion
 
         #region Подписка на данные
-        public override void Subscrible(Security security)
+        public void Subscrible(Security security)
         {
             SubscribeMarketDepth(security.Name);
             SubscribeTrades(security.Name);
@@ -761,7 +863,7 @@ namespace OsEngine.Market.Servers.GateIo.Futures
             _wsSource?.SendMessage(message);
         }
 
-        public override void GetOrdersState(List<Order> orders)
+        public void GetOrdersState(List<Order> orders)
         {
 
         }
@@ -769,7 +871,7 @@ namespace OsEngine.Market.Servers.GateIo.Futures
 
         #region Работа со свечами
 
-        public override List<Candle> GetCandleDataToSecurity(Security security, TimeFrameBuilder timeFrameBuilder, DateTime startTime, DateTime endTime, DateTime actualTime)
+        public List<Candle> GetCandleDataToSecurity(Security security, TimeFrameBuilder timeFrameBuilder, DateTime startTime, DateTime endTime, DateTime actualTime)
         {
             List<Candle> candles = new List<Candle>();
 
@@ -888,7 +990,7 @@ namespace OsEngine.Market.Servers.GateIo.Futures
             return candles;
         }
 
-        public override List<Trade> GetTickDataToSecurity(Security security, DateTime startTime, DateTime endTime, DateTime actualTime)
+        public List<Trade> GetTickDataToSecurity(Security security, DateTime startTime, DateTime endTime, DateTime actualTime)
         {
             List<Trade> trades = new List<Trade>();
 
@@ -1003,6 +1105,36 @@ namespace OsEngine.Market.Servers.GateIo.Futures
             return trades;
         }
 
+        public void CancelAllOrders()
+        {
+
+        }
+
+        public void ResearchTradesToOrders(List<Order> orders)
+        {
+
+        }
+
+        private void SendLogMessage(string messgae, LogMessageType logMessageType)
+        {
+            LogMessageEvent(messgae, logMessageType);
+        }
+
+        public event Action<Order> MyOrderEvent;
+        public event Action<MyTrade> MyTradeEvent;
+        public event Action<List<Portfolio>> PortfolioEvent;
+        public event Action<List<Security>> SecurityEvent;
+        public event Action<MarketDepth> MarketDepthEvent;
+        public event Action<Trade> NewTradesEvent;
+        public event Action ConnectEvent;
+        public event Action DisconnectEvent;
+        public event Action<string, LogMessageType> LogMessageEvent;
+
         #endregion
+
+        public void CancelAllOrdersToSecurity(Security security)
+        {
+
+        }
     }
 }

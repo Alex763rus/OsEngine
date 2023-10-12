@@ -8,6 +8,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using OsEngine.Language;
 using System.IO;
+using System.Reflection;
 
 namespace OsEngine.Entity
 {
@@ -16,7 +17,7 @@ namespace OsEngine.Entity
         public static DataGridView GetDataGridView(DataGridViewSelectionMode selectionMode, DataGridViewAutoSizeRowsMode rowsSizeMode, bool createSaveMenu = false)
         {
             DataGridView grid = new DoubleBufferedDataGridView();
-
+            
             grid.AllowUserToOrderColumns = true;
             grid.AllowUserToResizeRows = true;
             grid.AutoSizeRowsMode = rowsSizeMode;
@@ -40,7 +41,6 @@ namespace OsEngine.Entity
             style.BackColor =  Color.FromArgb(21, 26, 30);
             style.SelectionBackColor = Color.FromArgb(17, 18, 23);
             style.ForeColor = Color.FromArgb(154, 156, 158);
-          
             grid.DefaultCellStyle = style;
 
             DataGridViewCellStyle headerStyle = new DataGridViewCellStyle();
@@ -190,10 +190,117 @@ namespace OsEngine.Entity
             grid.Click -= GridClickMenuEvent;
         }
 
+        public static DataGridView GetDataGridBuyAtStopPositions()
+        {
+            DataGridView newGrid = GetDataGridView(DataGridViewSelectionMode.FullRowSelect,
+    DataGridViewAutoSizeRowsMode.AllCells);
+
+            newGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            DataGridViewCellStyle style = newGrid.DefaultCellStyle;
+
+            DataGridViewTextBoxCell cell0 = new DataGridViewTextBoxCell();
+            cell0.Style = style;
+
+            /*  
+positionOpener.Number
+positionOpener.TimeCreate
+positionOpener.TabName
+positionOpener.Securit
+positionOpener.Volume = volume;
+positionOpener.Side
+positionOpener.ActivateType
+positionOpener.PriceRedLine
+positionOpener.PriceOrder
+positionOpener.ExpiresBars
+positionOpener.LifeTimeType
+
+*/
+
+            DataGridViewColumn colum0 = new DataGridViewColumn();
+            colum0.CellTemplate = cell0;
+            colum0.HeaderText = OsLocalization.Entity.PositionBuyAtStopColumn1; // Number
+            colum0.ReadOnly = true;
+            colum0.Width = 70;
+            newGrid.Columns.Add(colum0);
+
+            DataGridViewColumn colum01 = new DataGridViewColumn();
+            colum01.CellTemplate = cell0;
+            colum01.HeaderText = OsLocalization.Entity.PositionBuyAtStopColumn2; // Time Open
+            colum01.ReadOnly = true;
+            colum01.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            newGrid.Columns.Add(colum01);
+
+            DataGridViewColumn colum02 = new DataGridViewColumn();
+            colum02.CellTemplate = cell0;
+            colum02.HeaderText = OsLocalization.Entity.PositionBuyAtStopColumn3; // Tab name
+            colum02.ReadOnly = true;
+            colum02.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            newGrid.Columns.Add(colum02);
+
+            DataGridViewColumn colum03 = new DataGridViewColumn();
+            colum03.CellTemplate = cell0;
+            colum03.HeaderText = OsLocalization.Entity.PositionBuyAtStopColumn4; // Security
+            colum03.ReadOnly = true;
+            colum03.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            newGrid.Columns.Add(colum03);
+
+            DataGridViewColumn colum04 = new DataGridViewColumn();
+            colum04.CellTemplate = cell0;
+            colum04.HeaderText = OsLocalization.Entity.PositionBuyAtStopColumn5; // Volume
+            colum04.ReadOnly = true;
+            colum04.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            newGrid.Columns.Add(colum04);
+
+            DataGridViewColumn colum05 = new DataGridViewColumn();
+            colum05.CellTemplate = cell0;
+            colum05.HeaderText = OsLocalization.Entity.PositionBuyAtStopColumn6; // Side
+            colum05.ReadOnly = true;
+            colum05.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            newGrid.Columns.Add(colum05);
+
+            DataGridViewColumn colum06 = new DataGridViewColumn();
+            colum06.CellTemplate = cell0;
+            colum06.HeaderText = OsLocalization.Entity.PositionBuyAtStopColumn7; // ActivateType
+            colum06.ReadOnly = true;
+            colum06.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            newGrid.Columns.Add(colum06);
+
+            DataGridViewColumn colum07 = new DataGridViewColumn();
+            colum07.CellTemplate = cell0;
+            colum07.HeaderText = OsLocalization.Entity.PositionBuyAtStopColumn8; // PriceRedLine
+            colum07.ReadOnly = true;
+            colum07.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            newGrid.Columns.Add(colum07);
+
+            DataGridViewColumn colum08 = new DataGridViewColumn();
+            colum08.CellTemplate = cell0;
+            colum08.HeaderText = OsLocalization.Entity.PositionBuyAtStopColumn9; // PriceOrder
+            colum08.ReadOnly = true;
+            colum08.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            newGrid.Columns.Add(colum08);
+
+            DataGridViewColumn colum09 = new DataGridViewColumn();
+            colum09.CellTemplate = cell0;
+            colum09.HeaderText = OsLocalization.Entity.PositionBuyAtStopColumn10; // ExpiresBars
+            colum09.ReadOnly = true;
+            colum09.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            newGrid.Columns.Add(colum09);
+
+            DataGridViewColumn colum10 = new DataGridViewColumn();
+            colum10.CellTemplate = cell0;
+            colum10.HeaderText = OsLocalization.Entity.PositionBuyAtStopColumn11; // ExpiresBars
+            colum10.ReadOnly = true;
+            colum10.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            newGrid.Columns.Add(colum10);
+
+            return newGrid;
+        }
+
         public static DataGridView GetDataGridPosition(bool readOnly = true)
         {
             DataGridView newGrid = GetDataGridView(DataGridViewSelectionMode.FullRowSelect,
                 DataGridViewAutoSizeRowsMode.AllCells);
+
             newGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             DataGridViewCellStyle style = newGrid.DefaultCellStyle;
 
@@ -204,21 +311,21 @@ namespace OsEngine.Entity
             colum0.CellTemplate = cell0;
             colum0.HeaderText = OsLocalization.Entity.PositionColumn1;
             colum0.ReadOnly = true;
-            colum0.Width = 50;
+            colum0.Width = 70;
             newGrid.Columns.Add(colum0);
 
             DataGridViewColumn colum01 = new DataGridViewColumn();
             colum01.CellTemplate = cell0;
             colum01.HeaderText = OsLocalization.Entity.PositionColumn2;
             colum01.ReadOnly = true;
-            colum01.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            colum01.Width = 100;
             newGrid.Columns.Add(colum01);
 
             DataGridViewColumn colum02 = new DataGridViewColumn();
             colum02.CellTemplate = cell0;
             colum02.HeaderText = OsLocalization.Entity.PositionColumn3;
             colum02.ReadOnly = true;
-            colum02.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            colum02.Width = 100;
             newGrid.Columns.Add(colum02);
 
             DataGridViewColumn colu = new DataGridViewColumn();
@@ -785,6 +892,12 @@ namespace OsEngine.Entity
             column7.ReadOnly = true;
             column7.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
             _gridPosition.Columns.Add(column7);
+
+            DataGridViewColumn column8 = new DataGridViewColumn();
+            column8.CellTemplate = cell0;
+            column8.ReadOnly = true;
+            column8.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            _gridPosition.Columns.Add(column8);
 
             return _gridPosition;
         }

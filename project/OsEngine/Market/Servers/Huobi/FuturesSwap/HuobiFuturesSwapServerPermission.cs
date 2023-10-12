@@ -90,6 +90,10 @@ namespace OsEngine.Market.Servers.Huobi.FuturesSwap
 
         #endregion
 
+        public bool MarketOrdersIsSupport
+        {
+            get { return true; }
+        }
         public bool IsTradeServer
         {
             get { return true; }
